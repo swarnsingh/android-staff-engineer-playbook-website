@@ -5,7 +5,8 @@ def check():
  issues=[];scenes=0
  for p in (Path(__file__).resolve().parents[1]/'content/blend').rglob('*.blend'):
   for m in re.finditer(r'<section class="pb-figure" data-pb-flow="scene".*?<script type="application/json">(.*?)</script>',p.read_text(),re.S):
-   scenes+=1;data=json.loads(m[1])
+   from scene_data import resolve
+   scenes+=1;data=resolve(json.loads(m[1]))
    for name,L in data['layouts'].items():
     for edge,path in L['edges'].items():
      pieces=re.findall(r'([MLCQHV])([^MLCQHV]+)',path);start=(0,0)

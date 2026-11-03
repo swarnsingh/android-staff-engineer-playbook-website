@@ -70,6 +70,13 @@ def check():
             if hashlib.sha256((ROOT/path).read_bytes()).hexdigest() != digest:
                 raise ValueError('Read-only source changed: '+path)
         verified += len(hashes)
+    pilot = snapshot['distributed-systems_sha256']
+    if set(pilot) != {'distributed-systems.md', 'distributed-systems/delivery-semantics.md'}:
+        raise ValueError('Distributed Systems pilot snapshot scope changed')
+    for path, digest in pilot.items():
+        if hashlib.sha256((ROOT/path).read_bytes()).hexdigest() != digest:
+            raise ValueError('Read-only pilot source changed: '+path)
+    verified += len(pilot)
     linked = snapshot['observability_link_targets_sha256']
     if set(linked) != {'release-engineering/crash-rate-gating.md', 'milestones.md'}:
         raise ValueError('Observability linked-source snapshot scope changed')

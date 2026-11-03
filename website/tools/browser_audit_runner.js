@@ -101,7 +101,7 @@ window.__runAudit = async (pages, widths = [320, 390, 768, 1181, 1280, 1439, 144
               const data=JSON.parse(scene.querySelector('script[type="application/json"]').textContent);
               for(const [mode,track] of Object.entries(data.modes)) {
                 const button=[...scene.querySelectorAll('[data-mode]')].find(b=>b.dataset.mode===mode);
-                if(button)button.click();else scene.querySelector('[data-act=reset]').click();
+                if(button)button.click();scene.querySelector('[data-act=reset]').click();
                 for(let i=0;i<track.steps.length;i++) {
                   if(i)scene.querySelector('[data-act=next]').click();
                   const problems=[];

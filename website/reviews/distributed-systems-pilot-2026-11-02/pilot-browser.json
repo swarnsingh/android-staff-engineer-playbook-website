@@ -1,0 +1,43 @@
+{
+  "checks": [
+    {
+      "name": "manual mode exposes no Play control",
+      "ok": true
+    },
+    {
+      "name": "last step retains focus and stops advancing",
+      "ok": true
+    },
+    {
+      "name": "two deliveries leave one local effect and sender confirmed",
+      "ok": true
+    },
+    {
+      "name": "phone resize preserves the selected state",
+      "ok": true
+    },
+    {
+      "name": "reduced motion preserves manual transitions with no animation",
+      "ok": true
+    },
+    {
+      "name": "phone has no page horizontal overflow",
+      "ok": true
+    },
+    {
+      "name": "all original answers remain open and adjacent",
+      "ok": true
+    },
+    {
+      "name": "unconverted chapter source links use approved canonical revision",
+      "ok": true
+    },
+    {
+      "name": "no-JS fallback has all seven steps, original text and answers",
+      "ok": true
+    }
+  ],
+  "ok": true,
+  "browser": "Chrome/151.0.7922.47",
+  "limits": "Headless Chromium viewport emulation only; no physical device, screen reader or other browser engine."
+}

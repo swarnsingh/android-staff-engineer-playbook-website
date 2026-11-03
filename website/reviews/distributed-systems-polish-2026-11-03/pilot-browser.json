@@ -1,0 +1,1808 @@
+{
+  "checks": [
+    {
+      "name": "manual advancement has no automatic Play control",
+      "ok": true
+    },
+    {
+      "name": "help names the step dropdown",
+      "ok": true
+    },
+    {
+      "name": "Next moves a labelled message on the send path",
+      "ok": true
+    },
+    {
+      "name": "native step selection reaches the requested state",
+      "ok": true
+    },
+    {
+      "name": "lost acknowledgement moves on a warning path that stops before the sender",
+      "ok": true
+    },
+    {
+      "name": "lost reply retains a visible cross after its packet disappears",
+      "ok": true
+    },
+    {
+      "name": "lost reply leaves sender uncertain after one committed effect",
+      "ok": true
+    },
+    {
+      "name": "comparison retains step and shows two deliveries with two effects",
+      "ok": true
+    },
+    {
+      "name": "same-step comparison restores one effect and original result",
+      "ok": true
+    },
+    {
+      "name": "last step retains keyboard focus and stops advancing",
+      "ok": true
+    },
+    {
+      "name": "reduced motion retains transfer highlighting without a travelling packet",
+      "ok": true
+    },
+    {
+      "name": "duplicate run delivery caption explicitly omits the replay record",
+      "ok": true
+    },
+    {
+      "name": "375×812 retry step 1 keeps every actor, caption and control in view",
+      "ok": true
+    },
+    {
+      "name": "375×812 retry step 2 keeps every actor, caption and control in view",
+      "ok": true
+    },
+    {
+      "name": "375×812 retry step 3 keeps every actor, caption and control in view",
+      "ok": true
+    },
+    {
+      "name": "375×812 retry step 4 keeps every actor, caption and control in view",
+      "ok": true
+    },
+    {
+      "name": "375px retry reduced-motion lost step retains cross",
+      "ok": true
+    },
+    {
+      "name": "375×812 retry step 5 keeps every actor, caption and control in view",
+      "ok": true
+    },
+    {
+      "name": "375×812 retry step 6 keeps every actor, caption and control in view",
+      "ok": true
+    },
+    {
+      "name": "375×812 retry step 7 keeps every actor, caption and control in view",
+      "ok": true
+    },
+    {
+      "name": "375×812 unsafe step 1 keeps every actor, caption and control in view",
+      "ok": true
+    },
+    {
+      "name": "375×812 unsafe step 2 keeps every actor, caption and control in view",
+      "ok": true
+    },
+    {
+      "name": "375×812 unsafe step 3 keeps every actor, caption and control in view",
+      "ok": true
+    },
+    {
+      "name": "375×812 unsafe step 4 keeps every actor, caption and control in view",
+      "ok": true
+    },
+    {
+      "name": "375px unsafe reduced-motion lost step retains cross",
+      "ok": true
+    },
+    {
+      "name": "375×812 unsafe step 5 keeps every actor, caption and control in view",
+      "ok": true
+    },
+    {
+      "name": "375×812 unsafe step 6 keeps every actor, caption and control in view",
+      "ok": true
+    },
+    {
+      "name": "375×812 unsafe step 7 keeps every actor, caption and control in view",
+      "ok": true
+    },
+    {
+      "name": "375px has no page horizontal overflow",
+      "ok": true
+    },
+    {
+      "name": "1024×768 retry step 1 keeps every actor, caption and control in view",
+      "ok": true
+    },
+    {
+      "name": "1024×768 retry step 2 keeps every actor, caption and control in view",
+      "ok": true
+    },
+    {
+      "name": "1024×768 retry step 3 keeps every actor, caption and control in view",
+      "ok": true
+    },
+    {
+      "name": "1024×768 retry step 4 keeps every actor, caption and control in view",
+      "ok": true
+    },
+    {
+      "name": "1024px retry reduced-motion lost step retains cross",
+      "ok": true
+    },
+    {
+      "name": "1024×768 retry step 5 keeps every actor, caption and control in view",
+      "ok": true
+    },
+    {
+      "name": "1024×768 retry step 6 keeps every actor, caption and control in view",
+      "ok": true
+    },
+    {
+      "name": "1024×768 retry step 7 keeps every actor, caption and control in view",
+      "ok": true
+    },
+    {
+      "name": "1024×768 unsafe step 1 keeps every actor, caption and control in view",
+      "ok": true
+    },
+    {
+      "name": "1024×768 unsafe step 2 keeps every actor, caption and control in view",
+      "ok": true
+    },
+    {
+      "name": "1024×768 unsafe step 3 keeps every actor, caption and control in view",
+      "ok": true
+    },
+    {
+      "name": "1024×768 unsafe step 4 keeps every actor, caption and control in view",
+      "ok": true
+    },
+    {
+      "name": "1024px unsafe reduced-motion lost step retains cross",
+      "ok": true
+    },
+    {
+      "name": "1024×768 unsafe step 5 keeps every actor, caption and control in view",
+      "ok": true
+    },
+    {
+      "name": "1024×768 unsafe step 6 keeps every actor, caption and control in view",
+      "ok": true
+    },
+    {
+      "name": "1024×768 unsafe step 7 keeps every actor, caption and control in view",
+      "ok": true
+    },
+    {
+      "name": "1024px has no page horizontal overflow",
+      "ok": true
+    },
+    {
+      "name": "1280×900 retry step 1 keeps every actor, caption and control in view",
+      "ok": true
+    },
+    {
+      "name": "1280×900 retry step 2 keeps every actor, caption and control in view",
+      "ok": true
+    },
+    {
+      "name": "1280×900 retry step 3 keeps every actor, caption and control in view",
+      "ok": true
+    },
+    {
+      "name": "1280×900 retry step 4 keeps every actor, caption and control in view",
+      "ok": true
+    },
+    {
+      "name": "1280px retry reduced-motion lost step retains cross",
+      "ok": true
+    },
+    {
+      "name": "1280×900 retry step 5 keeps every actor, caption and control in view",
+      "ok": true
+    },
+    {
+      "name": "1280×900 retry step 6 keeps every actor, caption and control in view",
+      "ok": true
+    },
+    {
+      "name": "1280×900 retry step 7 keeps every actor, caption and control in view",
+      "ok": true
+    },
+    {
+      "name": "1280×900 unsafe step 1 keeps every actor, caption and control in view",
+      "ok": true
+    },
+    {
+      "name": "1280×900 unsafe step 2 keeps every actor, caption and control in view",
+      "ok": true
+    },
+    {
+      "name": "1280×900 unsafe step 3 keeps every actor, caption and control in view",
+      "ok": true
+    },
+    {
+      "name": "1280×900 unsafe step 4 keeps every actor, caption and control in view",
+      "ok": true
+    },
+    {
+      "name": "1280px unsafe reduced-motion lost step retains cross",
+      "ok": true
+    },
+    {
+      "name": "1280×900 unsafe step 5 keeps every actor, caption and control in view",
+      "ok": true
+    },
+    {
+      "name": "1280×900 unsafe step 6 keeps every actor, caption and control in view",
+      "ok": true
+    },
+    {
+      "name": "1280×900 unsafe step 7 keeps every actor, caption and control in view",
+      "ok": true
+    },
+    {
+      "name": "1280px has no page horizontal overflow",
+      "ok": true
+    },
+    {
+      "name": "320px remains bounded without page overflow",
+      "ok": true
+    },
+    {
+      "name": "resize retains mode and selected step",
+      "ok": true
+    },
+    {
+      "name": "direct selection and resize retain the lost-reply cross",
+      "ok": true
+    },
+    {
+      "name": "selecting another step clears the lost marker from every edge",
+      "ok": true
+    },
+    {
+      "name": "ten original answer pairs stay open with forward-looking scope guidance",
+      "ok": true
+    },
+    {
+      "name": "no-JS fallback includes both seven-step runs and original answers",
+      "ok": true
+    },
+    {
+      "name": "preview has no application console or runtime errors (favicon excluded)",
+      "ok": true
+    }
+  ],
+  "geometry": [
+    {
+      "width": 375,
+      "height": 812,
+      "paperHeight": 356.671875,
+      "step": "Step 1 of 7",
+      "mode": "retry",
+      "header": 165,
+      "boxes": [
+        {
+          "label": "Sender / M42M42 pending",
+          "top": 210.15911865234375,
+          "bottom": 273.83355712890625
+        },
+        {
+          "label": "Consumerdeliveries: 0",
+          "top": 330.43304443359375,
+          "bottom": 394.10748291015625
+        },
+        {
+          "label": "Business DBeffects: 00",
+          "top": 450.7069396972656,
+          "bottom": 514.38134765625
+        },
+        {
+          "label": "pb-caption",
+          "top": 561.53125,
+          "bottom": 695.53125
+        },
+        {
+          "label": "pb-controls",
+          "top": 705.53125,
+          "bottom": 811.53125
+        }
+      ],
+      "ok": true
+    },
+    {
+      "width": 375,
+      "height": 812,
+      "paperHeight": 356.671875,
+      "step": "Step 2 of 7",
+      "mode": "retry",
+      "header": 165,
+      "boxes": [
+        {
+          "label": "Sender / M42awaiting reply",
+          "top": 202.15911865234375,
+          "bottom": 265.83355712890625
+        },
+        {
+          "label": "Consumerdeliveries: 1",
+          "top": 322.43304443359375,
+          "bottom": 386.10748291015625
+        },
+        {
+          "label": "Business DBeffects: 00",
+          "top": 442.7069396972656,
+          "bottom": 506.3813781738281
+        },
+        {
+          "label": "pb-caption",
+          "top": 553.53125,
+          "bottom": 687.53125
+        },
+        {
+          "label": "pb-controls",
+          "top": 697.53125,
+          "bottom": 803.53125
+        }
+      ],
+      "ok": true
+    },
+    {
+      "width": 375,
+      "height": 812,
+      "paperHeight": 356.671875,
+      "step": "Step 3 of 7",
+      "mode": "retry",
+      "header": 165,
+      "boxes": [
+        {
+          "label": "Sender / M42awaiting reply",
+          "top": 202.15911865234375,
+          "bottom": 265.83355712890625
+        },
+        {
+          "label": "ConsumerR42 ready",
+          "top": 322.43304443359375,
+          "bottom": 386.10748291015625
+        },
+        {
+          "label": "Business DBeffects: 1; R421",
+          "top": 442.7069396972656,
+          "bottom": 506.3813781738281
+        },
+        {
+          "label": "pb-caption",
+          "top": 553.53125,
+          "bottom": 687.53125
+        },
+        {
+          "label": "pb-controls",
+          "top": 697.53125,
+          "bottom": 803.53125
+        }
+      ],
+      "ok": true
+    },
+    {
+      "width": 375,
+      "height": 812,
+      "paperHeight": 356.671875,
+      "step": "Step 4 of 7",
+      "mode": "retry",
+      "header": 165,
+      "boxes": [
+        {
+          "label": "Sender / M42outcome unknown",
+          "top": 202.15911865234375,
+          "bottom": 265.83355712890625
+        },
+        {
+          "label": "Consumerreply lost",
+          "top": 322.43304443359375,
+          "bottom": 386.10748291015625
+        },
+        {
+          "label": "Business DBeffects: 1; R421",
+          "top": 442.7069396972656,
+          "bottom": 506.3813781738281
+        },
+        {
+          "label": "pb-caption",
+          "top": 553.53125,
+          "bottom": 687.53125
+        },
+        {
+          "label": "pb-controls",
+          "top": 697.53125,
+          "bottom": 803.53125
+        }
+      ],
+      "ok": true
+    },
+    {
+      "width": 375,
+      "height": 812,
+      "paperHeight": 356.671875,
+      "step": "Step 5 of 7",
+      "mode": "retry",
+      "header": 165,
+      "boxes": [
+        {
+          "label": "Sender / M42retry same M42",
+          "top": 202.15911865234375,
+          "bottom": 265.83355712890625
+        },
+        {
+          "label": "Consumerdeliveries: 2",
+          "top": 322.43304443359375,
+          "bottom": 386.10748291015625
+        },
+        {
+          "label": "Business DBeffects: 1; R421",
+          "top": 442.7069396972656,
+          "bottom": 506.3813781738281
+        },
+        {
+          "label": "pb-caption",
+          "top": 553.53125,
+          "bottom": 687.53125
+        },
+        {
+          "label": "pb-controls",
+          "top": 697.53125,
+          "bottom": 803.53125
+        }
+      ],
+      "ok": true
+    },
+    {
+      "width": 375,
+      "height": 812,
+      "paperHeight": 356.671875,
+      "step": "Step 6 of 7",
+      "mode": "retry",
+      "header": 165,
+      "boxes": [
+        {
+          "label": "Sender / M42retry same M42",
+          "top": 202.15911865234375,
+          "bottom": 265.83355712890625
+        },
+        {
+          "label": "Consumerreplay R42",
+          "top": 322.43304443359375,
+          "bottom": 386.10748291015625
+        },
+        {
+          "label": "Business DBeffects: 1; R421",
+          "top": 442.7069396972656,
+          "bottom": 506.3813781738281
+        },
+        {
+          "label": "pb-caption",
+          "top": 553.53125,
+          "bottom": 687.53125
+        },
+        {
+          "label": "pb-controls",
+          "top": 697.53125,
+          "bottom": 803.53125
+        }
+      ],
+      "ok": true
+    },
+    {
+      "width": 375,
+      "height": 812,
+      "paperHeight": 356.671875,
+      "step": "Step 7 of 7",
+      "mode": "retry",
+      "header": 165,
+      "boxes": [
+        {
+          "label": "Sender / M42M42 confirmed",
+          "top": 176.15911865234375,
+          "bottom": 239.83355712890625
+        },
+        {
+          "label": "Consumerdeliveries: 2",
+          "top": 296.43304443359375,
+          "bottom": 360.10748291015625
+        },
+        {
+          "label": "Business DBeffects: 1; R421",
+          "top": 416.7069396972656,
+          "bottom": 480.3813781738281
+        },
+        {
+          "label": "pb-caption",
+          "top": 527.53125,
+          "bottom": 687.53125
+        },
+        {
+          "label": "pb-controls",
+          "top": 697.53125,
+          "bottom": 803.53125
+        }
+      ],
+      "ok": true
+    },
+    {
+      "width": 375,
+      "height": 812,
+      "paperHeight": 356.671875,
+      "step": "Step 1 of 7",
+      "mode": "unsafe",
+      "header": 165,
+      "boxes": [
+        {
+          "label": "Sender / M42M42 pending",
+          "top": 184.15911865234375,
+          "bottom": 247.83355712890625
+        },
+        {
+          "label": "Consumerdeliveries: 0",
+          "top": 304.43304443359375,
+          "bottom": 368.10748291015625
+        },
+        {
+          "label": "Business DBeffects: 00",
+          "top": 424.7069396972656,
+          "bottom": 488.3813781738281
+        },
+        {
+          "label": "pb-caption",
+          "top": 535.53125,
+          "bottom": 695.53125
+        },
+        {
+          "label": "pb-controls",
+          "top": 705.53125,
+          "bottom": 811.53125
+        }
+      ],
+      "ok": true
+    },
+    {
+      "width": 375,
+      "height": 812,
+      "paperHeight": 356.671875,
+      "step": "Step 2 of 7",
+      "mode": "unsafe",
+      "header": 165,
+      "boxes": [
+        {
+          "label": "Sender / M42awaiting reply",
+          "top": 184.15911865234375,
+          "bottom": 247.83355712890625
+        },
+        {
+          "label": "Consumerdeliveries: 1",
+          "top": 304.43304443359375,
+          "bottom": 368.10748291015625
+        },
+        {
+          "label": "Business DBeffects: 00",
+          "top": 424.7069396972656,
+          "bottom": 488.3813781738281
+        },
+        {
+          "label": "pb-caption",
+          "top": 535.53125,
+          "bottom": 669.53125
+        },
+        {
+          "label": "pb-controls",
+          "top": 679.53125,
+          "bottom": 785.53125
+        }
+      ],
+      "ok": true
+    },
+    {
+      "width": 375,
+      "height": 812,
+      "paperHeight": 356.671875,
+      "step": "Step 3 of 7",
+      "mode": "unsafe",
+      "header": 165,
+      "boxes": [
+        {
+          "label": "Sender / M42awaiting reply",
+          "top": 184.15911865234375,
+          "bottom": 247.83355712890625
+        },
+        {
+          "label": "ConsumerR42 ready",
+          "top": 304.43304443359375,
+          "bottom": 368.10748291015625
+        },
+        {
+          "label": "Business DBeffects: 1; R421",
+          "top": 424.7069396972656,
+          "bottom": 488.3813781738281
+        },
+        {
+          "label": "pb-caption",
+          "top": 535.53125,
+          "bottom": 643.53125
+        },
+        {
+          "label": "pb-controls",
+          "top": 653.53125,
+          "bottom": 759.53125
+        }
+      ],
+      "ok": true
+    },
+    {
+      "width": 375,
+      "height": 812,
+      "paperHeight": 356.671875,
+      "step": "Step 4 of 7",
+      "mode": "unsafe",
+      "header": 165,
+      "boxes": [
+        {
+          "label": "Sender / M42outcome unknown",
+          "top": 184.15911865234375,
+          "bottom": 247.83355712890625
+        },
+        {
+          "label": "Consumerreply lost",
+          "top": 304.43304443359375,
+          "bottom": 368.10748291015625
+        },
+        {
+          "label": "Business DBeffects: 1; R421",
+          "top": 424.7069396972656,
+          "bottom": 488.3813781738281
+        },
+        {
+          "label": "pb-caption",
+          "top": 535.53125,
+          "bottom": 669.53125
+        },
+        {
+          "label": "pb-controls",
+          "top": 679.53125,
+          "bottom": 785.53125
+        }
+      ],
+      "ok": true
+    },
+    {
+      "width": 375,
+      "height": 812,
+      "paperHeight": 356.671875,
+      "step": "Step 5 of 7",
+      "mode": "unsafe",
+      "header": 165,
+      "boxes": [
+        {
+          "label": "Sender / M42retry same M42",
+          "top": 184.15911865234375,
+          "bottom": 247.83355712890625
+        },
+        {
+          "label": "Consumerdeliveries: 2",
+          "top": 304.43304443359375,
+          "bottom": 368.10748291015625
+        },
+        {
+          "label": "Business DBeffects: 1; R421",
+          "top": 424.7069396972656,
+          "bottom": 488.3813781738281
+        },
+        {
+          "label": "pb-caption",
+          "top": 535.53125,
+          "bottom": 669.53125
+        },
+        {
+          "label": "pb-controls",
+          "top": 679.53125,
+          "bottom": 785.53125
+        }
+      ],
+      "ok": true
+    },
+    {
+      "width": 375,
+      "height": 812,
+      "paperHeight": 356.671875,
+      "step": "Step 6 of 7",
+      "mode": "unsafe",
+      "header": 165,
+      "boxes": [
+        {
+          "label": "Sender / M42retry same M42",
+          "top": 184.15911865234375,
+          "bottom": 247.83355712890625
+        },
+        {
+          "label": "Consumersecond order: R43",
+          "top": 304.43304443359375,
+          "bottom": 368.10748291015625
+        },
+        {
+          "label": "Business DBeffects: 2; R432",
+          "top": 424.7069396972656,
+          "bottom": 488.3813781738281
+        },
+        {
+          "label": "pb-caption",
+          "top": 535.53125,
+          "bottom": 669.53125
+        },
+        {
+          "label": "pb-controls",
+          "top": 679.53125,
+          "bottom": 785.53125
+        }
+      ],
+      "ok": true
+    },
+    {
+      "width": 375,
+      "height": 812,
+      "paperHeight": 356.671875,
+      "step": "Step 7 of 7",
+      "mode": "unsafe",
+      "header": 165,
+      "boxes": [
+        {
+          "label": "Sender / M42M42 confirmed",
+          "top": 184.15911865234375,
+          "bottom": 247.83355712890625
+        },
+        {
+          "label": "Consumerdeliveries: 2",
+          "top": 304.43304443359375,
+          "bottom": 368.10748291015625
+        },
+        {
+          "label": "Business DBeffects: 2; R432",
+          "top": 424.7069396972656,
+          "bottom": 488.3813781738281
+        },
+        {
+          "label": "pb-caption",
+          "top": 535.53125,
+          "bottom": 669.53125
+        },
+        {
+          "label": "pb-controls",
+          "top": 679.53125,
+          "bottom": 785.53125
+        }
+      ],
+      "ok": true
+    },
+    {
+      "width": 1024,
+      "height": 768,
+      "paperHeight": 446,
+      "step": "Step 1 of 7",
+      "mode": "retry",
+      "header": 180.1875,
+      "boxes": [
+        {
+          "label": "Sender / M42M42 pending",
+          "top": 278.984375,
+          "bottom": 504.5843811035156
+        },
+        {
+          "label": "Consumerdeliveries: 0",
+          "top": 278.984375,
+          "bottom": 504.5843811035156
+        },
+        {
+          "label": "Business DBeffects: 00",
+          "top": 278.984375,
+          "bottom": 504.5843811035156
+        },
+        {
+          "label": "pb-caption",
+          "top": 631.984375,
+          "bottom": 713.984375
+        },
+        {
+          "label": "pb-controls",
+          "top": 723.984375,
+          "bottom": 767.984375
+        }
+      ],
+      "ok": true
+    },
+    {
+      "width": 1024,
+      "height": 768,
+      "paperHeight": 446,
+      "step": "Step 2 of 7",
+      "mode": "retry",
+      "header": 180.1875,
+      "boxes": [
+        {
+          "label": "Sender / M42awaiting reply",
+          "top": 278.984375,
+          "bottom": 504.5843811035156
+        },
+        {
+          "label": "Consumerdeliveries: 1",
+          "top": 278.984375,
+          "bottom": 504.5843811035156
+        },
+        {
+          "label": "Business DBeffects: 00",
+          "top": 278.984375,
+          "bottom": 504.5843811035156
+        },
+        {
+          "label": "pb-caption",
+          "top": 631.984375,
+          "bottom": 687.984375
+        },
+        {
+          "label": "pb-controls",
+          "top": 697.984375,
+          "bottom": 741.984375
+        }
+      ],
+      "ok": true
+    },
+    {
+      "width": 1024,
+      "height": 768,
+      "paperHeight": 446,
+      "step": "Step 3 of 7",
+      "mode": "retry",
+      "header": 180.1875,
+      "boxes": [
+        {
+          "label": "Sender / M42awaiting reply",
+          "top": 278.984375,
+          "bottom": 504.5843811035156
+        },
+        {
+          "label": "ConsumerR42 ready",
+          "top": 278.984375,
+          "bottom": 504.5843811035156
+        },
+        {
+          "label": "Business DBeffects: 1; R421",
+          "top": 278.984375,
+          "bottom": 504.5843811035156
+        },
+        {
+          "label": "pb-caption",
+          "top": 631.984375,
+          "bottom": 687.984375
+        },
+        {
+          "label": "pb-controls",
+          "top": 697.984375,
+          "bottom": 741.984375
+        }
+      ],
+      "ok": true
+    },
+    {
+      "width": 1024,
+      "height": 768,
+      "paperHeight": 446,
+      "step": "Step 4 of 7",
+      "mode": "retry",
+      "header": 180.1875,
+      "boxes": [
+        {
+          "label": "Sender / M42outcome unknown",
+          "top": 270.984375,
+          "bottom": 496.5843811035156
+        },
+        {
+          "label": "Consumerreply lost",
+          "top": 270.984375,
+          "bottom": 496.5843811035156
+        },
+        {
+          "label": "Business DBeffects: 1; R421",
+          "top": 270.984375,
+          "bottom": 496.5843811035156
+        },
+        {
+          "label": "pb-caption",
+          "top": 623.984375,
+          "bottom": 705.984375
+        },
+        {
+          "label": "pb-controls",
+          "top": 715.984375,
+          "bottom": 759.984375
+        }
+      ],
+      "ok": true
+    },
+    {
+      "width": 1024,
+      "height": 768,
+      "paperHeight": 446,
+      "step": "Step 5 of 7",
+      "mode": "retry",
+      "header": 180.1875,
+      "boxes": [
+        {
+          "label": "Sender / M42retry same M42",
+          "top": 270.984375,
+          "bottom": 496.5843811035156
+        },
+        {
+          "label": "Consumerdeliveries: 2",
+          "top": 270.984375,
+          "bottom": 496.5843811035156
+        },
+        {
+          "label": "Business DBeffects: 1; R421",
+          "top": 270.984375,
+          "bottom": 496.5843811035156
+        },
+        {
+          "label": "pb-caption",
+          "top": 623.984375,
+          "bottom": 679.984375
+        },
+        {
+          "label": "pb-controls",
+          "top": 689.984375,
+          "bottom": 733.984375
+        }
+      ],
+      "ok": true
+    },
+    {
+      "width": 1024,
+      "height": 768,
+      "paperHeight": 446,
+      "step": "Step 6 of 7",
+      "mode": "retry",
+      "header": 180.1875,
+      "boxes": [
+        {
+          "label": "Sender / M42retry same M42",
+          "top": 270.984375,
+          "bottom": 496.5843811035156
+        },
+        {
+          "label": "Consumerreplay R42",
+          "top": 270.984375,
+          "bottom": 496.5843811035156
+        },
+        {
+          "label": "Business DBeffects: 1; R421",
+          "top": 270.984375,
+          "bottom": 496.5843811035156
+        },
+        {
+          "label": "pb-caption",
+          "top": 623.984375,
+          "bottom": 705.984375
+        },
+        {
+          "label": "pb-controls",
+          "top": 715.984375,
+          "bottom": 759.984375
+        }
+      ],
+      "ok": true
+    },
+    {
+      "width": 1024,
+      "height": 768,
+      "paperHeight": 446,
+      "step": "Step 7 of 7",
+      "mode": "retry",
+      "header": 180.1875,
+      "boxes": [
+        {
+          "label": "Sender / M42M42 confirmed",
+          "top": 270.984375,
+          "bottom": 496.5843811035156
+        },
+        {
+          "label": "Consumerdeliveries: 2",
+          "top": 270.984375,
+          "bottom": 496.5843811035156
+        },
+        {
+          "label": "Business DBeffects: 1; R421",
+          "top": 270.984375,
+          "bottom": 496.5843811035156
+        },
+        {
+          "label": "pb-caption",
+          "top": 623.984375,
+          "bottom": 705.984375
+        },
+        {
+          "label": "pb-controls",
+          "top": 715.984375,
+          "bottom": 759.984375
+        }
+      ],
+      "ok": true
+    },
+    {
+      "width": 1024,
+      "height": 768,
+      "paperHeight": 446,
+      "step": "Step 1 of 7",
+      "mode": "unsafe",
+      "header": 180.1875,
+      "boxes": [
+        {
+          "label": "Sender / M42M42 pending",
+          "top": 278.984375,
+          "bottom": 504.5843811035156
+        },
+        {
+          "label": "Consumerdeliveries: 0",
+          "top": 278.984375,
+          "bottom": 504.5843811035156
+        },
+        {
+          "label": "Business DBeffects: 00",
+          "top": 278.984375,
+          "bottom": 504.5843811035156
+        },
+        {
+          "label": "pb-caption",
+          "top": 631.984375,
+          "bottom": 713.984375
+        },
+        {
+          "label": "pb-controls",
+          "top": 723.984375,
+          "bottom": 767.984375
+        }
+      ],
+      "ok": true
+    },
+    {
+      "width": 1024,
+      "height": 768,
+      "paperHeight": 446,
+      "step": "Step 2 of 7",
+      "mode": "unsafe",
+      "header": 180.1875,
+      "boxes": [
+        {
+          "label": "Sender / M42awaiting reply",
+          "top": 278.984375,
+          "bottom": 504.5843811035156
+        },
+        {
+          "label": "Consumerdeliveries: 1",
+          "top": 278.984375,
+          "bottom": 504.5843811035156
+        },
+        {
+          "label": "Business DBeffects: 00",
+          "top": 278.984375,
+          "bottom": 504.5843811035156
+        },
+        {
+          "label": "pb-caption",
+          "top": 631.984375,
+          "bottom": 687.984375
+        },
+        {
+          "label": "pb-controls",
+          "top": 697.984375,
+          "bottom": 741.984375
+        }
+      ],
+      "ok": true
+    },
+    {
+      "width": 1024,
+      "height": 768,
+      "paperHeight": 446,
+      "step": "Step 3 of 7",
+      "mode": "unsafe",
+      "header": 180.1875,
+      "boxes": [
+        {
+          "label": "Sender / M42awaiting reply",
+          "top": 278.984375,
+          "bottom": 504.5843811035156
+        },
+        {
+          "label": "ConsumerR42 ready",
+          "top": 278.984375,
+          "bottom": 504.5843811035156
+        },
+        {
+          "label": "Business DBeffects: 1; R421",
+          "top": 278.984375,
+          "bottom": 504.5843811035156
+        },
+        {
+          "label": "pb-caption",
+          "top": 631.984375,
+          "bottom": 687.984375
+        },
+        {
+          "label": "pb-controls",
+          "top": 697.984375,
+          "bottom": 741.984375
+        }
+      ],
+      "ok": true
+    },
+    {
+      "width": 1024,
+      "height": 768,
+      "paperHeight": 446,
+      "step": "Step 4 of 7",
+      "mode": "unsafe",
+      "header": 180.1875,
+      "boxes": [
+        {
+          "label": "Sender / M42outcome unknown",
+          "top": 270.984375,
+          "bottom": 496.5843811035156
+        },
+        {
+          "label": "Consumerreply lost",
+          "top": 270.984375,
+          "bottom": 496.5843811035156
+        },
+        {
+          "label": "Business DBeffects: 1; R421",
+          "top": 270.984375,
+          "bottom": 496.5843811035156
+        },
+        {
+          "label": "pb-caption",
+          "top": 623.984375,
+          "bottom": 705.984375
+        },
+        {
+          "label": "pb-controls",
+          "top": 715.984375,
+          "bottom": 759.984375
+        }
+      ],
+      "ok": true
+    },
+    {
+      "width": 1024,
+      "height": 768,
+      "paperHeight": 446,
+      "step": "Step 5 of 7",
+      "mode": "unsafe",
+      "header": 180.1875,
+      "boxes": [
+        {
+          "label": "Sender / M42retry same M42",
+          "top": 270.984375,
+          "bottom": 496.5843811035156
+        },
+        {
+          "label": "Consumerdeliveries: 2",
+          "top": 270.984375,
+          "bottom": 496.5843811035156
+        },
+        {
+          "label": "Business DBeffects: 1; R421",
+          "top": 270.984375,
+          "bottom": 496.5843811035156
+        },
+        {
+          "label": "pb-caption",
+          "top": 623.984375,
+          "bottom": 679.984375
+        },
+        {
+          "label": "pb-controls",
+          "top": 689.984375,
+          "bottom": 733.984375
+        }
+      ],
+      "ok": true
+    },
+    {
+      "width": 1024,
+      "height": 768,
+      "paperHeight": 446,
+      "step": "Step 6 of 7",
+      "mode": "unsafe",
+      "header": 180.1875,
+      "boxes": [
+        {
+          "label": "Sender / M42retry same M42",
+          "top": 270.984375,
+          "bottom": 496.5843811035156
+        },
+        {
+          "label": "Consumersecond order: R43",
+          "top": 270.984375,
+          "bottom": 496.5843811035156
+        },
+        {
+          "label": "Business DBeffects: 2; R432",
+          "top": 270.984375,
+          "bottom": 496.5843811035156
+        },
+        {
+          "label": "pb-caption",
+          "top": 623.984375,
+          "bottom": 679.984375
+        },
+        {
+          "label": "pb-controls",
+          "top": 689.984375,
+          "bottom": 733.984375
+        }
+      ],
+      "ok": true
+    },
+    {
+      "width": 1024,
+      "height": 768,
+      "paperHeight": 446,
+      "step": "Step 7 of 7",
+      "mode": "unsafe",
+      "header": 180.1875,
+      "boxes": [
+        {
+          "label": "Sender / M42M42 confirmed",
+          "top": 270.984375,
+          "bottom": 496.5843811035156
+        },
+        {
+          "label": "Consumerdeliveries: 2",
+          "top": 270.984375,
+          "bottom": 496.5843811035156
+        },
+        {
+          "label": "Business DBeffects: 2; R432",
+          "top": 270.984375,
+          "bottom": 496.5843811035156
+        },
+        {
+          "label": "pb-caption",
+          "top": 623.984375,
+          "bottom": 679.984375
+        },
+        {
+          "label": "pb-controls",
+          "top": 689.984375,
+          "bottom": 733.984375
+        }
+      ],
+      "ok": true
+    },
+    {
+      "width": 1280,
+      "height": 900,
+      "paperHeight": 446,
+      "step": "Step 1 of 7",
+      "mode": "retry",
+      "header": 132.1875,
+      "boxes": [
+        {
+          "label": "Sender / M42M42 pending",
+          "top": 411.015625,
+          "bottom": 636.6156005859375
+        },
+        {
+          "label": "Consumerdeliveries: 0",
+          "top": 411.015625,
+          "bottom": 636.6156005859375
+        },
+        {
+          "label": "Business DBeffects: 00",
+          "top": 411.015625,
+          "bottom": 636.6156005859375
+        },
+        {
+          "label": "pb-caption",
+          "top": 764.015625,
+          "bottom": 846.015625
+        },
+        {
+          "label": "pb-controls",
+          "top": 856.015625,
+          "bottom": 900.015625
+        }
+      ],
+      "ok": true
+    },
+    {
+      "width": 1280,
+      "height": 900,
+      "paperHeight": 446,
+      "step": "Step 2 of 7",
+      "mode": "retry",
+      "header": 132.1875,
+      "boxes": [
+        {
+          "label": "Sender / M42awaiting reply",
+          "top": 411.015625,
+          "bottom": 636.6156005859375
+        },
+        {
+          "label": "Consumerdeliveries: 1",
+          "top": 411.015625,
+          "bottom": 636.6156005859375
+        },
+        {
+          "label": "Business DBeffects: 00",
+          "top": 411.015625,
+          "bottom": 636.6156005859375
+        },
+        {
+          "label": "pb-caption",
+          "top": 764.015625,
+          "bottom": 820.015625
+        },
+        {
+          "label": "pb-controls",
+          "top": 830.015625,
+          "bottom": 874.015625
+        }
+      ],
+      "ok": true
+    },
+    {
+      "width": 1280,
+      "height": 900,
+      "paperHeight": 446,
+      "step": "Step 3 of 7",
+      "mode": "retry",
+      "header": 132.1875,
+      "boxes": [
+        {
+          "label": "Sender / M42awaiting reply",
+          "top": 411.015625,
+          "bottom": 636.6156005859375
+        },
+        {
+          "label": "ConsumerR42 ready",
+          "top": 411.015625,
+          "bottom": 636.6156005859375
+        },
+        {
+          "label": "Business DBeffects: 1; R421",
+          "top": 411.015625,
+          "bottom": 636.6156005859375
+        },
+        {
+          "label": "pb-caption",
+          "top": 764.015625,
+          "bottom": 820.015625
+        },
+        {
+          "label": "pb-controls",
+          "top": 830.015625,
+          "bottom": 874.015625
+        }
+      ],
+      "ok": true
+    },
+    {
+      "width": 1280,
+      "height": 900,
+      "paperHeight": 446,
+      "step": "Step 4 of 7",
+      "mode": "retry",
+      "header": 132.1875,
+      "boxes": [
+        {
+          "label": "Sender / M42outcome unknown",
+          "top": 403.015625,
+          "bottom": 628.6156005859375
+        },
+        {
+          "label": "Consumerreply lost",
+          "top": 403.015625,
+          "bottom": 628.6156005859375
+        },
+        {
+          "label": "Business DBeffects: 1; R421",
+          "top": 403.015625,
+          "bottom": 628.6156005859375
+        },
+        {
+          "label": "pb-caption",
+          "top": 756.015625,
+          "bottom": 838.015625
+        },
+        {
+          "label": "pb-controls",
+          "top": 848.015625,
+          "bottom": 892.015625
+        }
+      ],
+      "ok": true
+    },
+    {
+      "width": 1280,
+      "height": 900,
+      "paperHeight": 446,
+      "step": "Step 5 of 7",
+      "mode": "retry",
+      "header": 132.1875,
+      "boxes": [
+        {
+          "label": "Sender / M42retry same M42",
+          "top": 403.015625,
+          "bottom": 628.6156005859375
+        },
+        {
+          "label": "Consumerdeliveries: 2",
+          "top": 403.015625,
+          "bottom": 628.6156005859375
+        },
+        {
+          "label": "Business DBeffects: 1; R421",
+          "top": 403.015625,
+          "bottom": 628.6156005859375
+        },
+        {
+          "label": "pb-caption",
+          "top": 756.015625,
+          "bottom": 812.015625
+        },
+        {
+          "label": "pb-controls",
+          "top": 822.015625,
+          "bottom": 866.015625
+        }
+      ],
+      "ok": true
+    },
+    {
+      "width": 1280,
+      "height": 900,
+      "paperHeight": 446,
+      "step": "Step 6 of 7",
+      "mode": "retry",
+      "header": 132.1875,
+      "boxes": [
+        {
+          "label": "Sender / M42retry same M42",
+          "top": 403.015625,
+          "bottom": 628.6156005859375
+        },
+        {
+          "label": "Consumerreplay R42",
+          "top": 403.015625,
+          "bottom": 628.6156005859375
+        },
+        {
+          "label": "Business DBeffects: 1; R421",
+          "top": 403.015625,
+          "bottom": 628.6156005859375
+        },
+        {
+          "label": "pb-caption",
+          "top": 756.015625,
+          "bottom": 812.015625
+        },
+        {
+          "label": "pb-controls",
+          "top": 822.015625,
+          "bottom": 866.015625
+        }
+      ],
+      "ok": true
+    },
+    {
+      "width": 1280,
+      "height": 900,
+      "paperHeight": 446,
+      "step": "Step 7 of 7",
+      "mode": "retry",
+      "header": 132.1875,
+      "boxes": [
+        {
+          "label": "Sender / M42M42 confirmed",
+          "top": 403.015625,
+          "bottom": 628.6156005859375
+        },
+        {
+          "label": "Consumerdeliveries: 2",
+          "top": 403.015625,
+          "bottom": 628.6156005859375
+        },
+        {
+          "label": "Business DBeffects: 1; R421",
+          "top": 403.015625,
+          "bottom": 628.6156005859375
+        },
+        {
+          "label": "pb-caption",
+          "top": 756.015625,
+          "bottom": 838.015625
+        },
+        {
+          "label": "pb-controls",
+          "top": 848.015625,
+          "bottom": 892.015625
+        }
+      ],
+      "ok": true
+    },
+    {
+      "width": 1280,
+      "height": 900,
+      "paperHeight": 446,
+      "step": "Step 1 of 7",
+      "mode": "unsafe",
+      "header": 132.1875,
+      "boxes": [
+        {
+          "label": "Sender / M42M42 pending",
+          "top": 411.015625,
+          "bottom": 636.6156005859375
+        },
+        {
+          "label": "Consumerdeliveries: 0",
+          "top": 411.015625,
+          "bottom": 636.6156005859375
+        },
+        {
+          "label": "Business DBeffects: 00",
+          "top": 411.015625,
+          "bottom": 636.6156005859375
+        },
+        {
+          "label": "pb-caption",
+          "top": 764.015625,
+          "bottom": 846.015625
+        },
+        {
+          "label": "pb-controls",
+          "top": 856.015625,
+          "bottom": 900.015625
+        }
+      ],
+      "ok": true
+    },
+    {
+      "width": 1280,
+      "height": 900,
+      "paperHeight": 446,
+      "step": "Step 2 of 7",
+      "mode": "unsafe",
+      "header": 132.1875,
+      "boxes": [
+        {
+          "label": "Sender / M42awaiting reply",
+          "top": 411.015625,
+          "bottom": 636.6156005859375
+        },
+        {
+          "label": "Consumerdeliveries: 1",
+          "top": 411.015625,
+          "bottom": 636.6156005859375
+        },
+        {
+          "label": "Business DBeffects: 00",
+          "top": 411.015625,
+          "bottom": 636.6156005859375
+        },
+        {
+          "label": "pb-caption",
+          "top": 764.015625,
+          "bottom": 820.015625
+        },
+        {
+          "label": "pb-controls",
+          "top": 830.015625,
+          "bottom": 874.015625
+        }
+      ],
+      "ok": true
+    },
+    {
+      "width": 1280,
+      "height": 900,
+      "paperHeight": 446,
+      "step": "Step 3 of 7",
+      "mode": "unsafe",
+      "header": 132.1875,
+      "boxes": [
+        {
+          "label": "Sender / M42awaiting reply",
+          "top": 411.015625,
+          "bottom": 636.6156005859375
+        },
+        {
+          "label": "ConsumerR42 ready",
+          "top": 411.015625,
+          "bottom": 636.6156005859375
+        },
+        {
+          "label": "Business DBeffects: 1; R421",
+          "top": 411.015625,
+          "bottom": 636.6156005859375
+        },
+        {
+          "label": "pb-caption",
+          "top": 764.015625,
+          "bottom": 820.015625
+        },
+        {
+          "label": "pb-controls",
+          "top": 830.015625,
+          "bottom": 874.015625
+        }
+      ],
+      "ok": true
+    },
+    {
+      "width": 1280,
+      "height": 900,
+      "paperHeight": 446,
+      "step": "Step 4 of 7",
+      "mode": "unsafe",
+      "header": 132.1875,
+      "boxes": [
+        {
+          "label": "Sender / M42outcome unknown",
+          "top": 403.015625,
+          "bottom": 628.6156005859375
+        },
+        {
+          "label": "Consumerreply lost",
+          "top": 403.015625,
+          "bottom": 628.6156005859375
+        },
+        {
+          "label": "Business DBeffects: 1; R421",
+          "top": 403.015625,
+          "bottom": 628.6156005859375
+        },
+        {
+          "label": "pb-caption",
+          "top": 756.015625,
+          "bottom": 838.015625
+        },
+        {
+          "label": "pb-controls",
+          "top": 848.015625,
+          "bottom": 892.015625
+        }
+      ],
+      "ok": true
+    },
+    {
+      "width": 1280,
+      "height": 900,
+      "paperHeight": 446,
+      "step": "Step 5 of 7",
+      "mode": "unsafe",
+      "header": 132.1875,
+      "boxes": [
+        {
+          "label": "Sender / M42retry same M42",
+          "top": 403.015625,
+          "bottom": 628.6156005859375
+        },
+        {
+          "label": "Consumerdeliveries: 2",
+          "top": 403.015625,
+          "bottom": 628.6156005859375
+        },
+        {
+          "label": "Business DBeffects: 1; R421",
+          "top": 403.015625,
+          "bottom": 628.6156005859375
+        },
+        {
+          "label": "pb-caption",
+          "top": 756.015625,
+          "bottom": 812.015625
+        },
+        {
+          "label": "pb-controls",
+          "top": 822.015625,
+          "bottom": 866.015625
+        }
+      ],
+      "ok": true
+    },
+    {
+      "width": 1280,
+      "height": 900,
+      "paperHeight": 446,
+      "step": "Step 6 of 7",
+      "mode": "unsafe",
+      "header": 132.1875,
+      "boxes": [
+        {
+          "label": "Sender / M42retry same M42",
+          "top": 403.015625,
+          "bottom": 628.6156005859375
+        },
+        {
+          "label": "Consumersecond order: R43",
+          "top": 403.015625,
+          "bottom": 628.6156005859375
+        },
+        {
+          "label": "Business DBeffects: 2; R432",
+          "top": 403.015625,
+          "bottom": 628.6156005859375
+        },
+        {
+          "label": "pb-caption",
+          "top": 756.015625,
+          "bottom": 812.015625
+        },
+        {
+          "label": "pb-controls",
+          "top": 822.015625,
+          "bottom": 866.015625
+        }
+      ],
+      "ok": true
+    },
+    {
+      "width": 1280,
+      "height": 900,
+      "paperHeight": 446,
+      "step": "Step 7 of 7",
+      "mode": "unsafe",
+      "header": 132.1875,
+      "boxes": [
+        {
+          "label": "Sender / M42M42 confirmed",
+          "top": 403.015625,
+          "bottom": 628.6156005859375
+        },
+        {
+          "label": "Consumerdeliveries: 2",
+          "top": 403.015625,
+          "bottom": 628.6156005859375
+        },
+        {
+          "label": "Business DBeffects: 2; R432",
+          "top": 403.015625,
+          "bottom": 628.6156005859375
+        },
+        {
+          "label": "pb-caption",
+          "top": 756.015625,
+          "bottom": 812.015625
+        },
+        {
+          "label": "pb-controls",
+          "top": 822.015625,
+          "bottom": 866.015625
+        }
+      ],
+      "ok": true
+    }
+  ],
+  "runtimeErrors": [],
+  "auxiliaryErrors": [
+    {
+      "text": "Failed to load resource: the server responded with a status of 404 (File not found)",
+      "url": "http://127.0.0.1:4186/favicon.ico"
+    }
+  ],
+  "ok": true,
+  "browser": "Chrome/151.0.7922.47",
+  "limits": "Headless Chromium emulation only. Default reading size at specified viewport sizes; no physical device or screen-reader certification. The local server has no favicon; that request is recorded separately."
+}

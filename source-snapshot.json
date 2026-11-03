@@ -237,5 +237,16 @@
     "milestones.md": "25df271211d99bb3d6c6ca984e092032f5fb316d5d8b2b7e7f3c19a9db74931b"
   },
   "mobile-system-design_authentication_reference_commit": "8e152a8ead842de3c7f20ac6f88118d5b3e70fc6",
-  "observability_slos_reference_commit": "1f5085812813042fbacf6be7b26cbbef98d1627b"
+  "observability_slos_reference_commit": "1f5085812813042fbacf6be7b26cbbef98d1627b",
+  "distributed-systems_sha256": {
+    "distributed-systems.md": "98794cf1a8aa1a610b99e918c96c2990ef6551127cd1a0eeb77cd44d7170715c",
+    "distributed-systems/delivery-semantics.md": "5c618201cf04b97541c112e4cd213560ee4b6f5951c86579d198560291cc0509"
+  },
+  "distributed-systems_provenance": {
+    "repository": "https://github.com/swarnsingh/android-staff-engineer-playbook",
+    "commit": "fb8354edb079e901edf18710ca9388a124712a5b",
+    "source_pr": 76,
+    "scope": "Guided index and Delivery Semantics pilot only; other chapter snapshots remain unconverted.",
+    "method": "Exact git show bytes from approved combined main; SHA-256 over raw bytes."
+  }
 }

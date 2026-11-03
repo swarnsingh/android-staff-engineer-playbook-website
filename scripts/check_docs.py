@@ -47,6 +47,8 @@ THIN_FILE_ALLOWLIST: set[str] = {
     "website/design-system/components/CodeCard/README.md",
     "website/design-system/components/Callout/README.md",
     "website/design-system/components/WideDiagram/README.md",
+    # Retained validation report is evidence, not a chapter; keep its scope concise.
+    "website/reviews/computer-science-code-tabs-complete-2026-11-01/REPORT.md",
     # Planning record for three testing chapters, not a reader-facing lesson.
     "website/reviews/android-phase6-structure.md",
     # Instructions shipped inside the generated private review package, not a knowledge chapter.

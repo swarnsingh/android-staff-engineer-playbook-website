@@ -43,14 +43,14 @@ flowchart LR
     network -.->|"message may be lost"| lost["No retry"]
 ```
 
-Implementation: send and forget. No acknowledgment, no retry.
+One implementation is fire-and-forget. A queue consumer can also choose at-most-once processing by acknowledging before processing, accepting loss if it then crashes.
 
 - Use when: losing a message is acceptable (telemetry, metrics, UI updates that will be superseded).
 - Cost: zero retry infrastructure. Risk: data loss.
 
 **2. At-least-once**
 
-The producer retries until it receives an acknowledgment. The consumer sees the message one or more times.
+With durable retention, retries and eventual recovery/delivery, the consumer sees the message one or more times. A finite retry loop alone does not establish that guarantee.
 
 ```mermaid
 sequenceDiagram
@@ -142,7 +142,8 @@ suspend fun sendWithRetry(
     initialDelay: Duration = 100.milliseconds
 ): AckResponse {
     var attempt = 0
-    var delay = initialDelay
+    require(maxAttempts > 0)
+    var backoff = initialDelay
     while (true) {
         try {
             val response = client.send(message)
@@ -150,21 +151,21 @@ suspend fun sendWithRetry(
         } catch (e: TimeoutException) {
             attempt++
             if (attempt >= maxAttempts) throw MaxRetriesExceededException(e)
-            delay(delay + jitter(delay))
-            delay *= 2
+            delay(backoff + jitter(backoff))
+            backoff *= 2
         }
     }
 }
 ```
 
-The producer retries on timeout. The consumer might process the message more than once — the timeout could fire because the ack was slow, not because the message was lost. The consumer *must* be idempotent for correctness.
+This bounded attempt loop retries on its transport adapter's timeout exception. Exhaustion leaves an uncertain outcome; durable pending work must survive and resume or be reconciled. Coroutine cancellation must propagate, not become a retry. The consumer might process the message more than once — the timeout could fire because the ack was slow, not because the message was lost. The consumer *must* be idempotent for correctness.
 
 ### Effectively exactly-once: at-least-once + deduplication
 
 ```kotlin
 // Consumer-side deduplication
 class IdempotentConsumer(
-    private val dedupStore: DedupStore,
+    private val dedupStore: BusinessDatabase,
     private val handler: MessageHandler
 ) {
     suspend fun consume(message: Message): Result {
@@ -174,17 +175,21 @@ class IdempotentConsumer(
         dedupStore.get(key)?.let { return it }
 
         // Process and atomically store the result
-        return dedupStore.transaction {
+        return dedupStore.serializableTransaction {
             // Double-check inside transaction (concurrent retries)
-            get(key)?.let { return@transaction it }
+            get(key)?.let { return@serializableTransaction it }
 
-            val result = handler.handle(message)
+            val result = handler.applyLocalEffect(this, message)
             put(key, result, ttl = 7.days)
             result
         }
     }
 }
 ```
+
+Before cached-result lookup, authenticate the caller and validate that the scoped operation ID is bound to the original payload.
+
+`BusinessDatabase`, `serializableTransaction` and `applyLocalEffect` are app-defined contracts: a unique scoped key serializes concurrent duplicates, and the handler writes only through the same local transaction. An external service call needs an outbox/downstream idempotency and reconciliation; a local transaction cannot make it atomic.
 
 The consumer checks a deduplication store before processing. If the message's key has been seen, the stored result is returned without re-processing. The dedup-store write and the processing must be atomic — see [`idempotency.md`](idempotency.md) for the atomic-capture requirement.
 
@@ -196,7 +201,7 @@ Kafka EOS combines three mechanisms:
 
 2. **Transactional writes.** A producer can atomically write to multiple partitions and commit consumer offsets in the same transaction. This ensures that "read from input topic, process, write to output topic, commit input offset" is all-or-nothing.
 
-3. **Read-committed consumers.** Consumers configured with `isolation.level=read_committed` only see messages from committed transactions.
+3. **Read-committed consumers.** Consumers configured with `isolation.level=read_committed` hide aborted/uncommitted transactional records; nontransactional records remain visible too.
 
 ```mermaid
 flowchart LR
@@ -205,7 +210,7 @@ flowchart LR
     transaction --> consumer["Consumer<br/>read_committed"]
 ```
 
-This is *not* exactly-once at the network layer. It's at-least-once delivery with server-side deduplication and transactional state management. But the *effect* is exactly-once processing — each input message produces exactly one output, even across failures and retries.
+This is *not* exactly-once at the network layer. It's at-least-once delivery with server-side deduplication and transactional state management. But the *effect* is exactly-once processing — the transaction atomically commits its Kafka output records and consumed offsets across failures. A transform may emit zero, one or many records; external database or payment effects are outside this scope.
 
 ---
 
@@ -238,12 +243,12 @@ The complexity increases from left to right. At-most-once requires no infrastruc
 
 ## Production Example
 
-- **HTTP.** `GET` is at-most-once by convention (no side effects, safe to not retry). `POST` with retries is at-least-once; combined with `Idempotency-Key`, it's effectively exactly-once. See [`idempotency.md`](idempotency.md).
+- **HTTP.** A method does not specify delivery count. Safe/idempotent requests may be retried; a POST needs an explicit replay contract for safe duplicate effects.
 - **Kafka.** Pre-0.11: at-least-once. Post-0.11 with EOS enabled: effectively exactly-once. The transition was one of the most significant Kafka upgrades.
-- **AWS SQS.** Standard queues: at-least-once. FIFO queues: exactly-once delivery (broker-side deduplication within a 5-minute window).
-- **Google Pub/Sub.** At-least-once. Exactly-once delivery available via "exactly-once delivery" feature (server-side dedup with client ack).
+- **AWS SQS.** Standard queues can redeliver. FIFO send deduplication covers a five-minute producer retry window; consumer visibility-timeout expiry can still cause redelivery.
+- **Google Pub/Sub.** Exactly-once delivery is a documented option for pull subscriptions within its regional scope after successful acknowledgement. It is not a guarantee for push subscriptions or an external business effect.
 - **Stripe webhooks.** At-least-once. Stripe retries failed webhook deliveries for up to 72 hours. Webhook handlers must be idempotent. Stripe's documentation explicitly says this.
-- **Push notifications (FCM/APNs).** At-most-once for regular notifications (no delivery confirmation, no retry). At-least-once for high-priority data messages with server-side retry.
+- **Mobile push.** FCM/APNs are hints for reconciliation, not a durable operation log. Priority affects urgency and resource handling, not an at-least-once business-delivery guarantee. Fetch authoritative state with a cursor.
 
 ---
 
@@ -270,8 +275,8 @@ class SyncWorker(context: Context, params: WorkerParameters) : CoroutineWorker(c
         for (change in pendingChanges) {
             try {
                 // Each change carries an idempotency key
-                api.submitChange(change, idempotencyKey = change.localId)
-                localDb.markSynced(change.localId)
+                api.submitChange(change.payload, idempotencyKey = change.operationId)
+                localDb.acknowledgeIfGenerationMatches(change.entityId, change.generation)
             } catch (e: IOException) {
                 return Result.retry()  // WorkManager will re-invoke doWork()
             }
@@ -281,27 +286,29 @@ class SyncWorker(context: Context, params: WorkerParameters) : CoroutineWorker(c
 }
 
 // Effectively exactly-once: payment submission
-// The payment must succeed exactly once, even across retries and process death
+// Persist one immutable intent; do not recreate it from mutable UI fields.
 class PaymentRepository(
     private val api: PaymentApi,
     private val localDb: PaymentDao
 ) {
     suspend fun submitPayment(payment: Payment): PaymentResult {
-        // Generate idempotency key ONCE and persist it
-        val key = localDb.getOrCreateIdempotencyKey(payment.localId)
-
+        // App-defined transaction: create once, otherwise load the same payload
+        // and operation ID for this account-scoped logical payment.
+        val intent = localDb.loadOrCreateImmutableIntent(payment)
         return withRetry(maxAttempts = 3) {
             api.charge(
-                amount = payment.amount,
-                cardToken = payment.cardToken,
-                idempotencyKey = key  // same key on every retry
+                amount = intent.amount,
+                cardToken = intent.cardToken,
+                idempotencyKey = intent.operationId
             )
         }.also { result ->
-            localDb.markCompleted(payment.localId, result.transactionId)
+            localDb.markIntentCompleted(intent.operationId, result.transactionId)
         }
     }
 }
 ```
+
+`loadOrCreateImmutableIntent` must reject a changed payload under an existing logical identity, persist before sending and enforce owner binding. Keep uncertain outcomes pending and reconcile them after the backend retention horizon; a fresh key is not recovery. WorkManager retries are conditional on scheduling and eventual execution, not proof that every pending business action completes.
 
 The key Android-specific concern: **process death between send and ack**. If the app sends a payment request, the process dies before the ack arrives, and the app restarts and retries, the retry must carry the same idempotency key. This means the key must be persisted *before* the first send — not generated in-memory.
 
@@ -461,6 +468,12 @@ Canonical: [`../observability/metrics.md`](../observability/metrics.md), [`../ob
 ---
 
 ## Further Reading
+
+- [RabbitMQ publisher confirms versus consumer acknowledgements](https://www.rabbitmq.com/docs/confirms).
+- [SQS FIFO deduplication window](https://docs.aws.amazon.com/AWSSimpleQueueService/latest/SQSDeveloperGuide/FIFO-queues-exactly-once-processing.html).
+- [Pub/Sub exactly-once scope](https://docs.cloud.google.com/pubsub/docs/exactly-once-delivery).
+- [Kafka consumer isolation](https://kafka.apache.org/41/configuration/consumer-configs/#isolation.level).
+
 
 In this repository:
 

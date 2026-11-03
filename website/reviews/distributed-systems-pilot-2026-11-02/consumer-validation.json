@@ -1,0 +1,11 @@
+{
+  "status": "passed",
+  "assertions": 6,
+  "kotlin": "2.4.21",
+  "coroutines": "1.11.0",
+  "jdk": "openjdk version \"17.0.19\" 2026-04-21",
+  "chapter_sha256": "5c618201cf04b97541c112e4cd213560ee4b6f5951c86579d198560291cc0509",
+  "fragment_sha256": "529e620f25fb41b04617a67ea452d959c38243b23b162741e26f1948d8fb9b21",
+  "output": "PASS: 6 assertions; duplicate and 8 concurrent deliveries share a local result",
+  "limits": "Fake Mutex-backed transaction and handler only. Does not prove database isolation, rollback, account/payload checks, TTL or real-service effects. Other chapter fragments were not compiled in this pilot check."
+}

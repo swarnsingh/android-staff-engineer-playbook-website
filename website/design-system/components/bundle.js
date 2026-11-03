@@ -154,7 +154,7 @@
     if (!data.layouts) data.layouts = autoLayouts(data);
     // Cross-process/lane scenes keep their authored topology. A local scroll
     // viewport protects legibility without turning side-by-side owners into a list.
-    if(root.dataset.pbFlow === 'scene')return 'wide';
+    if(root.dataset.pbFlow === 'scene' && !data.responsive)return 'wide';
     var paper = root.querySelector('.pb-paper') || root, size = data.layouts.wide.size[0];
     var scale = Math.min(paper.clientWidth, size * 1.2) / size;
     return scale >= needScale('wide') ? 'wide' : 'narrow';
@@ -211,7 +211,7 @@
     svg.setAttribute('data-layout', key);
     // Never scale far past the drawn size: the stacked layout stops at phone scale, the wide one at 1.2x.
     svg.style.maxWidth = key === 'narrow' ? '440px' : Math.round(L.size[0] * 1.2) + 'px'; svg.style.marginInline = 'auto';
-    if(svg.closest('[data-pb-flow="scene"]'))svg.style.minWidth=Math.ceil(L.size[0]*needScale('wide'))+'px';
+    if(svg.closest('[data-pb-flow="scene"]'))svg.style.minWidth=Math.ceil(L.size[0]*needScale(key))+'px';
     var defs = el('defs', {}, svg);
     var f = el('filter', { id: id + 'r', x: '-4%', y: '-12%', width: '108%', height: '124%' }, defs);
     el('feTurbulence', { type: 'fractalNoise', baseFrequency: '0.035', numOctaves: '2', seed: '5' }, f);
@@ -220,6 +220,10 @@
       var m = el('marker', { id: id + 'h' + t, viewBox: '0 0 10 10', refX: 8, refY: 5, markerWidth: 6, markerHeight: 6, orient: 'auto' }, defs);
       el('path', { 'class': 'pb-head ' + t, d: 'M0 1 L9 5 L0 9 z' }, m);
     });
+    if(data.lossMarker){
+      var loss = el('marker', Object.assign({id:id+'hlost'},data.lossMarker.attributes), defs);
+      el('path', { 'class': 'pb-loss', d: data.lossMarker.path }, loss);
+    }
     (L.regions || []).forEach(function (r) {
       var g = el('g', { 'class': 'pb-region' }, svg);
       el('rect', { x: r.x, y: r.y, width: r.w, height: r.h, rx: 14 }, g);
@@ -237,7 +241,7 @@
       if(n.art){
         rec.art=n.art;
         rec.picture=el('g',{'class':'pb-art','aria-hidden':'true',transform:'translate('+(portrait?p.x+(p.w-72)/2:p.x+12)+' '+(portrait?p.y+8:p.y+(p.h-64)/2)+')'},g);
-        rec.tx=portrait?p.x+p.w/2:p.x+96;rec.tw=portrait?p.w-20:p.w-108;rec.sy=portrait?p.y+132:p.y+75;
+        rec.tx=portrait?p.x+p.w/2:p.x+96;rec.tw=portrait?p.w-20:p.w-108;rec.sy=portrait?p.y+132:p.y+(L.actor?.statusOffset || 75);
         if(portrait){title.setAttribute('text-anchor','middle');rec.sub.setAttribute('text-anchor','middle');}
         lines(title,n.label,rec.tw,rec.tx,portrait?p.y+88:p.y+27,21);
       }else title.textContent=n.label;
@@ -420,7 +424,8 @@
       bar = root.querySelector('.pb-progress i'), list = root.querySelector('.pb-steps ol');
     var btn = {}; root.querySelectorAll('[data-act]').forEach(function (b) { btn[b.dataset.act] = b; });
     var mode = Object.keys(data.modes)[0], idx = 0, token = 0, flying = false, playing = false, timer = 0, ref, key;
-    var turn;
+    var turn, manual = data.playback === 'manual';
+    if(manual){btn.play.hidden=true;btn.play.disabled=true;}
     // Keep the live explanation and its controls together; optional help and the
     // full transcript share one disclosure instead of competing with the scene.
     var interaction = document.createElement('div'); interaction.className = 'pb-interaction';
@@ -437,6 +442,8 @@
     guide.classList.add('pb-guide');
     guide.querySelector('summary').textContent = 'Help & step transcript';
     var help=document.createElement('p');help.textContent='Use Next to follow cause and effect, Previous to compare states' + (data.illustrated ? ', or choose a numbered step. ' : '. ') + 'Reset returns to the first step. Play follows the sequence; Pause finishes the current step. With reduced motion, use the step controls.';
+    if(manual)help.textContent='Use Next, Previous or a numbered step to compare final states. Reset returns to the first step. Next follows the declared message transfers; automatic playback is off. Reduced motion shows each final state immediately. Every step is listed below.';
+    if(data.stepNavigation === 'select')help.textContent=help.textContent.replace('a numbered step','the step dropdown');
     guide.insertBefore(help, list);
     if(data.illustrated){
       root.classList.add('is-illustrated');
@@ -458,7 +465,10 @@
     }
     function edgesFor(step, moving) {
       Object.keys(ref.edges).forEach(function (k) { setEdge(ref, k, null, false); });
-      (step.packets || []).forEach(function (p) { setEdge(ref, p.edge, p.tone, moving); });
+      (step.packets || []).forEach(function (p) {
+        setEdge(ref, p.edge, p.tone, moving);
+        if(p.lost && data.lossMarker && ref.edges[p.edge])ref.edges[p.edge].setAttribute('marker-end','url(#'+ref.id+'hlost)');
+      });
     }
     function settle() { // show the current step's final state with no motion
       token++; flying = false; root.classList.remove('is-moving');
@@ -471,12 +481,13 @@
       countEl.textContent = 'Step ' + (idx + 1) + ' of ' + n;
       capEl.innerHTML = track().steps[idx].caption;
       bar.style.width = ((idx + 1) / n * 100) + '%';
-      btn.prev.disabled = idx === 0; btn.next.disabled = idx === n - 1;
+      btn.prev.setAttribute('aria-disabled',idx === 0); btn.next.setAttribute('aria-disabled',idx === n - 1);
       btn.play.textContent = playing || flying ? 'Pause' : 'Play';
       btn.play.setAttribute('aria-pressed', playing || flying ? 'true' : 'false');
       btn.play.setAttribute('aria-label', playing || flying ? 'Pause playback' : (idx === n - 1 ? 'Play from the first step' : 'Play sequence'));
-      btn.play.disabled = motion.reduced();
+      btn.play.disabled = manual || motion.reduced();
       root.querySelectorAll('[data-step]').forEach(function(b){if(Number(b.dataset.step)===idx)b.setAttribute('aria-current','step');else b.removeAttribute('aria-current');});
+      var selector=root.querySelector('.pb-step-select');if(selector)selector.value=String(idx);
     }
     function fly(p, my) {
       return new Promise(function (done) {
@@ -491,8 +502,23 @@
         requestAnimationFrame(frame);
       });
     }
-    function go(i, animate) {
+    function keepWorkVisible() {
+      if(!data.responsive)return;
+      var actors=[...root.querySelectorAll('.pb-node')];
+      var header=Math.max(0,...[...document.querySelectorAll('.topbar,.lesson-tabs,.mobile-outline')]
+        .filter(function(e){return getComputedStyle(e).position==='sticky';})
+        .map(function(e){return e.getBoundingClientRect().bottom;}));
+      var gap=parseFloat(getComputedStyle(root).getPropertyValue('--space-2')) || 0;
+      var top=Math.min(...actors.map(function(e){return e.getBoundingClientRect().top;}));
+      var bottom=controls.getBoundingClientRect().bottom;
+      // Only scroll on explicit navigation, and only when the whole working area can fit.
+      if(bottom-top>innerHeight-header-2*gap)return;
+      var delta=bottom>innerHeight-gap ? bottom-innerHeight+gap : top<header+gap ? top-header-gap : 0;
+      if(delta)window.scrollBy({top:delta,behavior:'instant'});
+    }
+    function go(i, animate, keepVisible) {
       settle(); idx = i; ui();
+      if(keepVisible)keepWorkVisible();
       var step = track().steps[i], my = token, changed = Object.keys((step.set || {}).nodes || {});
       if (!animate || motion.reduced() || !(step.packets || []).length) {
         paint(ref, stateAt(i), changed, !animate || motion.reduced()); edgesFor(step, false);
@@ -515,27 +541,36 @@
       if (idx >= track().steps.length - 1) { stop(); return; }
       go(idx + 1, true).then(function (ok) { if (ok && playing) timer = setTimeout(loop, 2600); });
     }
-    btn.next.addEventListener('click', function () { stop(); turn.claim(); if (idx < track().steps.length - 1) go(idx + 1, true); });
-    btn.prev.addEventListener('click', function () { stop(); if (idx > 0) go(idx - 1, false); });
-    btn.reset.addEventListener('click', function () { stop(); go(0, false); });
+    btn.next.addEventListener('click', function () { stop(); turn.claim(); if (idx < track().steps.length - 1) go(idx + 1, true, true); });
+    btn.prev.addEventListener('click', function () { stop(); if (idx > 0) go(idx - 1, false, true); });
+    btn.reset.addEventListener('click', function () { stop(); go(0, false, true); });
     btn.play.addEventListener('click', function () {
       if (playing || flying) { stop(); return; }
-      if (motion.reduced()) return;
+      if (manual || motion.reduced()) return;
       playing = true; turn.claim();
       if (idx >= track().steps.length - 1) go(0, false);
       ui(); timer = setTimeout(loop, 400);
     });
     root.querySelectorAll('[data-mode]').forEach(function (b) {
       b.addEventListener('click', function () {
-        stop(); mode = b.dataset.mode; idx = 0;
+        stop(); mode = b.dataset.mode; idx = data.compareAtCurrentStep ? Math.min(idx, track().steps.length - 1) : 0;
         root.querySelectorAll('[data-mode]').forEach(function (o) { o.setAttribute('aria-pressed', o === b ? 'true' : 'false'); });
-        fillList(); go(0, false);
+        fillList(); go(idx, false);
       });
     });
     function fillList() {
       list.innerHTML = '';
       track().steps.forEach(function (s) { var li = document.createElement('li'); li.innerHTML = s.caption; list.appendChild(li); });
-      if(data.illustrated){
+      if(data.stepNavigation === 'select'){
+        var select=root.querySelector('.pb-step-select');
+        if(!select){
+          select=document.createElement('select');select.className='pb-btn pb-step-select';select.setAttribute('aria-label','Walkthrough step');
+          controls.prepend(select);
+          select.addEventListener('change',function(){var next=Number(select.value);stop();turn.claim();go(next,false,true);});
+        }
+        select.replaceChildren();
+        track().steps.forEach(function(s,i){var option=document.createElement('option');option.value=i;option.textContent=(i+1)+' / '+track().steps.length+' · '+(s.label || 'Step '+(i+1));select.append(option);});
+      }else if(data.illustrated){
         var nav=root.querySelector('.pb-step-nav');
         if(!nav){nav=document.createElement('nav');nav.className='pb-step-nav';nav.setAttribute('aria-label','Scene steps');controls.prepend(nav);}
         nav.innerHTML='';
