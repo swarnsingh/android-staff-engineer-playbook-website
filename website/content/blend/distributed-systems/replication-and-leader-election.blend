@@ -1,0 +1,255 @@
+<!-- Teaching layer over exact approved source fb8354e. -->
+<!-- @opening -->
+<p class="story-lead">The replacement leader has already written a newer value. The old leader wakes after a long pause and sends a delayed write to a destination that may not know leadership changed.</p>
+
+<!-- @before Leader Election :: animation -->
+### Enforce ownership where the effect lands
+
+<section class="pb-figure" data-pb-flow="scene" aria-label="A stale owner reaches the resource">
+<h3>Walkthrough 1. A stale owner reaches the resource</h3><p class="pb-sub">Illustrative fencing contract. The resource atomically validates a monotonically increasing epoch with each protected write.</p>
+<div class="pb-seg" role="group" aria-label="Comparison policy"><button type="button" data-mode="fenced" aria-pressed="true">Resource enforces epoch</button><button type="button" data-mode="unchecked" aria-pressed="false">Unchecked destination</button></div>
+<div class="pb-paper" role="region" aria-label="Illustrative system; scroll if needed" tabindex="0"><svg class="pb-svg" role="img" aria-label="A stale owner reaches the resource; every step is available as text below"></svg></div>
+<div class="pb-progress" aria-hidden="true"><i></i></div><div class="pb-caption" aria-live="polite"><span class="pb-count"></span><p></p></div>
+<div class="pb-controls"><button type="button" class="pb-btn" data-act="prev">Previous</button><button type="button" class="pb-btn primary" data-act="play" hidden aria-pressed="false">Play</button><button type="button" class="pb-btn" data-act="next">Next</button><span class="spacer"></span><button type="button" class="pb-btn" data-act="reset">Reset</button></div>
+<details class="pb-steps"><summary>Read every step as text</summary><ol></ol></details>
+<script type="application/json">
+{
+  "illustrated": true,
+  "playback": "manual",
+  "layout": "three-peers",
+  "owners": {
+    "a": "FORMER OWNER",
+    "b": "CURRENT OWNER",
+    "c": "PROTECTED RESOURCE"
+  },
+  "nodes": [
+    {
+      "id": "a",
+      "label": "Old writer A",
+      "art": {
+        "kind": "server",
+        "role": "runtime"
+      }
+    },
+    {
+      "id": "b",
+      "label": "New writer B",
+      "art": {
+        "kind": "server",
+        "role": "runtime"
+      }
+    },
+    {
+      "id": "c",
+      "label": "Resource C",
+      "art": {
+        "kind": "database",
+        "role": "storage"
+      }
+    }
+  ],
+  "edges": [
+    {
+      "id": "bc",
+      "from": "b",
+      "to": "c",
+      "label": "epoch 8"
+    },
+    {
+      "id": "ac",
+      "from": "a",
+      "to": "c",
+      "label": "epoch 7"
+    }
+  ],
+  "modes": {
+    "fenced": {
+      "initial": {
+        "nodes": {
+          "a": [
+            "",
+            "writer; epoch 7"
+          ],
+          "b": [
+            "",
+            "writer; epoch 8"
+          ],
+          "c": [
+            "",
+            "value 0"
+          ]
+        }
+      },
+      "steps": [
+        {
+          "label": "Pause",
+          "caption": "Writer A holds epoch 7 and pauses. B later obtains epoch 8 under the service’s ownership protocol.",
+          "packets": []
+        },
+        {
+          "label": "New owner",
+          "caption": "B writes value 8 with epoch 8. The resource records the newest accepted epoch atomically.",
+          "packets": [
+            {
+              "edge": "bc",
+              "label": "epoch 8",
+              "tone": "fwd",
+              "kind": "page"
+            }
+          ],
+          "set": {
+            "nodes": {
+              "b": [
+                "is-done",
+                "epoch 8; value 8"
+              ],
+              "c": [
+                "is-done",
+                "epoch 8; value 8"
+              ]
+            }
+          }
+        },
+        {
+          "label": "Old owner",
+          "caption": "A resumes and sends its delayed epoch-7 write. Its local belief in ownership has not changed.",
+          "packets": [
+            {
+              "edge": "ac",
+              "label": "late epoch 7",
+              "tone": "fwd",
+              "kind": "page"
+            }
+          ],
+          "set": {
+            "nodes": {
+              "a": [
+                "is-warn",
+                "old epoch 7"
+              ]
+            }
+          }
+        },
+        {
+          "label": "Validate",
+          "caption": "The resource rejects epoch 7 and keeps value 8.",
+          "packets": [],
+          "set": {
+            "nodes": {
+              "c": [
+                "is-done",
+                "epoch 8; value 8"
+              ]
+            }
+          }
+        },
+        {
+          "label": "Recover",
+          "caption": "The resource’s atomic check fences the stale effect. The ownership service alone was not enough.",
+          "packets": []
+        }
+      ]
+    },
+    "unchecked": {
+      "initial": {
+        "nodes": {
+          "a": [
+            "",
+            "writer; epoch 7"
+          ],
+          "b": [
+            "",
+            "writer; epoch 8"
+          ],
+          "c": [
+            "",
+            "value 0"
+          ]
+        }
+      },
+      "steps": [
+        {
+          "label": "Pause",
+          "caption": "Writer A holds epoch 7 and pauses. B later obtains epoch 8 under the service’s ownership protocol.",
+          "packets": []
+        },
+        {
+          "label": "New owner",
+          "caption": "B writes value 8 with epoch 8. The resource records the newest accepted epoch atomically.",
+          "packets": [
+            {
+              "edge": "bc",
+              "label": "epoch 8",
+              "tone": "fwd",
+              "kind": "page"
+            }
+          ],
+          "set": {
+            "nodes": {
+              "b": [
+                "is-done",
+                "epoch 8; value 8"
+              ],
+              "c": [
+                "is-done",
+                "epoch 8; value 8"
+              ]
+            }
+          }
+        },
+        {
+          "label": "Old owner",
+          "caption": "A resumes and sends its delayed epoch-7 write. Its local belief in ownership has not changed.",
+          "packets": [
+            {
+              "edge": "ac",
+              "label": "late epoch 7",
+              "tone": "fwd",
+              "kind": "page"
+            }
+          ],
+          "set": {
+            "nodes": {
+              "a": [
+                "is-warn",
+                "old epoch 7"
+              ]
+            }
+          }
+        },
+        {
+          "label": "Validate",
+          "caption": "Without epoch enforcement, the resource accepts the old write and regresses to value 7.",
+          "packets": [],
+          "set": {
+            "nodes": {
+              "c": [
+                "is-warn",
+                "value 7: regressed"
+              ]
+            }
+          }
+        },
+        {
+          "label": "Recover",
+          "caption": "A new leader existed, but the unprotected destination still accepted a stale owner’s effect.",
+          "packets": []
+        }
+      ]
+    }
+  },
+  "stepNavigation": "select",
+  "compareAtCurrentStep": true
+}
+</script>
+</section>
+
+<!-- @before Replication Lag :: guide -->
+### A leader election does not refresh every read
+
+After a successful write, the read path still needs the feature’s freshness promise. Persist and carry its consistency token where supported, or show pending state until the authority can confirm the result. Session identity and eligible replicas matter across failover. [Session guarantees](https://www.cs.cornell.edu/courses/cs734/2000FA/cached%20papers/SessionGuaranteesPDIS_1.html).
+
+<!-- @before Staff Engineer Review Checklist :: staff -->
+### Name the enforcing owner
+
+A generation number protects only the destination that checks it. Do not infer external fencing from a worker being cancelled or a lease expiring. [Chubby’s sequencers](https://research.google.com/archive/chubby-osdi06.pdf) illustrate making stale ownership detectable to the protected service.

@@ -1,0 +1,305 @@
+<!-- Teaching layer over exact approved source fb8354e. -->
+<!-- @opening -->
+<p class="story-lead">A refresh requested before an edit returns after the edit’s successful response. Showing whichever response arrived last can make a saved change disappear even though the server is correct.</p>
+
+<!-- @before Monotonic Reads :: animation -->
+### A late response is not a newer state
+
+<section class="pb-figure" data-pb-flow="scene" aria-label="Keep revision 8 when revision 7 arrives late">
+<h3>Walkthrough 1. Keep revision 8 when revision 7 arrives late</h3><p class="pb-sub">Illustrative one-entity history. The server owns the revision order; compare-and-apply is atomic.</p>
+<div class="pb-seg" role="group" aria-label="Comparison policy"><button type="button" data-mode="version" aria-pressed="true">Compare revisions</button><button type="button" data-mode="arrival" aria-pressed="false">Arrival order</button></div>
+<div class="pb-paper" role="region" aria-label="Illustrative system; scroll if needed" tabindex="0"><svg class="pb-svg" role="img" aria-label="Keep revision 8 when revision 7 arrives late; every step is available as text below"></svg></div>
+<div class="pb-progress" aria-hidden="true"><i></i></div><div class="pb-caption" aria-live="polite"><span class="pb-count"></span><p></p></div>
+<div class="pb-controls"><button type="button" class="pb-btn" data-act="prev">Previous</button><button type="button" class="pb-btn primary" data-act="play" hidden aria-pressed="false">Play</button><button type="button" class="pb-btn" data-act="next">Next</button><span class="spacer"></span><button type="button" class="pb-btn" data-act="reset">Reset</button></div>
+<details class="pb-steps"><summary>Read every step as text</summary><ol></ol></details>
+<script type="application/json">
+{
+  "illustrated": true,
+  "playback": "manual",
+  "layout": "request-store",
+  "owners": {
+    "sender": "CLIENT: visible state",
+    "service": "SERVER",
+    "transaction": "ENTITY AUTHORITY"
+  },
+  "nodes": [
+    {
+      "id": "sender",
+      "label": "Client",
+      "art": {
+        "kind": "phone",
+        "role": "client"
+      }
+    },
+    {
+      "id": "receiver",
+      "label": "API",
+      "art": {
+        "kind": "server",
+        "role": "runtime"
+      }
+    },
+    {
+      "id": "store",
+      "label": "Entity DB",
+      "art": {
+        "kind": "database",
+        "role": "storage"
+      }
+    }
+  ],
+  "edges": [
+    {
+      "id": "send",
+      "from": "sender",
+      "to": "receiver",
+      "label": "new edit"
+    },
+    {
+      "id": "reply",
+      "from": "receiver",
+      "to": "sender",
+      "label": "response"
+    },
+    {
+      "id": "write",
+      "from": "receiver",
+      "to": "store",
+      "label": "commit"
+    },
+    {
+      "id": "read",
+      "from": "store",
+      "to": "receiver",
+      "label": "revision"
+    }
+  ],
+  "modes": {
+    "version": {
+      "initial": {
+        "nodes": {
+          "sender": [
+            "",
+            "visible v7"
+          ],
+          "receiver": [
+            "",
+            "v7 reply pending"
+          ],
+          "store": [
+            "",
+            "revision 7"
+          ]
+        }
+      },
+      "steps": [
+        {
+          "label": "Start",
+          "caption": "The client and database start at revision 7. A request for revision 7 is delayed in the network.",
+          "packets": []
+        },
+        {
+          "label": "Commit",
+          "caption": "A new edit commits as server revision 8. The API returns that authoritative revision.",
+          "packets": [
+            {
+              "edge": "send",
+              "label": "new edit",
+              "tone": "fwd",
+              "kind": "page"
+            },
+            {
+              "edge": "write",
+              "label": "commit v8",
+              "tone": "fwd",
+              "kind": "page"
+            },
+            {
+              "edge": "read",
+              "label": "v8",
+              "tone": "back",
+              "kind": "page"
+            }
+          ],
+          "set": {
+            "nodes": {
+              "store": [
+                "is-done",
+                "revision 8"
+              ],
+              "receiver": [
+                "is-done",
+                "revision 8"
+              ]
+            }
+          }
+        },
+        {
+          "label": "Observe",
+          "caption": "The client observes revision 8. The earlier response is still in flight.",
+          "packets": [
+            {
+              "edge": "reply",
+              "label": "v8",
+              "tone": "back",
+              "kind": "page"
+            }
+          ],
+          "set": {
+            "nodes": {
+              "sender": [
+                "is-done",
+                "visible v8"
+              ]
+            }
+          }
+        },
+        {
+          "label": "Late reply",
+          "caption": "The delayed revision 7 arrives. Compare and apply atomically; retain visible revision 8.",
+          "packets": [
+            {
+              "edge": "reply",
+              "label": "late v7",
+              "tone": "back",
+              "kind": "page"
+            }
+          ],
+          "set": {
+            "nodes": {
+              "sender": [
+                "is-done",
+                "visible v8"
+              ]
+            }
+          }
+        },
+        {
+          "label": "Keep promise",
+          "caption": "The client stays at v8. Pending edits still need their own overlay and conflict policy.",
+          "packets": []
+        }
+      ]
+    },
+    "arrival": {
+      "initial": {
+        "nodes": {
+          "sender": [
+            "",
+            "visible v7"
+          ],
+          "receiver": [
+            "",
+            "v7 reply pending"
+          ],
+          "store": [
+            "",
+            "revision 7"
+          ]
+        }
+      },
+      "steps": [
+        {
+          "label": "Start",
+          "caption": "The client and database start at revision 7. A request for revision 7 is delayed in the network.",
+          "packets": []
+        },
+        {
+          "label": "Commit",
+          "caption": "A new edit commits as server revision 8. The API returns that authoritative revision.",
+          "packets": [
+            {
+              "edge": "send",
+              "label": "new edit",
+              "tone": "fwd",
+              "kind": "page"
+            },
+            {
+              "edge": "write",
+              "label": "commit v8",
+              "tone": "fwd",
+              "kind": "page"
+            },
+            {
+              "edge": "read",
+              "label": "v8",
+              "tone": "back",
+              "kind": "page"
+            }
+          ],
+          "set": {
+            "nodes": {
+              "store": [
+                "is-done",
+                "revision 8"
+              ],
+              "receiver": [
+                "is-done",
+                "revision 8"
+              ]
+            }
+          }
+        },
+        {
+          "label": "Observe",
+          "caption": "The client observes revision 8. The earlier response is still in flight.",
+          "packets": [
+            {
+              "edge": "reply",
+              "label": "v8",
+              "tone": "back",
+              "kind": "page"
+            }
+          ],
+          "set": {
+            "nodes": {
+              "sender": [
+                "is-done",
+                "visible v8"
+              ]
+            }
+          }
+        },
+        {
+          "label": "Late reply",
+          "caption": "The delayed revision 7 arrives. Blind arrival-order replacement regresses the visible state to revision 7.",
+          "packets": [
+            {
+              "edge": "reply",
+              "label": "late v7",
+              "tone": "back",
+              "kind": "page"
+            }
+          ],
+          "set": {
+            "nodes": {
+              "sender": [
+                "is-warn",
+                "visible v7"
+              ]
+            }
+          }
+        },
+        {
+          "label": "Keep promise",
+          "caption": "The server remains at v8 while the screen shows v7. Transport success did not enforce monotonic reads.",
+          "packets": []
+        }
+      ]
+    }
+  },
+  "stepNavigation": "select",
+  "compareAtCurrentStep": true
+}
+</script>
+</section>
+
+<!-- @before Conflict UX :: guide -->
+### Read protection and write protection differ
+
+Rejecting an older response protects the screen’s observed order. It does not stop a stale edit overwriting a newer server value. Submit the base revision and require an atomic precondition check, such as [HTTP If-Match](https://www.rfc-editor.org/rfc/rfc9110.html#section-13.1.1). The feature still needs an explicit conflict outcome.
+
+<!-- @before Offline and Reset Contracts :: staff -->
+### Reset the continuation, preserve the user’s work
+
+An expired cursor can require a new snapshot without authorizing deletion of pending edits. Define snapshot scope, tombstones and outbox replay together. The same [session guarantee](https://www.cs.cornell.edu/courses/cs734/2000FA/cached%20papers/SessionGuaranteesPDIS_1.html) must remain meaningful after reconnect.

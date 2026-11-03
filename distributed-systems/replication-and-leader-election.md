@@ -62,7 +62,7 @@ Mobile relevance: the same pattern protects your own sync engine. If two app pro
 
 ### Leases
 
-Most systems combine election with **leases**: the leader holds leadership for a bounded time and must renew before expiry. This bounds how long a dead leader blocks the system, at the price of a mandatory unavailability window — a client-visible period where writes fail retryably. This is why "the API was down for 20 seconds and then everything worked" is often not an incident but a lease expiry doing its job.
+Some systems use leases with explicit clock, renewal and expiry assumptions. A paused owner may outlive its lease locally; the protected sink must fence its effects. Failover delays belong in availability SLOs and incident analysis, not in a blanket claim that any lease-sized outage is acceptable.
 
 ## Quorum Rule
 
@@ -74,7 +74,7 @@ N >= 2F + 1
 
 A 3-node cluster tolerates 1 failure. A 5-node cluster tolerates 2.
 
-The key property is quorum intersection: any two majorities overlap in at least one node, preventing two conflicting leaders from both committing values.
+The key property is quorum intersection: any two majorities overlap in at least one node. Safety across terms additionally requires durable voting rules and log/election restrictions; intersection alone is not a protocol.
 
 ## Replication Lag
 
@@ -131,7 +131,7 @@ Mobile should not treat all 500s as final. It should classify retryable vs termi
 
 ## Production Example
 
-**The double-charge that wasn't the client's fault (until it was).**
+**The deduplication record lost during failover.**
 
 A payment API runs single-leader with async replicas. During a failover:
 
@@ -139,12 +139,12 @@ A payment API runs single-leader with async replicas. During a failover:
 2. The app times out and retries — against the *new* leader.
 3. The new leader hasn't replicated the original charge yet (it was mid-flight), so the idempotency lookup misses, and it charges again.
 
-Whose bug is it? The backend's idempotency store should have been replicated synchronously with the data it protects — but the client also retried a payment without an idempotency key, betting the backend would dedupe. The Staff-level lesson: **the client's retry policy is part of the replication design.** For money, retries carry an idempotency key generated *before* the first attempt and persisted with the pending operation ([`idempotency.md`](idempotency.md)); the backend's contract states explicitly whether dedupe survives failover.
+Whose bug is it? The backend's idempotency store should have been replicated synchronously with the data it protects — and the client must retain the same key across attempts. In this example the retry has that key, but the backend lost its deduplication state; client identity alone cannot repair that contract violation. The Staff-level lesson: **the client's retry policy is part of the replication design.** For money, retries carry an idempotency key generated *before* the first attempt and persisted with the pending operation ([`idempotency.md`](idempotency.md)); the backend's contract states explicitly whether dedupe survives failover.
 
 ## Tradeoffs
 
 - **Sync vs async replication** is durability vs latency: waiting for replica acks makes writes slower and the system less available during replica failures, but shrinks the window where committed data can be lost or invisible. Backends usually choose per-table or per-endpoint — which is why consistency behavior differs *within* one API.
-- **Leader reads vs replica reads** is freshness vs scale: routing all reads to the leader gives linearizability and melts under load; replica reads scale and lag. The practical compromise — read-your-writes tokens on the flows that need them — pushes work onto the client, which is why the client team must be in the room when the contract is designed.
+- **Leader reads vs replica reads** is freshness vs scale: routing reads to a leader needs a currentness protocol to be linearizable and may create a bottleneck; replica reads scale and lag. The practical compromise — read-your-writes tokens on the flows that need them — pushes work onto the client, which is why the client team must be in the room when the contract is designed.
 - **Fast failover vs split-brain risk:** aggressive election timeouts shrink unavailability windows but misfire during network blips, causing leadership churn (and client-visible retry storms). Conservative timeouts mean longer "try again later" windows. Neither end is free; the client should tolerate both symptoms.
 
 ## Mobile Contract Questions
@@ -184,7 +184,7 @@ Ask backend teams:
 1. **A user updates their profile and immediately sees the old value on the next screen. Walk through every layer (client cache, replica lag, CDN) that could cause this and how you'd distinguish them.**
    It could be client cache (app fails to update local DB after write), CDN cache (returning stale edge data), or replica lag (reading from a follower that hasn't caught up). Distinguish by checking DB logs for lag, disabling CDN caching via headers, and verifying the local cache gets invalidated correctly upon a successful write.
 2. **Why does `N >= 2F + 1` prevent two leaders from both committing, and what property of majorities does the proof rest on?**
-   It prevents two leaders from committing because it ensures quorum intersection: any two majorities must overlap by at least one node. That overlapping node cannot vote for two conflicting leaders in the same epoch.
+   It prevents two leaders from committing because it ensures quorum intersection: any two majorities must overlap by at least one node. That overlapping node cannot vote twice in one term, and election log restrictions preserve committed entries across different terms. Stale leaders can still believe they are current; fence external effects.
 3. **What is a fencing token, and where in a *mobile sync engine* would you apply the same idea?**
    A fencing token is a monotonically increasing epoch number attached to writes to reject stale leader commands. In mobile sync, attach a generation number to a sync session to prevent an older, resurrected worker from overwriting the state of a newer worker.
 4. **Push notifications for new messages arrive before the message is visible via the fetch API. What replication design causes this, and what are three client strategies to handle it?**
@@ -197,6 +197,10 @@ Ask backend teams:
 ---
 
 ## Further Reading
+
+- [Raft election and read safety](https://raft.github.io/raft.pdf).
+- [etcd API guarantees](https://etcd.io/docs/v3.6/learning/api_guarantees/).
+
 
 - [`consensus-basics.md`](consensus-basics.md) - consensus and leader election mechanics.
 - [`consistency-models.md`](consistency-models.md) - read guarantees.

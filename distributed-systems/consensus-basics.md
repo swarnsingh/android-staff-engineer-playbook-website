@@ -20,9 +20,9 @@ Consensus protocols solve this by providing a *safe* mechanism for nodes to agre
 
 ## Historical Context
 
-1. **Two-Phase Commit (1978).** Jim Gray's 2PC protocol achieves consensus between a coordinator and participants — but it blocks if the coordinator dies mid-protocol. It's consensus with a single point of failure.
+1. **Two-Phase Commit (1978).** Two-phase commit coordinates an atomic transaction decision among participants. It can block after participants prepare if the coordinator becomes unavailable; its atomic-commit validity requirements differ from generic consensus.
 2. **FLP impossibility (1985).** Fischer, Lynch, and Paterson proved that no deterministic consensus algorithm can guarantee both safety and liveness in an asynchronous system with even one crash-faulty process. This result didn't stop progress — it just meant every real protocol must make timing assumptions or sacrifice guaranteed liveness.
-3. **Paxos (1989, published 1998).** Leslie Lamport's protocol for achieving consensus in the presence of crash failures. Correct, but famously difficult to understand and implement. The paper was published nine years after it was written because reviewers didn't understand it.
+3. **Paxos (1989, published 1998).** Leslie Lamport's protocol for achieving consensus in the presence of crash failures. Correct, but famously difficult to understand and implement. The journal publication followed the original work by several years.
 4. **Zab (2008).** Zookeeper Atomic Broadcast, designed for ZooKeeper. Simpler than Paxos for the specific use case of replicated state machines with a leader.
 5. **Raft (2013).** Diego Ongaro and John Ousterhout designed Raft explicitly for understandability. Same guarantees as Paxos, but structured around leader election + log replication. Became the most widely-implemented consensus protocol in modern systems (etcd, CockroachDB, TiKV, Consul).
 6. **PBFT and BFT (1999, ongoing).** Practical Byzantine Fault Tolerance handles *malicious* (not just crash-faulty) nodes. Used in blockchain and some critical infrastructure. Much more expensive than crash-fault consensus.
@@ -77,7 +77,7 @@ If the foreperson falls asleep (crashes), the remaining jurors pick a new forepe
 
 If a juror lies about how they voted (Byzantine fault), the process is harder. You need more jurors and more rounds of voting to detect and outvote the liar.
 
-The FLP result says: if there's no clock on the wall (asynchronous system), and at least one juror might fall asleep at any moment, it's possible that deliberation never terminates. In practice, there *is* a clock — timeouts ensure someone eventually calls for a new vote.
+The FLP result says: if there's no clock on the wall (asynchronous system), and at least one juror might fall asleep at any moment, it's possible that deliberation never terminates. In practice, there *is* a clock — timeouts allow new votes, but progress also requires a reachable quorum and eventually suitable timing.
 
 ---
 
@@ -111,69 +111,15 @@ Raft structures consensus as three sub-problems:
 
 **1. Leader election**
 
-```kotlin
-// Raft node states
-enum class NodeState { FOLLOWER, CANDIDATE, LEADER }
-
-class RaftNode(val id: String, val peers: List<String>) {
-    var state = NodeState.FOLLOWER
-    var currentTerm = 0
-    var votedFor: String? = null
-    var electionTimeout = randomTimeout(150, 300)  // ms
-
-    fun onElectionTimeout() {
-        // Haven't heard from leader — start election
-        currentTerm++
-        state = NodeState.CANDIDATE
-        votedFor = id
-        var votes = 1  // vote for self
-
-        for (peer in peers) {
-            val granted = requestVote(peer, currentTerm, lastLogIndex, lastLogTerm)
-            if (granted) votes++
-        }
-
-        if (votes > (peers.size + 1) / 2) {
-            state = NodeState.LEADER
-            startHeartbeats()
-        }
-    }
-}
-```
-
-A node that doesn't hear from a leader within its election timeout becomes a candidate, increments the term, and requests votes. A majority of votes wins the election. Randomized timeouts prevent split votes (two candidates splitting the vote).
+Raft persists `currentTerm` and `votedFor` before responding, permits at most one vote per term, and grants votes only to candidates with sufficiently up-to-date logs. Higher-term RPCs force a step-down. An election result must still belong to the current term and candidacy when applied. Randomized timeouts reduce split votes; they do not guarantee progress in a permanently asynchronous network.
 
 **2. Log replication**
 
-```kotlin
-data class LogEntry(val term: Int, val command: Command)
+AppendEntries checks the previous log index and term before extending a follower's log. A leader advances its commit index using replication positions from distinct voting members, with Raft's current-term restriction. It then applies **every** newly committed entry in order, not just the last proposal. Earlier-term entries can become committed indirectly through a current-term entry.
 
-class RaftLeader(private val node: RaftNode) {
-    val log = mutableListOf<LogEntry>()
-    var commitIndex = -1
+These rules are a protocol outline, not an implementation. A loop counting boolean RPC responses omits persistence, term races, membership changes and log matching; use a tested Raft library and the original paper's Figure 2 rather than turning that loop into a server.
 
-    fun propose(command: Command) {
-        val entry = LogEntry(node.currentTerm, command)
-        log.add(entry)
-        val index = log.lastIndex
 
-        // Replicate to followers
-        var acks = 1  // self
-        for (peer in node.peers) {
-            val success = appendEntries(peer, entry, index)
-            if (success) acks++
-        }
-
-        // Commit when a majority has acked
-        if (acks > (node.peers.size + 1) / 2) {
-            commitIndex = index
-            applyToStateMachine(entry.command)
-        }
-    }
-}
-```
-
-The leader appends the command to its log, replicates to followers, and commits when a majority has acknowledged. Committed entries are guaranteed to be present in all future leaders' logs.
 
 **3. Safety**
 
@@ -234,7 +180,7 @@ A typical consensus-based system: clients talk to the leader, the leader replica
 ## Production Example
 
 - **etcd.** Raft-based key-value store. Used by Kubernetes for all cluster state (pod assignments, service discovery, config). Typically 3 or 5 nodes.
-- **ZooKeeper.** Zab (ZooKeeper Atomic Broadcast) protocol. Used for leader election, distributed locks, and configuration in Hadoop, Kafka, and many other systems.
+- **ZooKeeper.** Zab (ZooKeeper Atomic Broadcast) protocol. Used for leader election, distributed locks, and configuration in Hadoop and legacy Kafka deployments. Kafka 4.0 and later use KRaft, with ZooKeeper support removed.
 - **CockroachDB.** Uses Raft for replication of individual ranges (partitions of the key space). Each range has its own Raft group.
 - **TiKV.** The storage layer of TiDB, uses Raft for replication. Multi-Raft: one Raft group per key range.
 - **Consul.** Raft-based service discovery and configuration. HashiCorp's answer to ZooKeeper.
@@ -247,37 +193,11 @@ A typical consensus-based system: clients talk to the leader, the leader replica
 
 Mobile apps rarely implement consensus directly, but they *depend* on consensus-based services and encounter the same problems at a different scale.
 
-```kotlin
-// Leader election for background work coordination
-// When multiple instances of a service run, only one should execute the job
-class WorkCoordinator(
-    private val firestore: FirebaseFirestore,
-    private val deviceId: String
-) {
-    // Firestore transactions provide atomicity — not full consensus,
-    // but sufficient for single-document leader election
-    suspend fun tryBecomeLeader(jobId: String): Boolean {
-        return firestore.runTransaction { transaction ->
-            val ref = firestore.collection("leaders").document(jobId)
-            val doc = transaction.get(ref)
+A client-clock lease is unsafe: a fast phone can claim an unexpired lease, and a paused old worker may resume after replacement. If work must be exclusive across devices, use a trusted server coordinator and a monotonically increasing **fencing token**. The protected sink must reject stale tokens atomically with the effect. A lease without sink enforcement does not prevent a stale owner from writing.
 
-            val currentLeader = doc.getString("leaderId")
-            val leaseExpiry = doc.getLong("leaseExpiry") ?: 0
+For work on one Android installation, local unique-work scheduling is a different scope and does not elect a leader across devices.
 
-            if (currentLeader == null || System.currentTimeMillis() > leaseExpiry) {
-                // No leader or lease expired — claim leadership
-                transaction.set(ref, mapOf(
-                    "leaderId" to deviceId,
-                    "leaseExpiry" to System.currentTimeMillis() + 30_000  // 30s lease
-                ))
-                true
-            } else {
-                currentLeader == deviceId  // already leader
-            }
-        }.await()
-    }
-}
-```
+
 
 More commonly, Android apps interact with consensus through:
 
@@ -379,13 +299,13 @@ Canonical: [`../observability/metrics.md`](../observability/metrics.md), [`../ob
 
 **Don't implement consensus — use it.** Implementing Paxos or Raft correctly is one of the hardest tasks in systems engineering. Use etcd, ZooKeeper, or Consul. If you must embed consensus, use a well-tested library (e.g., etcd's Raft implementation in Go, or Apache Ratis in Java).
 
-**Know the consensus layer in your stack.** Most engineers use consensus without knowing it. Kubernetes uses etcd (Raft). Kafka uses ZooKeeper (Zab) or KRaft. Your database's replication protocol is likely consensus-based. Understanding this layer lets you diagnose failures that others can't.
+**Know the consensus layer in your stack.** Most engineers use consensus without knowing it. Kubernetes uses etcd (Raft). Kafka 4.0+ uses KRaft; older deployments may have used ZooKeeper (Zab). Your database's replication protocol is likely consensus-based. Understanding this layer lets you diagnose failures that others can't.
 
 **Size the cluster deliberately.** 3 nodes is the minimum for fault tolerance. 5 nodes buys an extra failure and enables rolling upgrades without losing quorum. 7+ nodes add latency without much additional benefit. The decision is a Staff-level trade-off between reliability and performance.
 
 **Plan for leader transitions.** Leader elections cause brief unavailability (typically 1-5 seconds). Design clients to retry during elections. If your SLO can't tolerate 5-second blips, you need leader leases and client-side read caching.
 
-**Use Multi-Raft for throughput.** A single Raft group has a single leader bottleneck. Partitioning data into many Raft groups (one per key range, one per partition) distributes the leader load. This is what CockroachDB, TiKV, and Spanner do.
+**Use Multi-Raft for throughput.** A single Raft group has a single leader bottleneck. Partitioning data into many Raft groups (one per key range, one per partition) distributes the leader load. CockroachDB and TiKV use multiple Raft groups; Spanner uses Paxos groups, not Raft.
 
 ---
 
@@ -393,7 +313,7 @@ Canonical: [`../observability/metrics.md`](../observability/metrics.md), [`../ob
 
 **"Consensus means all nodes agree at all times."** Consensus means all *non-faulty* nodes *eventually* agree on committed values. During the protocol, nodes may temporarily disagree. After commit, they agree.
 
-**"2PC is consensus."** 2PC is a coordination protocol, not a consensus protocol. It blocks on coordinator failure. True consensus protocols (Paxos, Raft) make progress despite node failures.
+**"2PC cannot survive a crash."** Durable logs can preserve atomicity and allow recovery, but prepared participants can block on coordinator failure. Atomic commit has different validity requirements from consensus; Raft/Paxos progress also depends on quorum and timing assumptions.
 
 **"Raft is simpler than Paxos and therefore weaker."** Raft provides the same safety and liveness guarantees as Paxos. It's simpler to *understand and implement*, not weaker.
 
@@ -410,7 +330,7 @@ Canonical: [`../observability/metrics.md`](../observability/metrics.md), [`../ob
 1. Explain the FLP impossibility result in your own words. What does it mean for practical systems?
 2. How does Raft prevent split brain? What role does the term number play?
 3. A 5-node Raft cluster loses 2 nodes. Can it still serve writes? What about reads?
-4. Compare 2PC and Raft. Why is 2PC not a true consensus protocol?
+4. Compare 2PC and Raft. Why can prepared 2PC participants block?
 5. Why do Raft election timeouts need to be randomized? What happens without randomization?
 6. Explain the difference between "written to the leader" and "committed" in Raft. Why does this distinction matter?
 7. A leader fails after committing entry X but before replicating it to all followers. Is X lost? Why or why not?
@@ -428,8 +348,8 @@ Canonical: [`../observability/metrics.md`](../observability/metrics.md), [`../ob
    Raft prevents split brain by requiring a majority vote to elect a leader and by attaching a monotonically increasing term number to every epoch. A node rejects commands from a leader with an older term, ensuring only the current leader can commit.
 3. **A 5-node Raft cluster loses 2 nodes. Can it still serve writes? What about reads?**
    Yes, a 5-node cluster can tolerate 2 failures and still form a majority quorum (3 nodes). It can serve both linearizable reads and writes as long as those 3 nodes are connected.
-4. **Compare 2PC and Raft. Why is 2PC not a true consensus protocol?**
-   2PC is a blocking coordination protocol: if the coordinator crashes mid-transaction, participants are stuck. Raft is a true consensus protocol because it is fault-tolerant and makes progress as long as a majority of nodes are alive.
+4. **Compare 2PC and Raft. Why can prepared 2PC participants block?**
+   2PC is a blocking coordination protocol: if the coordinator crashes mid-transaction, participants are stuck. Raft can make progress with a communicating majority once timing stabilizes; merely having a majority of powered-on nodes is insufficient.
 5. **Why do Raft election timeouts need to be randomized? What happens without randomization?**
    Timeouts are randomized to prevent election livelock. Without randomization, multiple followers might time out simultaneously, split the vote repeatedly, and endlessly loop without ever electing a leader.
 6. **Explain the difference between "written to the leader" and "committed" in Raft. Why does this distinction matter?**
@@ -446,6 +366,11 @@ Canonical: [`../observability/metrics.md`](../observability/metrics.md), [`../ob
 ---
 
 ## Further Reading
+
+- [Raft paper, Figure 2 and safety proof](https://raft.github.io/raft.pdf).
+- [Gray and Lamport: Consensus on Transaction Commit](https://www.microsoft.com/en-us/research/wp-content/uploads/2016/02/tr-2003-96.pdf).
+- [Kafka 4.0 migration: ZooKeeper removed](https://kafka.apache.org/40/getting-started/upgrade/).
+
 
 In this repository:
 

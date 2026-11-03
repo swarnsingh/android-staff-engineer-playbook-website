@@ -15,6 +15,10 @@ def resolve(data):
     for layout in result['layouts'].values():
         if set(layout['nodes'])!={n['id'] for n in result['nodes']}:
             raise ValueError('FlowScene preset actors do not match scene')
+        if set(edges)-set(layout['edges']):
+            raise ValueError('FlowScene preset routes do not match declared edges')
+        layout['edges']={key:value for key,value in layout['edges'].items() if key in edges}
+        layout['labels']=[label for label in layout.get('labels',[]) if label['edge'] in edges]
         for region in layout.get('regions',[]):
             region['label']=result['owners'][region.pop('owner')]
         for label in layout.get('labels',[]):

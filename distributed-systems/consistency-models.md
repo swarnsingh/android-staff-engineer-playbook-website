@@ -83,12 +83,12 @@ If no new writes occur, all replicas will *eventually* converge to the same valu
 flowchart TD
     linear["Linearizability"] --> sequential["Sequential consistency"]
     sequential --> causal["Causal consistency"]
-    causal --> eventual["Eventual consistency"]
+    eventual["Eventual convergence: separate progress requirement"]
     causal --> ryw["Read-your-writes"]
     causal --> monotonic["Monotonic reads"]
 ```
 
-Each model implies all models below it. Linearizability provides causal consistency, which provides read-your-writes, which provides eventual consistency. The converse is not true.
+The arrows show safety implications under the same operation/session scope. Eventual convergence is a separate progress requirement: read-your-writes alone does not ensure other replicas ever catch up. Causal delivery needs dependency tracking and buffering, not merely vector metadata.
 
 ---
 
@@ -130,7 +130,7 @@ sequenceDiagram
     Note over C,F2: All replicas have x=5 before client is told "success"
 ```
 
-The write is not confirmed until all (or a quorum of) replicas have acknowledged. This guarantees any subsequent read from any replica returns the new value. Cost: the write's latency is the maximum of all replica latencies.
+The diagram waits for both followers. A quorum acknowledgement can leave other replicas stale, so arbitrary follower reads are not linearizable. A complete protocol also needs safe failover and a read-currentness check (for example, Raft ReadIndex), not just synchronous writes.
 
 ### How eventual consistency works
 
@@ -159,8 +159,9 @@ The write is confirmed immediately on the local node. Replication happens in the
 
 ```kotlin
 data class VersionVector(val versions: Map<String, Int>) {
+    init { require(versions.values.all { it >= 0 }) }
     fun increment(nodeId: String): VersionVector =
-        copy(versions = versions + (nodeId to (versions[nodeId] ?: 0) + 1))
+        copy(versions = versions + (nodeId to Math.addExact(versions[nodeId] ?: 0, 1)))
 
     fun merge(other: VersionVector): VersionVector {
         val merged = (versions.keys + other.versions.keys).associateWith { key ->
@@ -174,116 +175,54 @@ data class VersionVector(val versions: Map<String, Int>) {
         versions.any { (k, v) -> v > (other.versions[k] ?: 0) }
 
     fun concurrent(other: VersionVector): Boolean =
-        !dominates(other) && !other.dominates(this)
+        (versions.keys + other.versions.keys).let { keys ->
+            keys.any { (versions[it] ?: 0) > (other.versions[it] ?: 0) } &&
+            keys.any { (versions[it] ?: 0) < (other.versions[it] ?: 0) }
+        }
 }
 ```
 
-Each write carries a version vector. On read, the system can determine if one version causally precedes another (one dominates), or if they're concurrent (neither dominates → conflict). This enables causal consistency without full linearizability.
+Each write carries a version vector. On read, the system can determine if one version causally precedes another (one dominates), or if they're concurrent (neither dominates → conflict). The vector detects dependency and concurrency; enforcing causal reads also requires waiting for missing dependencies. Equal vectors, including omitted zero components, are not concurrent.
 
 ### Session guarantees
 
 Read-your-writes is often implemented by tracking the client's "session" — the set of writes the client has performed:
 
-```kotlin
-class SessionAwareClient(private val replicas: List<Replica>) {
-    private var lastWriteVersion: Long = 0
+A backend may expose a session-wide comparable commit token. The client retains the maximum token from concurrent responses and asks the server to read **at least** that token. The server must enforce freshness together with the read, waiting or failing if no eligible replica is available. A separate `currentVersion()` probe followed by an unguarded read is not that contract. Per-entity revisions cannot be compared as if they were one global token.
 
-    suspend fun write(key: String, value: String) {
-        val version = primaryReplica().write(key, value)
-        lastWriteVersion = version
-    }
 
-    suspend fun read(key: String): String {
-        // Route to a replica that has seen at least lastWriteVersion
-        val replica = replicas.first { it.currentVersion() >= lastWriteVersion }
-        return replica.read(key)
-    }
-}
-```
-
-The client tracks its own write version and refuses to read from replicas that haven't caught up. This guarantees read-your-writes without requiring all replicas to be in sync.
-
----
-
-## Architecture
-
-```mermaid
-flowchart TB
-    subgraph Strong["Strong Consistency (CP)"]
-        Leader[Single Leader] --> Sync["Synchronous<br/>Replication"]
-        Sync --> Follower1[Follower 1]
-        Sync --> Follower2[Follower 2]
-    end
-
-    subgraph Causal["Causal Consistency"]
-        Multi[Multi-Leader] --> Track["Version Vectors<br/>per key"]
-        Track --> Dep["Dependency<br/>Tracking"]
-    end
-
-    subgraph Eventual["Eventual Consistency (AP)"]
-        Any["Any Node<br/>Accepts Writes"] --> Async["Async<br/>Replication"]
-        Async --> Gossip[Gossip / Anti-entropy]
-    end
-```
-
-Different consistency models require different architectural choices. Linearizability typically requires a single leader (or consensus protocol). Causal consistency requires dependency tracking. Eventual consistency can use any-node writes with background sync.
-
----
 
 ## Production Example
 
-- **Google Spanner.** Linearizable. TrueTime enables globally-consistent reads. Every read sees the latest committed write. The most expensive option; justified by the need for globally-consistent financial transactions.
-- **Amazon DynamoDB.** Tunable per read. `ConsistentRead=true` gives linearizable reads from the leader; `ConsistentRead=false` gives eventual consistency from any replica. The default is eventual.
-- **Cassandra.** Tunable per query. `QUORUM` reads and writes give strong consistency if `W + R > N` (and linearizability if combined with read-repair); `ONE` gives eventual consistency.
-- **MongoDB.** Causal consistency since 3.6. Reads within a causally-consistent session see all prior writes from that session. Independent sessions may see different orderings.
-- **Redis.** Single-leader eventual consistency. Reads from the leader are consistent; reads from replicas may be stale.
-- **Facebook/Meta TAO.** Read-your-writes consistency for social data. Users always see their own posts immediately; other users see them after replication lag (typically sub-second).
+- **Spanner:** offers strong and stale read options; TrueTime does not mean every configured read is fresh.
+- **DynamoDB:** table/LSI strong reads and GSI/stream eventual reads have different contracts; global table consistency modes differ.
+- **Cassandra:** quorum intersection and blocking read repair do not establish general linearizability. Conditional operations use lightweight transactions.
+- **MongoDB:** causal sessions need the documented majority read/write concerns to provide their complete causal guarantees.
+- **Redis:** asynchronous replication can lose acknowledged writes across failover; reading a leader is not a durability proof.
+
+
 
 ---
 
 ## Android Example
 
-Mobile apps encounter consistency models at every layer:
+Room observes committed local state; it does not prevent a delayed server response from overwriting a newer row. Keep observation separate from refresh so a network call does not delay the first local emission.
 
 ```kotlin
-// Layer 1: Local database — linearizable (single process, single writer)
-@Dao
-interface UserDao {
-    @Query("SELECT * FROM users WHERE id = :id")
-    fun getUser(id: String): Flow<User?>  // always reads latest local write
+// App-defined DAO contract: compare and update in one Room transaction.
+class UserRepository(private val dao: UserDao, private val api: UserApi) {
+    fun observeUser(id: String): Flow<User?> = dao.observe(id)
 
-    @Insert(onConflict = OnConflictStrategy.REPLACE)
-    suspend fun upsert(user: User)
-}
-
-// Layer 2: Network + local — eventually consistent
-class UserRepository(
-    private val dao: UserDao,
-    private val api: UserApi
-) {
-    // Read-your-writes: local writes are visible immediately
-    // Eventual consistency with server: server data arrives asynchronously
-    fun observeUser(id: String): Flow<User?> = dao.getUser(id)
-        .onStart {
-            // Background refresh — eventual consistency with server
-            try {
-                val fresh = api.fetchUser(id)
-                dao.upsert(fresh)
-            } catch (e: IOException) {
-                // Serve stale — AP behavior
-            }
-        }
-
-    // Monotonic reads: Room's Flow ensures the client never sees
-    // an older version after seeing a newer one (within the local DB)
-    // Cross-device monotonic reads require version tracking
+    suspend fun refreshUser(id: String) {
+        val incoming = api.fetchUser(id)
+        dao.applyServerRevisionIfNewer(incoming)
+    }
 }
 ```
 
-The consistency model changes at each boundary:
-- **Local Room DB:** linearizable (single writer, immediate visibility).
-- **Local + network:** eventually consistent. The local DB may be stale relative to the server.
-- **Multiple devices:** eventually consistent. Two phones editing the same data see different versions until sync completes.
+`applyServerRevisionIfNewer` must atomically compare the server revision and write the row, retain deletion revisions, and preserve pending local edits. A caller-owned coroutine invokes refresh and handles offline failure. Flow emits the resulting database state; monotonic versions come from the write policy, not Flow itself.
+
+
 
 The most common mobile consistency bug: a user makes a change on one device, opens the app on another device, and doesn't see the change. This is eventual consistency working as designed — but the user perceives it as a bug. Mitigation: faster sync, push notifications on change, or per-user read-your-writes guarantees via server-side session tracking.
 
@@ -343,7 +282,7 @@ The most common mobile consistency bug: a user makes a change on one device, ope
 
 ## Reliability Considerations
 
-- Stronger consistency models trade availability for correctness. During a partition, a linearizable system becomes unavailable; an eventually consistent system remains available.
+- Stronger consistency models trade availability for correctness. During a partition, a linearizable system becomes unavailable; a design may serve stale values if its availability contract permits; eventual convergence alone is not an availability guarantee.
 - **Read-your-writes as a minimum bar.** Most user-facing applications should guarantee at least read-your-writes consistency. Anything weaker creates user-visible bugs ("I posted a comment but it disappeared").
 - **Bounded staleness as a pragmatic middle ground.** "Reads are at most 5 seconds stale" is often good enough and much cheaper than linearizability.
 
@@ -425,11 +364,11 @@ Canonical: [`../observability/metrics.md`](../observability/metrics.md), [`../ob
 5. **DynamoDB offers both eventually consistent and strongly consistent reads. When would you use each?**
    Use strongly consistent (linearizable) reads for critical operational state where stale data is dangerous (e.g., financial balances, distributed locks). Use eventually consistent reads for read-heavy operations where slight staleness is fine and latency/availability is paramount (e.g., product catalogs, feeds).
 6. **A system uses quorum reads (R=2) and quorum writes (W=2) with N=3 replicas. Is this strictly linearizable? Why or why not?**
-   No, it is not strictly linearizable by itself because concurrent reads and writes can interleave, or a failed write could be partially visible, violating the single-instant appearance. Achieving strict linearizability with quorum requires additional protocols like read-repair during read operations (e.g., Paxos/Raft).
+   No, it is not strictly linearizable by itself because concurrent reads and writes can interleave, or a failed write could be partially visible, violating the single-instant appearance. Linearizability requires a complete read/write protocol with safe version selection and failover; read repair alone is insufficient. Paxos and Raft are consensus protocols, not names for read repair.
 7. **Two clients write different values to the same key concurrently in an eventually consistent system. What happens? Who "wins"?**
    The system detects a conflict. Who "wins" depends on the conflict resolution strategy: last-writer-wins (LWW) relies on timestamps (discarding one), CRDTs auto-merge them, or the system stores both as siblings for the application to resolve later.
 8. **What is bounded staleness, and why is it a useful middle ground?**
-   Bounded staleness guarantees that a read will return data no older than a specific time threshold (e.g., "at most 5 seconds old"). It is useful because it provides predictable behavior for the application while maintaining much higher availability and lower latency than strict linearizability.
+   Bounded staleness guarantees that a read will return data no older than a specific time threshold (e.g., "at most 5 seconds old"). It is useful because it provides predictable behavior for the application but reads must wait or fail when the freshness bound cannot be met; lower cost or higher availability is not automatic.
 9. **How does replication lag become a user-visible bug? Give a mobile-app example.**
    Replication lag becomes a bug when the app reads from a replica that hasn't processed a recent write. For example, a user marks a push notification as "read" on their phone, but opening the app fetches from a lagging replica, showing the notification as unread.
 10. **Your team wants to use eventual consistency for a shopping cart. What failure modes should they prepare for?**
@@ -438,6 +377,16 @@ Canonical: [`../observability/metrics.md`](../observability/metrics.md), [`../ob
 ---
 
 ## Further Reading
+
+- [MongoDB causal sessions](https://www.mongodb.com/docs/manual/core/causal-consistency-read-write-concerns/).
+- [Redis WAIT limits](https://redis.io/docs/latest/commands/wait/).
+- [Spanner read options](https://docs.cloud.google.com/spanner/docs/reads).
+
+
+- [etcd API guarantees](https://etcd.io/docs/v3.6/learning/api_guarantees/).
+- [Cassandra monotonic quorum reads](https://cassandra.apache.org/doc/latest/cassandra/managing/operating/read_repair.html).
+- [DynamoDB read modes](https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/HowItWorks.ReadConsistency.html).
+
 
 In this repository:
 

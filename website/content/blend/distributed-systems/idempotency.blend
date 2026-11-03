@@ -1,0 +1,409 @@
+<!-- Teaching layer over exact approved source fb8354e. -->
+<!-- @opening -->
+<p class="story-lead">The app kept its operation key through a long offline period. The server kept the business result, but may already have forgotten the replay record. Retrying with the same key now has a boundary to cross.</p>
+
+<!-- @before First Principles :: guide -->
+### A replay window is part of the contract
+
+An idempotency key is not an eternal receipt. Stripe API v1 documents parameter comparison, captured responses after execution begins, and reuse after pruning. Choose a retention or reconciliation policy that covers supported retries; do not copy an example TTL as a universal mobile guarantee. [Stripe API v1 replay rules](https://docs.stripe.com/api/idempotent_requests).
+
+<!-- @before Internal Mechanics :: animation -->
+### Follow the key beyond its replay window
+
+<section class="pb-figure" data-pb-flow="scene" aria-label="A late retry after retention">
+<h3>Walkthrough 1. A late retry after retention</h3><p class="pb-sub">Illustrative local ledger only. Compare a retained replay record with one pruned before a late retry.</p>
+<div class="pb-seg" role="group" aria-label="Comparison policy"><button type="button" data-mode="retained" aria-pressed="true">Record retained</button><button type="button" data-mode="pruned" aria-pressed="false">Record pruned</button></div>
+<div class="pb-paper" role="region" aria-label="Illustrative system; scroll if needed" tabindex="0"><svg class="pb-svg" role="img" aria-label="A late retry after retention; every step is available as text below"></svg></div>
+<div class="pb-progress" aria-hidden="true"><i></i></div><div class="pb-caption" aria-live="polite"><span class="pb-count"></span><p></p></div>
+<div class="pb-controls"><button type="button" class="pb-btn" data-act="prev">Previous</button><button type="button" class="pb-btn primary" data-act="play" hidden aria-pressed="false">Play</button><button type="button" class="pb-btn" data-act="next">Next</button><span class="spacer"></span><button type="button" class="pb-btn" data-act="reset">Reset</button></div>
+<details class="pb-steps"><summary>Read every step as text</summary><ol></ol></details>
+<script type="application/json">
+{
+  "illustrated": true,
+  "playback": "manual",
+  "layout": "request-store",
+  "owners": {
+    "sender": "CLIENT: durable intent",
+    "service": "SERVICE",
+    "transaction": "LOCAL DB TX"
+  },
+  "nodes": [
+    {
+      "id": "sender",
+      "label": "Mobile client",
+      "art": {
+        "kind": "phone",
+        "role": "client"
+      }
+    },
+    {
+      "id": "receiver",
+      "label": "API",
+      "art": {
+        "kind": "server",
+        "role": "runtime"
+      }
+    },
+    {
+      "id": "store",
+      "label": "Local ledger",
+      "art": {
+        "kind": "database",
+        "role": "storage"
+      }
+    }
+  ],
+  "edges": [
+    {
+      "id": "send",
+      "from": "sender",
+      "to": "receiver",
+      "label": "1 request"
+    },
+    {
+      "id": "reply",
+      "from": "receiver",
+      "to": "sender",
+      "label": "4 reply"
+    },
+    {
+      "id": "write",
+      "from": "receiver",
+      "to": "store",
+      "label": "2 DB call"
+    },
+    {
+      "id": "read",
+      "from": "store",
+      "to": "receiver",
+      "label": "3 result"
+    },
+    {
+      "id": "lostReply",
+      "from": "receiver",
+      "to": "sender",
+      "label": "Reply lost"
+    }
+  ],
+  "modes": {
+    "retained": {
+      "initial": {
+        "nodes": {
+          "sender": [
+            "",
+            "K persisted"
+          ],
+          "receiver": [
+            "",
+            "ready"
+          ],
+          "store": [
+            "",
+            "effects: 0"
+          ]
+        }
+      },
+      "steps": [
+        {
+          "label": "Persist",
+          "caption": "Keep K for one local ledger operation. Every retry uses that same account, payload and key.",
+          "packets": []
+        },
+        {
+          "label": "Commit",
+          "caption": "The request commits one ledger entry and captures R42 with K in the same local transaction.",
+          "packets": [
+            {
+              "edge": "send",
+              "label": "K",
+              "tone": "fwd",
+              "kind": "page"
+            },
+            {
+              "edge": "write",
+              "label": "entry + K",
+              "tone": "fwd",
+              "kind": "page"
+            },
+            {
+              "edge": "read",
+              "label": "R42",
+              "tone": "back",
+              "kind": "page"
+            }
+          ],
+          "set": {
+            "nodes": {
+              "sender": [
+                "is-active",
+                "outcome pending"
+              ],
+              "receiver": [
+                "is-done",
+                "R42 captured"
+              ],
+              "store": [
+                "is-done",
+                "effects: 1; K saved"
+              ]
+            }
+          }
+        },
+        {
+          "label": "Lose reply",
+          "caption": "R42 is lost before arrival. The committed entry remains; the client does not know the outcome.",
+          "packets": [
+            {
+              "edge": "lostReply",
+              "label": "R42 lost",
+              "tone": "stuck",
+              "kind": "page",
+              "lost": true
+            }
+          ],
+          "set": {
+            "nodes": {
+              "sender": [
+                "is-warn",
+                "outcome unknown"
+              ]
+            }
+          }
+        },
+        {
+          "label": "Retention",
+          "caption": "The late retry is still inside the supported replay window.",
+          "packets": [],
+          "set": {
+            "nodes": {
+              "store": [
+                "is-done",
+                "effects: 1; K saved"
+              ]
+            }
+          }
+        },
+        {
+          "label": "Retry",
+          "caption": "K is recognized; return the captured R42 without a second mutation.",
+          "packets": [
+            {
+              "edge": "send",
+              "label": "same K",
+              "tone": "fwd",
+              "kind": "page"
+            },
+            {
+              "edge": "write",
+              "label": "lookup K",
+              "tone": "fwd",
+              "kind": "page"
+            },
+            {
+              "edge": "read",
+              "label": "R42",
+              "tone": "back",
+              "kind": "page"
+            }
+          ],
+          "set": {
+            "nodes": {
+              "receiver": [
+                "is-done",
+                "replay R42"
+              ],
+              "store": [
+                "is-done",
+                "effects: 1; K saved"
+              ]
+            }
+          }
+        },
+        {
+          "label": "Confirm",
+          "caption": "One effect is confirmed within the retained replay contract.",
+          "packets": [
+            {
+              "edge": "reply",
+              "label": "R42",
+              "tone": "back",
+              "kind": "page"
+            }
+          ],
+          "set": {
+            "nodes": {
+              "sender": [
+                "is-done",
+                "R42; effects: 1"
+              ]
+            }
+          }
+        }
+      ]
+    },
+    "pruned": {
+      "initial": {
+        "nodes": {
+          "sender": [
+            "",
+            "K persisted"
+          ],
+          "receiver": [
+            "",
+            "ready"
+          ],
+          "store": [
+            "",
+            "effects: 0"
+          ]
+        }
+      },
+      "steps": [
+        {
+          "label": "Persist",
+          "caption": "Keep K for one local ledger operation. Every retry uses that same account, payload and key.",
+          "packets": []
+        },
+        {
+          "label": "Commit",
+          "caption": "The request commits one ledger entry and captures R42 with K in the same local transaction.",
+          "packets": [
+            {
+              "edge": "send",
+              "label": "K",
+              "tone": "fwd",
+              "kind": "page"
+            },
+            {
+              "edge": "write",
+              "label": "entry + K",
+              "tone": "fwd",
+              "kind": "page"
+            },
+            {
+              "edge": "read",
+              "label": "R42",
+              "tone": "back",
+              "kind": "page"
+            }
+          ],
+          "set": {
+            "nodes": {
+              "sender": [
+                "is-active",
+                "outcome pending"
+              ],
+              "receiver": [
+                "is-done",
+                "R42 captured"
+              ],
+              "store": [
+                "is-done",
+                "effects: 1; K saved"
+              ]
+            }
+          }
+        },
+        {
+          "label": "Lose reply",
+          "caption": "R42 is lost before arrival. The committed entry remains; the client does not know the outcome.",
+          "packets": [
+            {
+              "edge": "lostReply",
+              "label": "R42 lost",
+              "tone": "stuck",
+              "kind": "page",
+              "lost": true
+            }
+          ],
+          "set": {
+            "nodes": {
+              "sender": [
+                "is-warn",
+                "outcome unknown"
+              ]
+            }
+          }
+        },
+        {
+          "label": "Retention",
+          "caption": "The replay record was pruned before this late retry. The ledger entry remains.",
+          "packets": [],
+          "set": {
+            "nodes": {
+              "store": [
+                "is-warn",
+                "effects: 1; no K"
+              ]
+            }
+          }
+        },
+        {
+          "label": "Retry",
+          "caption": "K looks new after pruning. This illustrative API creates another entry; a key alone cannot prevent it.",
+          "packets": [
+            {
+              "edge": "send",
+              "label": "same K",
+              "tone": "fwd",
+              "kind": "page"
+            },
+            {
+              "edge": "write",
+              "label": "lookup K",
+              "tone": "fwd",
+              "kind": "page"
+            },
+            {
+              "edge": "read",
+              "label": "R43",
+              "tone": "back",
+              "kind": "page"
+            }
+          ],
+          "set": {
+            "nodes": {
+              "receiver": [
+                "is-warn",
+                "new R43"
+              ],
+              "store": [
+                "is-warn",
+                "effects: 2; K saved"
+              ]
+            }
+          }
+        },
+        {
+          "label": "Confirm",
+          "caption": "The late reply confirms R43, but does not undo the earlier effect. Reconciliation needs a separate policy.",
+          "packets": [
+            {
+              "edge": "reply",
+              "label": "R43",
+              "tone": "back",
+              "kind": "page"
+            }
+          ],
+          "set": {
+            "nodes": {
+              "sender": [
+                "is-warn",
+                "R43; effects: 2"
+              ]
+            }
+          }
+        }
+      ]
+    }
+  },
+  "stepNavigation": "select",
+  "compareAtCurrentStep": true
+}
+</script>
+</section>
+
+<!-- @before Staff Engineer Thinking :: staff -->
+### Own the retry deadline
+
+Define what an expired key means before shipping offline retry. Sensitive external effects require the destination’s replay/recovery contract; a local transaction cannot roll them back.

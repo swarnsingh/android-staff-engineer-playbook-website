@@ -1,0 +1,292 @@
+<!-- Teaching layer over exact approved source fb8354e. -->
+<!-- @opening -->
+<p class="story-lead">Two offline replicas each increment a counter from zero to one. If synchronization keeps only the larger displayed number, both replicas can agree on one while losing an increment.</p>
+
+<!-- @before Internal Mechanics :: animation -->
+### Convergence must preserve the chosen operations
+
+<section class="pb-figure" data-pb-flow="scene" aria-label="Two increments must remain two">
+<h3>Walkthrough 1. Two increments must remain two</h3><p class="pb-sub">Illustrative G-Counter with stable replica identities. Each writer owns only its own component.</p>
+<div class="pb-seg" role="group" aria-label="Comparison policy"><button type="button" data-mode="components" aria-pressed="true">Per-replica counts</button><button type="button" data-mode="scalar" aria-pressed="false">Scalar maximum</button></div>
+<div class="pb-paper" role="region" aria-label="Illustrative system; scroll if needed" tabindex="0"><svg class="pb-svg" role="img" aria-label="Two increments must remain two; every step is available as text below"></svg></div>
+<div class="pb-progress" aria-hidden="true"><i></i></div><div class="pb-caption" aria-live="polite"><span class="pb-count"></span><p></p></div>
+<div class="pb-controls"><button type="button" class="pb-btn" data-act="prev">Previous</button><button type="button" class="pb-btn primary" data-act="play" hidden aria-pressed="false">Play</button><button type="button" class="pb-btn" data-act="next">Next</button><span class="spacer"></span><button type="button" class="pb-btn" data-act="reset">Reset</button></div>
+<details class="pb-steps"><summary>Read every step as text</summary><ol></ol></details>
+<script type="application/json">
+{
+  "illustrated": true,
+  "playback": "manual",
+  "layout": "three-peers",
+  "owners": {
+    "a": "REPLICA A",
+    "b": "REPLICA B",
+    "c": "REPLICA C"
+  },
+  "nodes": [
+    {
+      "id": "a",
+      "label": "Replica A",
+      "art": {
+        "kind": "server",
+        "role": "storage"
+      }
+    },
+    {
+      "id": "b",
+      "label": "Replica B",
+      "art": {
+        "kind": "server",
+        "role": "storage"
+      }
+    },
+    {
+      "id": "c",
+      "label": "Replica C",
+      "art": {
+        "kind": "server",
+        "role": "storage"
+      }
+    }
+  ],
+  "edges": [
+    {
+      "id": "ab",
+      "from": "a",
+      "to": "b",
+      "label": "merge A"
+    },
+    {
+      "id": "bc",
+      "from": "b",
+      "to": "c",
+      "label": "merge B"
+    }
+  ],
+  "modes": {
+    "components": {
+      "initial": {
+        "nodes": {
+          "a": [
+            "",
+            "total 0"
+          ],
+          "b": [
+            "",
+            "total 0"
+          ],
+          "c": [
+            "",
+            "total 0"
+          ]
+        }
+      },
+      "steps": [
+        {
+          "label": "Start",
+          "caption": "Replicas A and B each start at zero and increment independently.",
+          "packets": []
+        },
+        {
+          "label": "Increment A",
+          "caption": "A records its own contribution: A=1, B=0; visible total 1.",
+          "packets": [],
+          "set": {
+            "nodes": {
+              "a": [
+                "is-done",
+                "A1 B0; total 1"
+              ]
+            }
+          }
+        },
+        {
+          "label": "Increment B",
+          "caption": "B records its own contribution: A=0, B=1; visible total 1.",
+          "packets": [],
+          "set": {
+            "nodes": {
+              "b": [
+                "is-done",
+                "A0 B1; total 1"
+              ]
+            }
+          }
+        },
+        {
+          "label": "Merge",
+          "caption": "Per-actor maxima preserve both contributions. B becomes A=1, B=1; total 2.",
+          "packets": [
+            {
+              "edge": "ab",
+              "label": "A1 B0",
+              "tone": "fwd",
+              "kind": "page"
+            }
+          ],
+          "set": {
+            "nodes": {
+              "b": [
+                "is-done",
+                "A1 B1; total 2"
+              ]
+            }
+          }
+        },
+        {
+          "label": "Disseminate",
+          "caption": "C merges the combined state and also reaches total 2.",
+          "packets": [
+            {
+              "edge": "bc",
+              "label": "A1 B1",
+              "tone": "fwd",
+              "kind": "page"
+            }
+          ],
+          "set": {
+            "nodes": {
+              "c": [
+                "is-done",
+                "A1 B1; total 2"
+              ]
+            }
+          }
+        },
+        {
+          "label": "Duplicate",
+          "caption": "Merging the same state again leaves total 2: this state merge is idempotent.",
+          "packets": [
+            {
+              "edge": "bc",
+              "label": "same state",
+              "tone": "fwd",
+              "kind": "page"
+            }
+          ]
+        }
+      ]
+    },
+    "scalar": {
+      "initial": {
+        "nodes": {
+          "a": [
+            "",
+            "total 0"
+          ],
+          "b": [
+            "",
+            "total 0"
+          ],
+          "c": [
+            "",
+            "total 0"
+          ]
+        }
+      },
+      "steps": [
+        {
+          "label": "Start",
+          "caption": "Replicas A and B each start at zero and increment independently.",
+          "packets": []
+        },
+        {
+          "label": "Increment A",
+          "caption": "A records its own contribution: A=1, B=0; visible total 1.",
+          "packets": [],
+          "set": {
+            "nodes": {
+              "a": [
+                "is-done",
+                "A1 B0; total 1"
+              ]
+            }
+          }
+        },
+        {
+          "label": "Increment B",
+          "caption": "B records its own contribution: A=0, B=1; visible total 1.",
+          "packets": [],
+          "set": {
+            "nodes": {
+              "b": [
+                "is-done",
+                "A0 B1; total 1"
+              ]
+            }
+          }
+        },
+        {
+          "label": "Merge",
+          "caption": "Taking max(1,1) over a single scalar returns 1 and loses one independent increment.",
+          "packets": [
+            {
+              "edge": "ab",
+              "label": "scalar 1",
+              "tone": "fwd",
+              "kind": "page"
+            }
+          ],
+          "set": {
+            "nodes": {
+              "b": [
+                "is-warn",
+                "scalar total 1"
+              ]
+            }
+          }
+        },
+        {
+          "label": "Disseminate",
+          "caption": "C converges to scalar 1 too. Agreement on the wrong merge does not preserve increments.",
+          "packets": [
+            {
+              "edge": "bc",
+              "label": "scalar 1",
+              "tone": "fwd",
+              "kind": "page"
+            }
+          ],
+          "set": {
+            "nodes": {
+              "c": [
+                "is-warn",
+                "scalar total 1"
+              ]
+            }
+          }
+        },
+        {
+          "label": "Duplicate",
+          "caption": "Repeating scalar max still leaves 1. Duplicate tolerance alone did not make this a correct counter.",
+          "packets": [
+            {
+              "edge": "bc",
+              "label": "same state",
+              "tone": "fwd",
+              "kind": "page"
+            }
+          ]
+        }
+      ]
+    }
+  },
+  "stepNavigation": "select",
+  "compareAtCurrentStep": true
+}
+</script>
+</section>
+
+<!-- @before First Principles :: guide -->
+### Use the update law as well as the merge law
+
+For state-based replication, local updates must move upward in the type’s order, merge must compute the join, and information must eventually propagate. Classical operation-based replication has different delivery and duplicate requirements. A counter’s convergence proof does not enforce stock or balance limits. [Shapiro et al.’s CRDT study](https://www.lip6.fr/Marc.Shapiro/papers/2011/Comprehensive-CRDTs-RR7506-2011-01.pdf).
+
+<!-- @before Staff Engineer Thinking :: staff -->
+### Review the visible conflict policy
+
+An OR-set’s concurrent add can survive a remove that did not observe it. That is a defined result, not proof that it matches the user’s intent. Decide the intended policy and safe metadata retirement before selecting a library.
+
+<!-- @before Answer Key :: guide -->
+### Separate convergence from the product choice
+
+Answer 1 describes classical operation-based requirements; a specific library can provide a different documented delivery contract. In answer 4, add-wins and remove-wins are alternative semantics, not a universal UX ranking. In answer 10, replica convergence does not guarantee that concurrent user intentions need no review. [CRDT definitions and set semantics](https://www.lip6.fr/Marc.Shapiro/papers/2011/Comprehensive-CRDTs-RR7506-2011-01.pdf).

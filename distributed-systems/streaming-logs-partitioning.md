@@ -88,7 +88,7 @@ Root causes often include cross-partition ordering assumptions: the receipt and 
 | Version | Entity-specific monotonic number | Conflict detection and stale update prevention |
 | Watermark | "Processed through time/offset" signal | Catch-up and completeness indicators |
 
-Mobile APIs should expose opaque cursors or entity versions, not Kafka offsets. Exposing raw offsets welds the client to the backend's partition count — the moment the topic is re-partitioned, every persisted client cursor breaks simultaneously. An opaque cursor lets the backend re-shard behind the token.
+Mobile APIs should expose opaque cursors or entity versions, not Kafka offsets. Exposing raw offsets welds the client to the backend's partition count — the moment the topic is re-partitioned, every persisted client cursor breaks simultaneously. An opaque cursor permits a migration contract, but does not implement one: the backend needs epoch/position mapping or an explicit reset response.
 
 ## At-Least-Once Streams
 
@@ -103,14 +103,15 @@ Client contract:
 - Out-of-order events are either impossible by key or handled by version checks.
 
 ```kotlin
-fun apply(event: SyncEvent) {
+suspend fun apply(event: SyncEvent) = database.withTransaction {
     val currentVersion = dao.versionFor(event.entityId)
-    if (event.version <= currentVersion) return
+    if (event.version <= currentVersion) return@withTransaction
     dao.apply(event)
+    // Persist a batch cursor only after every event in that batch is applied.
 }
 ```
 
-That one `if` is the client's entire defense against duplicates *and* reordering within an entity — which is why events carrying versions is a contract requirement, not a nicety. See [`delivery-semantics.md`](delivery-semantics.md) for why exactly-once delivery is not on the menu.
+The version check and write must share one transaction, with cursor advancement atomic with the complete batch. Preserve deletion revisions and pending local edits. The comparison needs server-defined revisions in one entity/incarnation domain. Broker exactly-once delivery does not make local business effects automatically exactly-once.
 
 ## Compaction and Tombstones
 
@@ -151,7 +152,7 @@ A feed is built from two pipelines: a fast push pipeline (new post → fanout �
 3. The client reconciles "server response = truth" and deletes the post from the local cache. The item vanishes before the user's eyes.
 4. Thirty seconds later the read model catches up; the next refresh resurrects the item.
 
-The fix is contract-level, not code-level: the feed API response carries a **watermark** ("materialized through offset/time T"), and the client only deletes locally-known items that are *older than the watermark*. Items newer than the watermark are in the uncertainty window and must be kept. Without the watermark field in the API, the client cannot distinguish "deleted" from "not yet materialized" — no amount of client cleverness recovers information the contract doesn't carry.
+Use explicit tombstones or an authoritative **complete snapshot of a defined scope**. A watermark alone does not turn omission from a filtered or paginated feed into deletion. A safe snapshot contract defines the included set, its complete boundary and a comparable watermark; otherwise retain uncertain items until authoritative removal arrives.
 
 ## Tradeoffs
 
@@ -188,15 +189,19 @@ The fix is contract-level, not code-level: the feed API response carries a **wat
 2. **Why should a mobile sync API never expose raw partition offsets, and what breaks the day it does?**
    Exposing offsets tightly couples the client to the backend's partition structure. The day the topic is re-partitioned, all persisted client offsets break simultaneously.
 3. **A feed item appears, disappears on refresh, and reappears later. Walk through the two-pipeline race that causes this and the contract field that fixes it.**
-   A fast push pipeline delivers the post optimistically, but a slower materialization pipeline hasn't caught up. A refresh queries the read model, which omits the post, so the client deletes it. Later, the read model catches up. Fix: The API must provide a "watermark" (materialized up to T) so the client retains optimistic posts newer than T.
+   A fast push pipeline delivers the post optimistically, but a slower materialization pipeline hasn't caught up. A refresh queries the read model, which omits the post, so the client deletes it. Later, the read model catches up. Fix: retain uncertain items unless there is an explicit tombstone or an authoritative complete snapshot of the relevant scope. A watermark can delimit completeness only under that contract; omission from a paginated or filtered feed is not a deletion.
 4. **Tombstone retention is 7 days and your users go offline for weeks. What does the sync protocol need, and what does the UX for it look like?**
    The protocol needs a fallback full-resync mechanism or cursor reset path. The UX must handle the delay, likely showing a loading spinner, warning about data usage, and potentially gating the sync until Wi-Fi is available.
 5. **What makes an event stream safe to replay against a client database — list the minimum contract fields and the client-side check for each.**
-   Minimum fields: entity ID and entity version/timestamp. Client-side check: compare the incoming event's version to the local database version and apply it only if `incoming.version > current.version`.
+   Use stable operation/entity identity, a server-defined revision in the right incarnation, explicit tombstones and a durable continuation cursor. Atomically compare/apply revisions and commit the complete batch cursor; preserve pending edits. A free-form timestamp or a separate check followed by a write is insufficient.
 6. **Your analytics pipeline and your sync pipeline consume the same log but lag differently. What user-visible inconsistencies can this cause, and which ones matter?**
    Push notifications (fast pipeline) might announce an event that the sync pipeline (slow pipeline) hasn't materialized yet. If a user taps the notification, the detail page might show a "not found" error or stale data.
 
 ## Further Reading
+
+- [HTTP preconditions](https://www.rfc-editor.org/rfc/rfc9110.html#section-13).
+- [Room transaction contract](https://developer.android.com/reference/androidx/room/RoomDatabaseKt).
+
 
 - [`delivery-semantics.md`](delivery-semantics.md) - at-least-once and idempotent consumers.
 - [`vector-clocks.md`](vector-clocks.md) - causality and concurrency.

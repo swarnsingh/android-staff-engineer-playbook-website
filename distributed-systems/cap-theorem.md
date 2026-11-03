@@ -29,7 +29,7 @@ CAP gave the industry a vocabulary to reason about these tradeoffs explicitly. I
 
 ### The three properties, precisely
 
-**Consistency (C).** Every read receives the result of the most recent write or an error. This is *linearizability* — the strongest consistency model. All nodes see the same data at the same instant, as if there were a single copy.
+**Consistency (C).** Here C means linearizability: each operation appears to take effect atomically between its invocation and response, respecting real-time order of non-overlapping operations. Replicas need not change at the same physical instant. Refusing an operation preserves safety but sacrifices availability.
 
 **Availability (A).** Every request to a non-failed node receives a response — not an error, not a timeout. The system continues to serve, even if some nodes are unreachable.
 
@@ -41,7 +41,7 @@ In the presence of a network partition (P), a distributed system must choose bet
 
 The "pick two" framing is misleading because:
 
-1. **Partitions are not optional.** In any real network, partitions happen — cables are cut, switches fail, cloud regions lose connectivity. A system that doesn't tolerate partitions is a single-node system, not a distributed system.
+1. **Partitions are not optional.** In any real network, partitions happen — cables are cut, switches fail, cloud regions lose connectivity. A distributed system can stop serving during a partition; that sacrifices availability rather than eliminating the partition.
 2. **The choice only matters during a partition.** When the network is healthy, a well-designed system can provide both strong consistency and high availability. CAP only forces a choice *during* a partition.
 3. **The choice is not binary.** Systems can choose different trade-offs for different operations, different data, or different failure scenarios.
 
@@ -93,7 +93,7 @@ sequenceDiagram
     B-->>C: ERROR: cannot guarantee consistency
 ```
 
-The replica refuses to serve because it might have stale data. This is the behavior of systems like ZooKeeper, etcd, and Consul during a minority partition.
+The replica refuses to serve because it might have stale data. For example, etcd cannot complete its default linearizable reads without the required quorum; explicitly requested serializable reads can return stale data.
 
 ### AP system behavior
 
@@ -114,7 +114,7 @@ sequenceDiagram
     Note over B: conflict resolution needed
 ```
 
-Both nodes serve requests. Writes during the partition create conflicts that must be resolved when the partition heals. This is the behavior of Cassandra, DynamoDB, and Riak.
+Both nodes serve requests. Writes during the partition create conflicts that must be resolved when the partition heals. This illustrates an available, asynchronously reconciled operation. A product name alone does not establish this contract; Cassandra requests still need their configured consistency level.
 
 ### Quorum-based tuning
 
@@ -125,22 +125,20 @@ Many modern systems use quorum reads and writes to tune the consistency-availabi
 // W = write quorum (number of replicas that must acknowledge a write)
 // R = read quorum (number of replicas that must respond to a read)
 //
-// If W + R > N: strong consistency (at least one replica in the read set
-//               saw the latest write)
-// If W + R <= N: eventual consistency (possible to read stale data)
-
+// W + R > N implies intersecting read/write sets in a fixed replica set.
+// It does not by itself prove linearizability or convergence.
 data class QuorumConfig(val n: Int, val w: Int, val r: Int) {
-    val isStronglyConsistent: Boolean = w + r > n
+    init { require(n > 0 && w in 1..n && r in 1..n) }
+    val readWriteQuorumsIntersect: Boolean = w > n - r
 }
 
-// Common configurations:
-val strongConsistency = QuorumConfig(n = 3, w = 2, r = 2)  // W+R=4 > 3
-val writeHeavy       = QuorumConfig(n = 3, w = 1, r = 3)  // W+R=4 > 3
-val readHeavy        = QuorumConfig(n = 3, w = 3, r = 1)  // W+R=4 > 3
-val eventual         = QuorumConfig(n = 3, w = 1, r = 1)  // W+R=2 <= 3
+val overlappingQuorums = QuorumConfig(n = 3, w = 2, r = 2)
+val writeHeavy = QuorumConfig(n = 3, w = 1, r = 3)
+val readHeavy = QuorumConfig(n = 3, w = 3, r = 1)
+val disjointPossible = QuorumConfig(n = 3, w = 1, r = 1)
 ```
 
-*(Note: `W + R > N` guarantees strong consistency. To achieve strict *linearizability*, the database must also perform read-repair during the read phase before returning the value).*
+Intersection alone does not handle concurrent writes, partially completed writes, sloppy quorums, or leadership changes. Read repair is not a universal upgrade to linearizability. Cassandra documents blocking read repair as providing monotonic quorum reads; conditional operations use a separate lightweight-transaction protocol.
 
 This is not a binary CP/AP choice — it's a dial that trades consistency for availability per operation.
 
@@ -176,66 +174,37 @@ The architecture of your distributed data store determines where you land on the
 
 ## Production Example
 
-**CP systems:**
+### Product contracts, not permanent labels
 
-- **ZooKeeper / etcd.** Configuration and coordination services. During a partition, the minority partition becomes read-only (or unavailable). Consistency is paramount because stale configuration data can cause cascading failures.
-- **Google Spanner.** Globally-consistent transactions via TrueTime. During a partition, Spanner's affected spans become unavailable rather than serving potentially inconsistent data.
-- **PostgreSQL (single-primary replication).** Synchronous replicas are CP: if the replica is unreachable, writes block.
-
-**AP systems:**
-
-- **Cassandra.** All nodes accept reads and writes during a partition. Conflicts are resolved by last-writer-wins (using wall-clock timestamps — see [`../engineering-fundamentals/time-and-clocks.md`](../engineering-fundamentals/time-and-clocks.md) for why this is imperfect).
-- **DynamoDB (in eventual consistency mode).** Reads from any replica; may return stale data.
-- **DNS.** The classic AP system. DNS caches serve stale records during upstream failures. Availability is more important than immediate consistency.
-- **CouchDB.** Multi-master replication with conflict detection.
-
-**Tunable systems:**
-
-- **DynamoDB.** Supports both eventually consistent reads (AP) and strongly consistent reads (CP, but with higher latency and lower availability).
-- **Cassandra.** Supports tunable consistency levels per query: `ONE`, `QUORUM`, `ALL`.
+- **etcd:** default reads are linearizable; optional serializable reads may be stale.
+- **Cassandra:** `ONE`, `QUORUM` and `ALL` require different acknowledgements. A partition can make a requested level unavailable. Lightweight transactions have separate serial consistency settings.
+- **DynamoDB:** tables and local secondary indexes offer eventual or strong reads; global secondary indexes and streams offer eventual reads. Global tables have distinct MREC and MRSC modes. Choosing eventual reads does not promise that writes succeed on every side of every partition.
+- **MongoDB:** majority read and write concerns alone are not the same as its explicit `linearizable` read concern. That mode has primary/single-document constraints and should use a time limit.
 
 ---
 
 ## Android Example
 
-Mobile applications are inherently partition-tolerant — the phone's network connection is the most unreliable link in the system. Every offline-capable Android app is making the AP choice implicitly:
+An offline app can accept **provisional local intent** while the backend is unreachable. That does not mean checkout or payment has committed remotely. Define the availability and consistency contract at each boundary.
 
 ```kotlin
-class OrderRepository(
-    private val localDb: OrderDao,      // local Room database
-    private val remoteApi: OrderApi     // backend API
-) {
-    // AP behavior: always serve from local cache
-    fun getOrders(): Flow<List<Order>> = localDb.observeAll()
-
-    // AP write: accept locally, sync when possible
-    suspend fun placeOrder(order: Order) {
-        localDb.insert(order.copy(syncStatus = SyncStatus.PENDING))
-        // background sync will push to server when network is available
-    }
-
-    // Background sync: resolve conflicts when partition heals
-    suspend fun sync() {
-        val pending = localDb.getPending()
-        for (order in pending) {
-            try {
-                val serverOrder = remoteApi.submitOrder(order)
-                localDb.update(order.copy(
-                    syncStatus = SyncStatus.SYNCED,
-                    serverId = serverOrder.id
-                ))
-            } catch (e: ConflictException) {
-                // Server rejected — another device modified this order
-                val serverVersion = remoteApi.getOrder(order.serverId)
-                val resolved = conflictResolver.resolve(local = order, remote = serverVersion)
-                localDb.update(resolved)
-            }
-        }
+// App-defined contracts: persist the immutable command and its operation ID
+// atomically before any send. Retrying reloads that exact command.
+suspend fun syncPending(command: PendingOrder) {
+    val result = api.submitOrder(
+        idempotencyKey = command.operationId,
+        payload = command.payload
+    )
+    database.withTransaction {
+        // Conditional acknowledgement cannot mark a later edit as synced.
+        orders.acknowledgeIfGenerationMatches(command.id, command.generation, result)
     }
 }
 ```
 
-The local database is the AP system. The phone and server are two nodes. The mobile network is the partition. The `sync()` function runs when the partition heals and resolves conflicts.
+The backend must authorize the operation, bind the key to the original parameters, and atomically record the outcome with its business effect. An uncertain network result stays pending and is reconciled under the same identity. See [idempotency](idempotency.md). Local Room storage is not itself a two-node AP system.
+
+
 
 See [`../reference-architectures/offline-first-app.md`](../reference-architectures/offline-first-app.md) for the full pattern.
 
@@ -343,11 +312,11 @@ Canonical: [`../observability/slis.md`](../observability/slis.md), [`../observab
 
 **"CAP means you can't have consistency and availability."** You can — when there's no partition. CAP says you can't have both *during* a partition.
 
-**"MongoDB is CP."** It depends on the configuration. With majority write concern and majority read concern, MongoDB is CP. With lower write concern, it's closer to AP. The label depends on the settings, not the product.
+**"MongoDB is CP."** Specify the read concern, write concern, topology and failure model. Majority concerns are not interchangeable with the explicit linearizable read mode.
 
-**"Eventual consistency means inconsistent."** No. It means the system will converge to a consistent state given enough time without new writes. The window of inconsistency is bounded by replication lag, not unbounded.
+**"Eventual consistency means inconsistent."** No. It means the system will converge to a consistent state given enough time without new writes. Eventual consistency supplies no finite staleness bound; convergence assumes updates can eventually propagate.
 
-**"CAP applies to microservices."** CAP is about *data stores*, not service architectures. A microservice calling another microservice is subject to different trade-offs (latency, failure handling) that CAP doesn't directly address.
+**"CAP only applies to databases."** The theorem concerns distributed state and its read/write contract, whether implemented by a database or several services. It does not classify every service call or every latency problem.
 
 ---
 
@@ -357,7 +326,7 @@ Canonical: [`../observability/slis.md`](../observability/slis.md), [`../observab
 2. Why are network partitions considered inevitable in distributed systems?
 3. Cassandra uses last-writer-wins for conflict resolution during partition healing. What can go wrong? (Link to [`../engineering-fundamentals/time-and-clocks.md`](../engineering-fundamentals/time-and-clocks.md).)
 4. An e-commerce app stores product inventory counts. Should this be CP or AP? Justify your answer, including the failure mode you're accepting.
-5. Explain quorum reads and writes (W + R > N). Why does this guarantee strong consistency? What extra step is required for true linearizability?
+5. Explain quorum reads and writes (W + R > N). What intersection does this guarantee, and why is that insufficient to prove linearizability?
 6. Why is the "pick two" framing of CAP misleading?
 7. A mobile app stores user preferences locally and syncs to a server. Where does this sit in the CAP model?
 8. Google Spanner claims to be "effectively CA." How does it achieve this, and what assumption makes it possible?
@@ -373,13 +342,13 @@ Canonical: [`../observability/slis.md`](../observability/slis.md), [`../observab
 3. **Cassandra uses last-writer-wins for conflict resolution during partition healing. What can go wrong?**
    Wall-clock timestamps are unreliable due to clock skew. A write on a lagging node might be ignored in favor of an older write from a node with a faster clock, leading to silent data loss.
 4. **An e-commerce app stores product inventory counts. Should this be CP or AP? Justify your answer, including the failure mode you're accepting.**
-   AP. Losing a sale because the system was temporarily unreachable is usually worse than overselling by a few units and resolving it via backorder/refund later.
-5. **Explain quorum reads and writes (W + R > N). Why does this guarantee strong consistency? What extra step is required for true linearizability?**
-   Quorum operations ensure the read and write sets overlap, guaranteeing at least one node in the read quorum has the latest write. Linearizability requires read-repair during the read phase to update lagging nodes before responding.
+   Choose from the inventory invariant: browsing can use stale availability, while scarce-stock checkout may need coordinated reservation. Accepting orders offline is appropriate only if product explicitly accepts backorders, rejection or refunds.
+5. **Explain quorum reads and writes (W + R > N). What intersection does this guarantee, and why is that insufficient to prove linearizability?**
+   Any successful read set intersects a successful write set within the same fixed replica membership. This is only a building block: concurrent/partial writes, version ordering and failover still require a correct protocol. Read repair alone is not a proof of linearizability.
 6. **Why is the "pick two" framing of CAP misleading?**
    It implies partitions are an optional choice. In reality, network partitions happen inevitably; the choice is only between C and A *during* a partition.
 7. **A mobile app stores user preferences locally and syncs to a server. Where does this sit in the CAP model?**
-   AP. The local DB guarantees availability, but during a network partition (offline), it becomes inconsistent with the server until it can sync and resolve conflicts.
+   The user can keep provisional local preferences available while disconnected, accepting later reconciliation. This resembles an availability-first replica contract; a local database alone does not satisfy the formal distributed CAP definition.
 8. **Google Spanner claims to be "effectively CA." How does it achieve this, and what assumption makes it possible?**
    Spanner relies on TrueTime (atomic clocks/GPS) to bound clock uncertainty and uses highly reliable private networking. It prioritizes CP but achieves "effectively CA" by aggressively minimizing the probability of partitions.
 9. **DynamoDB supports both eventually consistent and strongly consistent reads. What are the trade-offs between them?**
@@ -390,6 +359,13 @@ Canonical: [`../observability/slis.md`](../observability/slis.md), [`../observab
 ---
 
 ## Further Reading
+
+- [Gilbert and Lynch: CAP proof](https://groups.csail.mit.edu/tds/papers/Gilbert/Brewer6.pdf).
+- [Cassandra read repair](https://cassandra.apache.org/doc/latest/cassandra/managing/operating/read_repair.html).
+- [DynamoDB read consistency](https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/HowItWorks.ReadConsistency.html).
+- [MongoDB linearizable reads](https://www.mongodb.com/docs/manual/reference/read-concern-linearizable/).
+- [etcd API guarantees](https://etcd.io/docs/v3.6/learning/api_guarantees/).
+
 
 In this repository:
 

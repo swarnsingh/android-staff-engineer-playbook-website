@@ -97,15 +97,16 @@ A Lamport timestamp would have given each entry a single number, and you'd know 
 
 ## Internal Mechanics
 
-### Full implementation
+### Comparison and event-clock core
 
 ```kotlin
 data class VectorClock(val entries: Map<String, Int> = emptyMap()) {
+    init { require(entries.values.all { it >= 0 }) }
 
     /** Increment this node's entry (local event or send). */
     fun increment(nodeId: String): VectorClock {
         val current = entries[nodeId] ?: 0
-        return VectorClock(entries + (nodeId to current + 1))
+        return VectorClock(entries + (nodeId to Math.addExact(current, 1)))
     }
 
     /** Merge with a received vector clock, then increment own entry. */
@@ -132,7 +133,10 @@ data class VectorClock(val entries: Map<String, Int> = emptyMap()) {
 
     /** True if the two clocks are concurrent (conflict). */
     fun concurrent(other: VectorClock): Boolean =
-        !happenedBefore(other) && !other.happenedBefore(this) && this != other
+        (entries.keys + other.entries.keys).let { keys ->
+            keys.any { (entries[it] ?: 0) > (other.entries[it] ?: 0) } &&
+            keys.any { (entries[it] ?: 0) < (other.entries[it] ?: 0) }
+        }
 }
 ```
 
@@ -152,31 +156,18 @@ class ReplicatedStore(private val nodeId: String) {
     fun get(key: String): Pair<String, VectorClock>? = data[key]
 
     fun receiveReplica(key: String, value: String, remoteClock: VectorClock) {
+        // The process learns the receipt even if the value is obsolete.
+        clock = clock.merge(remoteClock, nodeId)
         val local = data[key]
-        if (local == null) {
-            // No local version — accept remote
-            clock = clock.merge(remoteClock, nodeId)
-            data[key] = value to clock
-        } else {
-            val (localValue, localClock) = local
-            when {
-                localClock.happenedBefore(remoteClock) -> {
-                    // Remote is newer — accept it
-                    clock = clock.merge(remoteClock, nodeId)
-                    data[key] = value to clock
-                }
-                remoteClock.happenedBefore(localClock) -> {
-                    // Local is newer — ignore remote
-                }
-                localClock.concurrent(remoteClock) -> {
-                    // CONFLICT: both values exist, neither caused the other
-                    // Application must resolve: merge, pick one, or ask user
-                    val resolved = resolveConflict(localValue, value)
-                    clock = clock.merge(remoteClock, nodeId)
-                    data[key] = resolved to clock
-                }
-            }
-        }
+        if (local == null || local.second.happenedBefore(remoteClock)) {
+            // Preserve the version of the WRITE, not the receiver's event clock.
+            data[key] = value to remoteClock
+        } else if (local.second.concurrent(remoteClock)) {
+            // Resolution is a NEW write, causally after both inputs.
+            val resolved = resolveConflict(local.first, value)
+            clock = clock.increment(nodeId)
+            data[key] = resolved to clock
+        } // Equal or obsolete value: no replacement.
     }
 }
 ```
@@ -221,13 +212,13 @@ sequenceDiagram
 
     A->>A: write(x=1) → VC=[A:1,B:0,C:0]
     A->>B: replicate(x=1, VC=[A:1,B:0,C:0])
-    Note over B: merge → VC=[A:1,B:1,C:0]
+    Note over B: Process clock becomes [A:1,B:1,C:0]<br/>Stored write retains [A:1,B:0,C:0]
 
     C->>C: write(x=2) → VC=[A:0,B:0,C:1]
     Note over A,C: A and C wrote independently — concurrent!
 
     B->>B: receive from C: (x=2, VC=[A:0,B:0,C:1])
-    Note over B: Compare [A:1,B:1,C:0] vs [A:0,B:0,C:1]
+    Note over B: Compare write versions [A:1,B:0,C:0] vs [A:0,B:0,C:1]
     Note over B: Neither dominates → CONFLICT
     Note over B: Must resolve: x=1 or x=2 or merge?
 ```
@@ -293,29 +284,13 @@ data class SyncVersion(
     }
 }
 
-// In the sync layer:
-class NoteRepository(private val localDb: NoteDao, private val api: NoteSyncApi) {
-    suspend fun sync(noteId: String) {
-        val local = localDb.getNote(noteId) ?: return
-        val remote = api.getNote(noteId) ?: return
-
-        when {
-            local.version.conflictsWith(remote.version) -> {
-                // True conflict: user edited on two devices without syncing
-                val resolved = presentConflictResolution(local, remote)
-                val mergedVersion = local.version.merge(remote.version)
-                    .increment(thisDeviceId)
-                localDb.update(resolved.copy(version = mergedVersion))
-                api.putNote(resolved.copy(version = mergedVersion))
-            }
-            remote.version.happenedAfter(local.version) -> {
-                // Remote is newer: accept it
-                localDb.update(remote)
-            }
-            // else: local is newer or equal; push on next sync
-        }
-    }
-}
+// Repository contracts, not a replacement PUT protocol:
+// 1. Fetch remote state without holding the local transaction.
+// 2. Atomically compare/merge it with the CURRENT local state and persist
+//    any resolution as a new version plus a durable outgoing operation.
+// 3. The server accepts that operation with a base-version precondition
+//    or a sibling-aware merge contract, then returns authoritative state.
+// A local edit during the fetch must not be overwritten by a stale copy.
 ```
 
 In practice, most mobile apps simplify this to last-writer-wins (using wall-clock timestamps) or server-arbitrated conflict resolution. Full vector clocks are used when data mergeability matters — collaborative editing, shared shopping lists, multi-device note-taking.
@@ -338,7 +313,7 @@ In practice, most mobile apps simplify this to last-writer-wins (using wall-cloc
 
 **Hidden costs**
 
-- **Clock bloat.** In Dynamo, every client that writes to a key adds an entry to the vector clock. For popular keys, the clock grows without bound. Mitigation: pruning (remove entries from nodes that haven't written recently) — but pruning reintroduces false conflicts.
+- **Clock bloat.** In Dynamo, every client that writes to a key adds an entry to the vector clock. For popular keys, the clock grows without bound. Mitigation: pruning (remove entries from nodes that haven't written recently) — but arbitrary pruning can also hide real concurrency.
 - **Sibling explosion.** Under high concurrency, a key can accumulate many concurrent versions (siblings). Without an application-level merge, the sibling list grows and reads become expensive.
 
 **When not to use**
@@ -351,13 +326,13 @@ In practice, most mobile apps simplify this to last-writer-wins (using wall-cloc
 
 ## Failure Modes
 
-**Clock bloat.** The vector clock grows unboundedly as new nodes write to the same key. Mitigation: prune entries from nodes that haven't written recently; accept the trade-off of occasional false conflicts from pruned entries.
+**Clock bloat.** The vector clock grows unboundedly as new nodes write to the same key. Mitigation: use an explicit replica-retirement or proven compaction protocol that preserves the required causal history. Dotted vectors can reduce sibling metadata in an appropriate protocol. Dropping idle writers solely by age is a risky approximation: it can hide concurrency, not just create false conflicts.
 
 **Sibling explosion.** Many concurrent writes to the same key create many siblings. If siblings are not resolved, subsequent writes create even more siblings (each new write is concurrent with all existing siblings). Mitigation: limit the maximum number of siblings; force resolution on read.
 
 **Incorrect comparison.** A bug in the `happenedBefore` or `concurrent` logic causes missed conflicts or false conflicts. Mitigation: exhaustive property-based testing of the comparison function.
 
-**Pruning-induced false conflicts.** When a vector-clock entry is pruned (to control size), the pruned node's history is lost. A subsequent write from that node appears concurrent with everything, creating a false conflict. Mitigation: prune conservatively; prefer dotted version vectors.
+**Pruning loses causal information.** It can create false conflicts or false dominance. For example, `{A:1,B:1}` and `{A:2}` are concurrent; deleting B from the first makes it appear older. A merge could then discard a legitimate concurrent value. Dotted vectors reduce some metadata but do not justify arbitrary history deletion.
 
 **Network partition with concurrent writes.** During a partition, both sides write independently. When the partition heals, all writes from both sides appear concurrent. If there are many, sibling explosion results. Mitigation: application-level merge strategies; CRDTs for auto-mergeable data types (see [`crdts.md`](crdts.md)).
 
@@ -377,7 +352,7 @@ For mobile apps, N is typically small (number of devices per user, often 2-5), m
 
 ## Reliability Considerations
 
-- Vector clocks make **conflict detection** reliable — you never miss a true conflict. This is the foundation for building reliable eventually consistent systems.
+- With complete retained causal history, non-reused actor identities and valid counters, vector comparisons detect concurrency. Pruning or forging that history invalidates the guarantee. This is the foundation for building reliable eventually consistent systems.
 - **Resolution** is separate from detection. Reliable detection + bad resolution = data loss. The resolution strategy (merge, LWW, user choice) must be tested as carefully as the detection.
 - Vector clocks are **partition-tolerant** by design. They continue to function correctly during and after network partitions. The concurrent writes created during a partition are detected and flagged when the partition heals.
 
@@ -385,7 +360,7 @@ For mobile apps, N is typically small (number of devices per user, often 2-5), m
 
 ## Security Considerations
 
-- **Clock manipulation.** A malicious node can forge its vector-clock entry to make its writes appear to dominate others, suppressing legitimate writes. Mitigation: sign vector clocks with per-node keys; verify on receipt.
+- **Clock manipulation.** A malicious node can forge its vector-clock entry to make its writes appear to dominate others, suppressing legitimate writes. Mitigation: authenticate updates and restrict who may issue clock components. A signature proves origin, not that a signed counter or claimed dependency is valid.
 - **Sibling injection.** A malicious client can deliberately create many concurrent writes to cause sibling explosion (a denial-of-service attack on storage). Mitigation: limit siblings per key; rate-limit writes.
 
 ---
@@ -458,9 +433,9 @@ Canonical: [`../observability/metrics.md`](../observability/metrics.md).
 4. **Vector clocks grow linearly with the number of nodes. At what scale does this become a problem, and what are the alternatives?**
    It becomes a problem when there are thousands of nodes (or clients) writing to the same key, as the clock metadata outgrows the payload. Alternatives include dotted version vectors, pruning, or shifting to last-writer-wins if concurrency detection isn't strictly necessary.
 5. **Explain vector-clock pruning. What does it gain, and what does it lose?**
-   Pruning removes entries from the vector clock for nodes that haven't written recently to cap the size of the clock. It gains space efficiency but loses precise causal history, introducing the risk of false conflicts when a pruned node writes again.
+   Pruning removes entries from the vector clock for nodes that haven't written recently to cap the size of the clock. It gains space efficiency but loses precise causal history, risking both false conflicts and missed concurrency unless a sound retirement/compaction protocol preserves the required history.
 6. **How is Git's merge model conceptually similar to vector clocks?**
-   Git tracks the exact causal history of commits via a directed acyclic graph (DAG) of parent pointers. A merge conflict occurs when two branches diverge from a common ancestor—the exact structural equivalent of two vector clocks showing concurrent writes.
+   Git tracks the exact causal history of commits via a directed acyclic graph (DAG) of parent pointers. Diverged branches represent concurrent histories; Git can still merge non-overlapping edits automatically. Causal divergence is not the same as a textual merge conflict.
 7. **A mobile app syncs notes across 3 devices. Device A and C both edit the same note offline. Describe the conflict-detection process when they sync.**
    When Device A and C sync with the server, the server compares their vector clocks. Since both incremented their own entries based on an older shared state, neither clock will dominate. The server detects the concurrency and flags a conflict for resolution.
 8. **Compare vector clocks with CRDTs as conflict-resolution strategies. When would you choose each?**
@@ -473,6 +448,12 @@ Canonical: [`../observability/metrics.md`](../observability/metrics.md).
 ---
 
 ## Further Reading
+
+- [HTTP conditional updates](https://www.rfc-editor.org/rfc/rfc9110.html#section-13).
+
+
+- [Dynamo original paper, object versioning](https://www.amazon.science/publications/dynamo-amazons-highly-available-key-value-store).
+
 
 In this repository:
 

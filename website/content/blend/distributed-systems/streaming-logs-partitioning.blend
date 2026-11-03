@@ -1,0 +1,34 @@
+<!-- Teaching layer over exact approved source fb8354e. -->
+<!-- @opening -->
+<p class="story-lead">A chat message and its read receipt travel through different partitions. Both streams are ordered locally, yet the phone receives the receipt first. No single partition order was violated.</p>
+
+<!-- @before Partitioning :: guide -->
+### Name the exact ordering scope
+
+A partition orders its records, not every downstream computation or delivery channel. Processing concurrently, retrying, repartitioning or combining push with a read model introduces further contracts. Stable keys help only within the chosen mapping and producer/consumer guarantees. [Kafka’s log and delivery design](https://kafka.apache.org/41/design/design/).
+
+<!-- @before Offset vs Cursor vs Version :: guide -->
+### Use each token for one question
+
+An offset answers where a log consumer resumes. A version answers whether an entity update is newer. An opaque mobile cursor gives the API room to evolve, but still needs an explicit migration or expiry/reset contract. Keep pending edits when rebuilding a snapshot; do not treat omission from a page as a deletion.
+
+<!-- @before At-Least-Once Streams :: staff -->
+### Replay is a transaction boundary
+
+Apply the complete accepted batch and commit its continuation together, or recover safely from interruption. If the destination is outside the log transaction, it must cooperate with duplicate handling. Kafka’s own transaction scope does not automatically cover that external effect.
+
+<!-- @before Partitioning :: visual -->
+### Partition order stops at the partition boundary
+
+```mermaid
+flowchart TB
+ P0["Partition 0: thread 1 records"]
+ P1["Partition 1: thread 2 records"]
+ V["Read-model consumer"]
+ M["Mobile API and local state"]
+ P0 -->|"partition-local order"| V
+ P1 -->|"independent order"| V
+ V -->|"versioned entities and opaque cursor"| M
+```
+
+Each partition has its own record order. Combining them into a mobile read model does not create a guaranteed global event order; entity revisions and completeness need their own API contract.

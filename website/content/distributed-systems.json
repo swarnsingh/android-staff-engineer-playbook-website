@@ -1,4 +1,15 @@
 {
-  "distributed-systems.md": "Begin with the guided source path. Delivery Semantics is the reader pilot; other chapters open their source text.",
-  "distributed-systems/delivery-semantics.md": "One message commits, its acknowledgement disappears, and the sender retries. Follow two deliveries and one committed local effect."
+  "distributed-systems.md": "Follow guarantees from a partitioned read through safe retry, concurrent edits, leader failover and partitioned logs.",
+  "distributed-systems/delivery-semantics.md": "One message commits, its acknowledgement disappears, and the sender retries. Follow two deliveries and one committed local effect.",
+  "distributed-systems/cap-theorem.md": "A write reaches replica A. The next read reaches B, but the link between them is down. B must decide what it can honestly return before the network recovers.",
+  "distributed-systems/consistency-models.md": "The phone saves a new display name. A tablet still reads the old one. A later phone refresh must decide whether to show that older value too: these are different promises.",
+  "distributed-systems/idempotency.md": "The app kept its operation key through a long offline period. The server kept the business result, but may already have forgotten the replay record. Retrying with the same key now has a boundary to cross.",
+  "distributed-systems/mobile-client-consistency-contracts.md": "A refresh requested before an edit returns after the edit’s successful response. Showing whichever response arrived last can make a saved change disappear even though the server is correct.",
+  "distributed-systems/vector-clocks.md": "Two offline devices change the same value. When both writes reach a third replica, arrival order says which packet was last, but says nothing about whether either writer had seen the other edit.",
+  "distributed-systems/crdts.md": "Two offline replicas each increment a counter from zero to one. If synchronization keeps only the larger displayed number, both replicas can agree on one while losing an increment.",
+  "distributed-systems/lww-vs-crdt.md": "The same two concurrent edits can yield one winning value, two retained alternatives, or a merged structure. Each result can converge; the product decision is which information it may discard.",
+  "distributed-systems/consensus-basics.md": "A leader writes an entry to its own disk and then loses contact with its followers. The bytes exist, but the client still needs to know whether the group committed the operation.",
+  "distributed-systems/replication-and-leader-election.md": "The replacement leader has already written a newer value. The old leader wakes after a long pause and sends a delayed write to a destination that may not know leadership changed.",
+  "distributed-systems/streaming-logs-partitioning.md": "A chat message and its read receipt travel through different partitions. Both streams are ordered locally, yet the phone receives the receipt first. No single partition order was violated.",
+  "distributed-systems/distributed-tracing.md": "Continue to the canonical Observability distributed-tracing lesson."
 }

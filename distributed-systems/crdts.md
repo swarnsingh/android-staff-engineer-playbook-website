@@ -2,7 +2,7 @@
 
 ## Overview
 
-A **Conflict-free Replicated Data Type (CRDT)** is a data structure that can be replicated across multiple nodes, updated independently and concurrently on each node, and merged deterministically — with the guarantee that all replicas converge to the same state, without coordination. No consensus protocol, no locks, no conflict resolution callbacks. The math ensures convergence. CRDTs are the strongest answer to the question: "Can we have both availability and eventual consistency without losing data?"
+A **Conflict-free Replicated Data Type (CRDT)** defines updates and merge rules so replicas with the same updates reach the same state under the synchronization contract. This can avoid coordination for supported operations. Convergence does not preserve every user intent: an LWW register discards losing writes, and an add-wins set can restore an item another user removed. Applications choose the semantics, authorize updates and enforce any additional business invariants.
 
 ---
 
@@ -12,7 +12,7 @@ In eventually consistent systems, concurrent writes to the same data create conf
 
 What was broken before CRDTs: every eventually consistent system needed a bespoke conflict-resolution strategy for every data type. Shopping carts used set union. Counters used "just pick the bigger number" (which is wrong under concurrent increments). Text editors used operational transformation (OT), which is notoriously complex. Each strategy was hand-designed, hand-tested, and hand-debugged.
 
-CRDTs eliminate the conflict entirely by designing the data structure so that all possible merge orderings produce the same result. Instead of detecting and resolving conflicts, you prevent them by construction. The trade-off: you can only represent data that has a commutative, associative, idempotent merge function — but a surprising number of useful data types fit this constraint.
+CRDTs define deterministic concurrency semantics so replicas with the same updates agree. Agreement does not guarantee that every user intent survives or that business invariants hold. The trade-off: you can only represent data that has a commutative, associative, idempotent merge function — but a surprising number of useful data types fit this constraint.
 
 ---
 
@@ -24,7 +24,7 @@ CRDTs eliminate the conflict entirely by designing the data structure so that al
 4. **Riak (2012+).** One of the first production databases to offer CRDTs (counters, sets, maps, flags) as first-class data types.
 5. **Redis CRDT module (2018).** Redis Enterprise added CRDT-based active-active geo-replication.
 6. **Automerge, Yjs (2017 onward).** CRDT-based libraries for collaborative editing, making CRDTs practical for text, JSON, and rich documents.
-7. **Apple's CloudKit, Figma.** Production systems using CRDT-inspired approaches for sync and collaboration.
+7. **Figma.** A published example of a custom collaboration design inspired by CRDTs.
 
 The arc: manual conflict resolution → algorithmic conflict resolution (OT) → conflict-free by construction (CRDTs).
 
@@ -42,11 +42,11 @@ Each replica holds the full state. To sync, replicas exchange their complete sta
 - **Associative:** `merge(merge(A, B), C) = merge(A, merge(B, C))`
 - **Idempotent:** `merge(A, A) = A`
 
-These three properties guarantee convergence regardless of message ordering, duplication, or delivery delays. The merge function defines a *join semilattice* — a mathematical structure where values can only move "up" toward a greatest element.
+For a state-based CRDT, merge is a least upper bound, local updates are inflationary in that order, and states must eventually propagate. Associativity, commutativity and idempotence alone do not repair lost updates or an invalid update function. There need not be a greatest element.
 
 **Operation-based CRDTs (CmRDTs — Commutative)**
 
-Instead of exchanging full states, replicas broadcast *operations*. The operations must commute: applying them in any order produces the same result. Requires a reliable broadcast channel (at-least-once, causal ordering).
+Instead of exchanging full states, replicas broadcast *operations*. The operations must commute: applying them in any order produces the same result. Classic operation-based designs require reliable causal delivery without duplicate application, or an explicit deduplication/idempotent-operation mechanism. At-least-once delivery alone duplicates increments. Yjs document updates have their own idempotent, order-independent contract.
 
 In practice, state-based CRDTs are more common because they work with unreliable networks (you can re-send the state without harm — idempotent merge). Operation-based CRDTs are more efficient (smaller messages) but need stronger delivery guarantees.
 
@@ -64,7 +64,7 @@ A CRDT's state lives on a *semilattice*: a partially ordered set where every pai
        {}                  ← bottom (empty set)
 ```
 
-Values can only move up the lattice (toward more information). This monotonicity is why CRDTs never lose data and always converge.
+Values can only move up the lattice (toward more information). With eventual dissemination and valid updates, this supports convergence. The visible data can still discard concurrent values (LWW), remove items, or violate an application invariant.
 
 ---
 
@@ -186,21 +186,29 @@ data class ORSet<T>(
 
 ### LWW-Register (Last-Writer-Wins Register)
 
-The simplest register CRDT. Each write carries a timestamp; the value with the highest timestamp wins. Requires loosely-synchronized clocks.
+The simplest register CRDT. Each write carries a timestamp; the value with the highest timestamp wins. It requires a deterministic total order of unique write stamps. Physical-clock accuracy affects which user intent wins, not convergence itself.
 
 ```kotlin
-data class LWWRegister<T>(val value: T, val timestamp: Long) {
-    fun set(newValue: T, newTimestamp: Long): LWWRegister<T> =
-        if (newTimestamp > timestamp) LWWRegister(newValue, newTimestamp)
-        else this
+data class WriteStamp(val counter: Long, val writerId: String) : Comparable<WriteStamp> {
+    override fun compareTo(other: WriteStamp): Int =
+        compareValuesBy(this, other, WriteStamp::counter, WriteStamp::writerId)
+}
 
-    fun merge(other: LWWRegister<T>): LWWRegister<T> =
-        if (other.timestamp > timestamp) other
-        else if (other.timestamp < timestamp) this
-        else if (other.hashCode() > hashCode()) other  // tiebreaker
-        else this
+data class LWWRegister<T>(val value: T, val stamp: WriteStamp) {
+    fun merge(other: LWWRegister<T>): LWWRegister<T> = when {
+        stamp < other.stamp -> other
+        stamp > other.stamp -> this
+        else -> {
+            require(value == other.value) { "A write stamp must identify one payload" }
+            this
+        }
+    }
 }
 ```
+
+Each writer needs a stable unique ID and a durable, increasing logical counter; advance past observed counters before a causally later write. Never reuse a stamp for another payload. Hash codes are not a valid tie-breaker: distinct strings such as `Aa` and `BB` collide and would make merge depend on argument order.
+
+
 
 LWW-Register has the weakest semantics — it can lose concurrent writes. But it's the simplest and most widely used in practice (Cassandra columns are effectively LWW registers).
 
@@ -246,7 +254,6 @@ CRDTs require no coordination layer — no leader, no consensus, no lock server.
 - **Riak.** Offers built-in CRDTs: counters (PN-Counter), sets (OR-Set), maps (nested CRDTs), flags (LWW boolean), registers (LWW). Used for shopping carts, view counts, feature flags.
 - **Redis Enterprise.** CRDT-based active-active geo-replication. Counters and sets replicate across regions without conflicts.
 - **Figma.** Uses CRDT-inspired data structures for real-time collaborative design. Each user edits independently; changes merge automatically.
-- **Apple CloudKit.** Uses CRDTs internally for syncing data across devices (records, assets).
 - **Automerge.** A CRDT library for JSON documents. Used by Ink & Switch (the research group) for local-first applications.
 - **Yjs.** A high-performance CRDT library for collaborative text editing. Used by many collaborative editors (including some under the hood of Notion-like tools).
 - **SoundCloud.** Used CRDTs for counting plays across a globally distributed system.
@@ -258,65 +265,19 @@ CRDTs require no coordination layer — no leader, no consensus, no lock server.
 CRDTs are natural for mobile offline-first sync — the phone and server are two replicas that sync when the network is available.
 
 ```kotlin
-// A CRDT-backed shopping cart that syncs across devices
-class ShoppingCart(private val deviceId: String) {
-    // OR-Set: supports add and remove, concurrent adds win
-    private var items = ORSet<CartItem>()
-    // PN-Counter per item for quantities
-    private var quantities = mutableMapOf<String, PNCounter>()
-
-    fun addItem(item: CartItem) {
-        items = items.add(item, deviceId)
-        quantities.getOrPut(item.id) { PNCounter() }
-            .let { quantities[item.id] = it.increment(deviceId) }
-    }
-
-    fun removeItem(item: CartItem) {
-        items = items.remove(item)
-    }
-
-    fun incrementQuantity(itemId: String) {
-        quantities[itemId]?.let {
-            quantities[itemId] = it.increment(deviceId)
-        }
-    }
-
-    // Sync: merge with server's state — NO CONFLICTS POSSIBLE
-    fun merge(serverCart: ShoppingCart): ShoppingCart {
-        val merged = ShoppingCart(deviceId)
-        merged.items = items.merge(serverCart.items)
-        val allItemIds = quantities.keys + serverCart.quantities.keys
-        for (id in allItemIds) {
-            val local = quantities[id] ?: PNCounter()
-            val remote = serverCart.quantities[id] ?: PNCounter()
-            merged.quantities[id] = local.merge(remote)
-        }
-        return merged
-    }
-}
-
-// In the repository layer:
-class CartRepository(
-    private val localDb: CartDao,
-    private val api: CartApi,
-    private val deviceId: String
-) {
-    suspend fun sync() {
-        val localCart = localDb.getCart()
-        try {
-            val serverCart = api.getCart()
-            val merged = localCart.merge(serverCart)
-            localDb.saveCart(merged)
-            api.putCart(merged)  // idempotent: state-based merge
-        } catch (e: IOException) {
-            // Offline — continue using local cart
-            // It will merge correctly when network returns
-        }
-    }
+// Membership-only example; quantity/checkout invariants are separate.
+data class CartMembership(val items: ORSet<String> = ORSet()) {
+    fun add(itemId: String, actor: String) = copy(items = items.add(itemId, actor))
+    fun remove(itemId: String) = copy(items = items.remove(itemId))
+    fun merge(other: CartMembership) = CartMembership(items.merge(other.items))
 }
 ```
 
-The key mobile benefit: **no conflict resolution code**. The merge is mechanical and guaranteed correct. The app works offline, syncs when possible, and never loses data or shows conflicts to the user.
+A sync adapter must atomically merge the remote state with the **current** local state, not a copy loaded before the network request. The server endpoint must merge states too; an ordinary replacement `PUT` can erase another device's update. These are application contracts, not properties of HTTP. Persist merge metadata and tombstones with the state.
+
+Quantity needs its own lifecycle and concurrency semantics. Simply attaching a permanent PN-counter to an item resurrects old quantity on remove/re-add and does not prevent negative totals. Checkout still validates price and inventory authoritatively.
+
+
 
 However, consider the **CRDT UX implications**: deterministic resolution does not always mean *intuitive* resolution from the user's perspective. For instance, concurrent edits to a text string might interleave characters unexpectedly, or an "add-wins" set might resurrect a deleted item. The UI must carefully present these merged states (e.g., via visual hints or undo stacks) so users understand what happened.
 
@@ -328,10 +289,10 @@ For collaborative features (shared notes, real-time co-editing), libraries like 
 
 **Advantages**
 
-- **Guaranteed convergence.** No conflict resolution logic needed. Merge is automatic and deterministic.
+- **Defined convergence.** Valid updates converge under the synchronization contract; the application still chooses and validates the concurrency semantics.
 - **High availability.** No coordination required. Every node can accept writes independently.
 - **Partition tolerance.** Nodes can be offline for arbitrary periods and still merge correctly when reconnected.
-- **Simplicity of reasoning.** Once the CRDT is correct, the sync layer is trivial — just merge.
+- **Simplicity of reasoning.** The merge algebra is bounded, but sync still needs durable delivery, atomic persistence, authorization and safe metadata retirement.
 
 **Disadvantages**
 
@@ -358,7 +319,7 @@ For collaborative features (shared notes, real-time co-editing), libraries like 
 
 **Tombstone bloat.** Deleted elements accumulate as tombstones. Over months of use, tombstones dominate the data structure's size. Mitigation: periodic garbage collection with a protocol that ensures all replicas have seen the tombstone before removing it.
 
-**Semantic surprise.** A PN-Counter allows negative values (more decrements than increments on one node, before merge). Users don't expect "quantity: -3." Mitigation: bounded CRDTs (check at read time) or design the data model to avoid underflow.
+**Semantic surprise.** A PN-Counter allows negative values (more decrements than increments on one node, before merge). Users don't expect "quantity: -3." Concurrent decrements can leave a permanently negative total. A display clamp does not enforce non-negativity; use coordination or a proven bounded/escrow design when the invariant matters.
 
 **Clock-dependent CRDTs.** LWW-Register depends on timestamps. If clocks are skewed, the "wrong" writer wins. Mitigation: use Hybrid Logical Clocks ([`../engineering-fundamentals/time-and-clocks.md`](../engineering-fundamentals/time-and-clocks.md)), or avoid LWW for critical data.
 
@@ -426,7 +387,7 @@ Canonical: [`../observability/metrics.md`](../observability/metrics.md).
 
 **"CRDTs are too complex for mobile."** The simplest CRDTs (G-Counter, LWW-Register) are trivial to implement. Libraries like Automerge handle complex cases.
 
-**"Last-writer-wins is a CRDT."** LWW-Register is technically a CRDT, but it achieves convergence by discarding concurrent writes — exactly the data loss CRDTs were designed to avoid. It's the degenerate case.
+**"Last-writer-wins is a CRDT."** An LWW register is a CRDT with overwrite semantics. CRDTs promise agreement under their assumptions, not preservation of every concurrent value.
 
 **"CRDTs don't need a network."** They work *without* a reliable network (no consensus needed), but they still need *some* communication to sync. Without sync, replicas diverge forever.
 
@@ -460,9 +421,9 @@ Canonical: [`../observability/metrics.md`](../observability/metrics.md).
 5. **How do you garbage-collect tombstones in a CRDT? Why is this hard?**
    Garbage collection requires ensuring every replica has seen the tombstone before you can safely remove it. This is hard because it requires global coordination in a system designed to be coordination-free.
 6. **A PN-Counter shows a value of -2. Is this a bug? How would you prevent it from being user-visible?**
-   It's not a mathematical bug; the PN-Counter subtracts negative counts from positive counts, which can temporarily dip below zero if decrements sync before increments. Prevent it by bounding the value at read time (e.g., `max(0, val)`).
+   A PN-counter permits more decrements than increments, even after full convergence. Clamping the display hides the negative value; it does not prevent overspending. Use an appropriate bounded-counter/escrow protocol or coordinated authorization.
 7. **Compare CRDTs and vector clocks as approaches to handling concurrent writes. How do they complement each other?**
-   Vector clocks detect concurrent updates and identify conflicts for the application to resolve. CRDTs use internal mathematical properties to prevent conflicts entirely and merge automatically.
+   Vector clocks detect concurrent updates and identify conflicts for the application to resolve. CRDTs define deterministic concurrency semantics and converge when their update/delivery assumptions hold. That resolves replica disagreement, not necessarily a conflict between user intentions.
 8. **You're building an offline-first collaborative note-taking app. Which CRDTs would you use for the note content, the tag list, and the view count?**
    Note content: text CRDT (like Automerge or Yjs). Tag list: OR-Set (to add/remove tags). View count: G-Counter or PN-Counter (if views can be removed).
 9. **Explain delta CRDTs. Why are they more efficient than state-based CRDTs for network sync?**
@@ -474,12 +435,16 @@ Canonical: [`../observability/metrics.md`](../observability/metrics.md).
 
 ## Further Reading
 
+- [Preguiça, Baquero and Shapiro: CRDT definitions and synchronization models](https://arxiv.org/abs/1805.06358).
+- [Yjs document-update contract](https://docs.yjs.dev/api/document-updates).
+
+
 In this repository:
 
-- [`vector-clocks.md`](vector-clocks.md) — conflict *detection* (vector clocks) vs conflict *prevention* (CRDTs).
+- [`vector-clocks.md`](vector-clocks.md) — causal/concurrency detection (vector clocks) versus defined merge semantics (CRDTs).
 - [`consistency-models.md`](consistency-models.md) — CRDTs provide strong eventual consistency, a precise point on the consistency spectrum.
 - [`cap-theorem.md`](cap-theorem.md) — CRDTs are AP-native: available during partitions, consistent after.
-- [`delivery-semantics.md`](delivery-semantics.md) — state-based CRDTs work with at-most-once delivery; operation-based CRDTs need at-least-once with causal ordering.
+- [`delivery-semantics.md`](delivery-semantics.md) — state-based synchronization must eventually disseminate updates; operation-based designs must meet their ordering and duplicate-delivery requirements.
 - [`../engineering-fundamentals/time-and-clocks.md`](../engineering-fundamentals/time-and-clocks.md) — LWW-Register depends on clock quality.
 - [`../reference-architectures/offline-first-app.md`](../reference-architectures/offline-first-app.md) — CRDTs as the foundation for offline-first sync.
 - [`../mobile-system-design/collaborative-editing.md`](../mobile-system-design/collaborative-editing.md) — CRDTs vs OT for collaborative editing.

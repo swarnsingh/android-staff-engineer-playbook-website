@@ -30,7 +30,7 @@ TREES = {
     'android': {'title': 'Android', 'phases': [1, 2, 3, 4, 5, 6, 7, 8, 9]},
     'mobile-system-design': {'title': 'Mobile System Design', 'phases': None},
     'observability': {'title': 'Observability', 'phases': None},
-    'distributed-systems': {'title': 'Distributed Systems', 'phases': [1], 'pilot': ['distributed-systems/delivery-semantics.md']},
+    'distributed-systems': {'title': 'Distributed Systems', 'phases': None},
 }
 
 
@@ -753,6 +753,9 @@ def design_gallery(asset_version):
     source=(WEB/'content/blend/distributed-systems/delivery-semantics.blend').read_text()
     scene=re.search(r'<section class="pb-figure" data-pb-flow="scene".*?</section>',source,re.S)
     samples.append('<section class="demo"><h3>Manual request and local transaction</h3>'+steps_as_text(scene[0])+'</section>')
+    source=(WEB/'content/blend/distributed-systems/crdts.blend').read_text()
+    scene=re.search(r'<section class="pb-figure" data-pb-flow="scene".*?</section>',source,re.S)
+    samples.append('<section class="demo"><h3>Independent peers and counter merge</h3>'+steps_as_text(scene[0])+'</section>')
     page_walkthrough=walkthrough_gallery()
     prose=tokens['type']['prose']
     fonts=''.join(f'<figure class="specimen" style="--specimen:var(--font-{o["family"]});--measure-prose:{o["measure"]}"><figcaption><strong>{escape(o["label"])}</strong> · {escape(o["description"])}</figcaption>'
