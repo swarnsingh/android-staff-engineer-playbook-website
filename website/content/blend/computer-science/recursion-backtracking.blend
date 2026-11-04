@@ -2,8 +2,6 @@
 <!-- @opening -->
 <p class="story-lead">A form must suggest every valid combination of three add-ons that fits a budget. Writing nested loops works for three add-ons and breaks when the number changes. Backtracking writes the choice once and lets recursion repeat it.</p>
 
-Recursion solves a problem by solving a smaller copy of it. Backtracking is recursion over choices: make a choice, explore what follows, then undo the choice and try the next one. Pruning stops exploring a branch as soon as it cannot succeed.
-
 <!-- @before Backtracking Pattern :: guide -->
 ### The three questions every backtracking solution answers
 

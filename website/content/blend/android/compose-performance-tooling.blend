@@ -5,7 +5,7 @@
 <!-- @opening -->
 <p class="story-lead">A feed stutters while scrolling. One engineer wraps every expression in <code>remember</code>, another marks every model <code>@Immutable</code>, a third rewrites the row in Views. The stutter stays. The trace nobody took would have shown full-size photos decoding on the main thread: a problem none of the three fixes touched.</p>
 
-Compose performance work starts with a measurement, not a technique. Reproduce the journey in a release-like build, find **which phase** the time is spent in (composition, layout, draw) or whether it is not a Compose problem at all, fix that cause, and protect the journey with a benchmark. This chapter walks through that loop and the Compose-specific tools inside it.
+Compose performance work starts with a measurement, not a technique. Reproduce the journey in a release-like build, find **which phase** the time is spent in (composition, layout, draw) or whether it is not a Compose problem at all, fix that cause, and protect the journey with a benchmark.
 
 <!-- @after Measurement Stack :: visual -->
 ### Where a frame's time can go

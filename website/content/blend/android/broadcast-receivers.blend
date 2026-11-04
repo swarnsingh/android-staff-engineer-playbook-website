@@ -6,7 +6,7 @@
 <!-- @opening -->
 <p class="story-lead">A user taps "Mark as read" on a notification, and the message stays unread. The receiver started a coroutine to call the server and returned at once. A few seconds later the system reclaimed the idle process, and the request went with it. No error was logged, because nothing ever failed. The work simply stopped existing.</p>
 
-A broadcast receiver is a doorway, not a workplace. The system can start your process just to call `onReceive()`, and once it returns the receiver is finished and the process may be killed. This chapter covers receiver types, delivery, time limits and security. The additions here follow one notification action from the doorway to an owner that outlives it.
+A broadcast receiver is a doorway, not a workplace. The system can start your process just to call `onReceive()`, and once it returns the receiver is finished and the process may be killed.
 
 <!-- @diagram 258254336f135e0e -->
 ### Delivering one broadcast

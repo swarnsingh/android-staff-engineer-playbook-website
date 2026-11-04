@@ -257,3 +257,9 @@ The 197 older Kotlin and Android teaching figures now use shared presentation mo
 The six reader stylesheet sources live under `design-system/components/ReaderShell/`. The build still publishes the same stylesheet URLs. `StaticFigure` and `ReaderShell` have component contracts, and the gallery renders three actual lesson figures through the same parameter and timeline-label processing as the reader.
 
 FigureMap also offers a compact phone composition when its automatic layout preserves all actors, labelled edges and owner boundaries within the shared compact-width and height budgets. Fifty-seven figures qualify in this build. The normal collision checks apply to both drawings, type sizes stay unchanged and the shared component selects the drawing from its actual available width. Complex figures retain their keyboard-accessible labelled local scroll area. Run `dev.py frames-phone` for an automated 375px check of every built chapter; this is separate from the deferred consolidated manual mobile review.
+
+## Reviewing added prose
+
+Run `python3 website/scripts/lesson_length.py website/.cache/lesson-length.json` with the website Python environment. This review aid inventories all 238 chapters, counting authored narrative, inline identifiers, ordinary tables and answer guidance. It includes hero descriptions, shared walkthrough prompts and the legacy Coroutines additions. Figures, animation payloads, fenced examples and generated navigation chrome are excluded. An authored description is counted once even if the reader repeats it elsewhere.
+
+The roughly quarter-length target identifies passages to read; it does not fail a build or justify deleting useful explanation. Cross-reference stubs are separate. The [November review](reviews/tokens-editorial-2026-11-04/REPORT.md) records the passages removed and the reasons for retaining longer additions. Original chapters and the current Q&A experience remain unchanged.

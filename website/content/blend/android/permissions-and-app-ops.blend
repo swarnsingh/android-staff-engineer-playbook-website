@@ -6,7 +6,7 @@
 <!-- @opening -->
 <p class="story-lead">Your logs say the camera permission is granted, and the card scanner still shows nothing but black. The user had switched off camera access for the whole device in quick settings. Your code checked the right permission and still got no picture. Holding a permission and being able to use the camera right now turned out to be different questions.</p>
 
-Permissions are the contract users and the system agree to. AppOps and platform rules decide, operation by operation, whether that contract can be used at this moment. This chapter covers permission categories, the runtime flow and the layered cases such as location. The additions here turn one user action into a capability that reports what actually happened, so the screen can respond sensibly to every outcome.
+Permissions are the contract users and the system agree to. AppOps and platform rules decide, operation by operation, whether that contract can be used at this moment.
 
 <!-- @after AppOps Mental Model :: visual -->
 ### Three questions before a feature works
@@ -25,7 +25,7 @@ Permissions are the contract users and the system agree to. AppOps and platform 
 ]</script><figcaption>Illustrative flow. Use Previous, Next or Play; every step is also readable as text.</figcaption></figure>
 
 <!-- @after Staff Engineer Thinking :: staff -->
-Count the outcomes, not just the grants. Track how often each capability returns denied, blocked or degraded, per feature and OS version. A falling grant rate after a release is a product regression with a clear owner.
+Count the outcomes, not just the grants. Track how often each capability returns denied, blocked or degraded, per feature and OS version.
 
 <!-- @after Failure Modes :: check -->
 ### Check your permission design

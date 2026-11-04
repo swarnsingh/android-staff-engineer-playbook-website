@@ -6,7 +6,7 @@
 <!-- @opening -->
 <p class="story-lead">A customer taps <code>https://example.com/orders/43</code> in an email. Your verified App Link opens the order screen at once, with no chooser and no question. But order 43 belongs to someone else. The link reached exactly the right app, and the app still had to decide whether to show it.</p>
 
-Every manifest entry is a promise about how other apps and the system may reach you. Every intent that arrives is input from outside. This chapter explains how Android matches an intent to a component and which manifest settings form your security boundary. The additions here separate what the system decides from what your code must still check.
+Every manifest entry is a promise about how other apps and the system may reach you. Every intent that arrives is input from outside.
 
 <!-- @diagram b3a61092347dc92b -->
 ### How an implicit intent finds its target

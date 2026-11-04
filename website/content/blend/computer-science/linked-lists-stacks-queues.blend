@@ -2,8 +2,6 @@
 <!-- @opening -->
 <p class="story-lead">An editor needs undo: the most recent change must be reversed first. A download manager needs the opposite: the oldest request should start first. Same data, different order of removal, and that order is the whole design decision.</p>
 
-A stack removes the newest item (last in, first out); a queue removes the oldest (first in, first out). Linked lists make insertion and removal at a known node cheap, at the cost of slow access by position.
-
 <!-- @before Common Patterns :: guide -->
 ### Recognise the structure from the problem
 

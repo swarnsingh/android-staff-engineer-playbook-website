@@ -3,7 +3,7 @@
 <!-- @opening -->
 <p class="story-lead">A user types "kotlin" into search. Results for "kotlin" appear — and then, a moment later, are replaced by results for "kot". The request for "kot" was simply slower, finished last, and won.</p>
 
-Flow's default is calm: one value at a time, each step waiting for the next, so a slow collector naturally slows the producer. Operators are where you deliberately change that — queue values, drop them, cancel obsolete work, or move work to another dispatcher. Each of those is a product decision ("is an old search result still wanted?"), and the bug above is what happens when it is made by accident. This chapter makes every such choice visible.
+Flow's default is calm: one value at a time, each step waiting for the next, so a slow collector naturally slows the producer. Operators are where you deliberately change that — queue values, drop them, cancel obsolete work, or move work to another dispatcher. Each of those is a product decision ("is an old search result still wanted?"), and the bug above is what happens when it is made by accident.
 
 <!-- @after First Principles :: animation -->
 ### One value at a time, by default

@@ -2,8 +2,6 @@
 <!-- @opening -->
 <p class="story-lead">An image loader has 300 requests queued and the user just scrolled. The requests for visible rows should go first, and new ones keep arriving. Sorting the whole queue on every arrival is wasteful; a heap keeps only the next item ready.</p>
 
-A binary heap is a complete tree stored in an array, where each parent is no larger than its children (a min-heap). It does not sort everything. It guarantees only that the smallest item is at the top, which is exactly what a scheduler needs.
-
 <!-- @before Core Patterns :: guide -->
 ### What a heap costs
 

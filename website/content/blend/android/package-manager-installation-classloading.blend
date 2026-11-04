@@ -6,7 +6,7 @@
 <!-- @opening -->
 <p class="story-lead">Install succeeds on every test device. A week later, crash reports arrive from one deep link, <code>/review</code>. The screen it opens lives in an on-demand feature module that most users never downloaded. Nothing failed at install time, because nothing on that path was looked up until a user followed the link.</p>
 
-Installation and class loading happen at different times. At install, `PackageManagerService` checks the signature, assigns the UID and records every component. Classes are found later, one at a time, when running code first needs them. This chapter covers the install pipeline, signing identity, the sandbox and the class loaders. The additions here follow one optional feature from install to its first use, so you can see where an absent class shows up.
+Installation and class loading happen at different times. At install, `PackageManagerService` checks the signature, assigns the UID and records every component. Classes are found later, one at a time, when running code first needs them.
 
 <!-- @diagram 683dd7ca5031e374 -->
 ### The install pipeline

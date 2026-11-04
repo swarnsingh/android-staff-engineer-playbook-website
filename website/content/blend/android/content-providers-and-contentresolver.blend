@@ -6,7 +6,7 @@
 <!-- @opening -->
 <p class="story-lead">Your app exports an invoice PDF and hands the email app a path to it: <code>/data/user/0/com.example/files/invoice.pdf</code>. The email opens with no attachment. The path was correct, but it pointed into your private storage, which no other app may read. To share one file, you need a way to hand over that file alone.</p>
 
-A content provider puts a narrow, permission-checked doorway in front of data that would otherwise be private. A `content://` URI names what is behind the door, and the `ContentResolver` carries each request through it. This chapter covers the contract, the startup trap and cursor discipline. The additions here follow one shared file from your storage to another app and back out again.
+A content provider puts a narrow, permission-checked doorway in front of data that would otherwise be private. A `content://` URI names what is behind the door, and the `ContentResolver` carries each request through it.
 
 <!-- @after First Principles :: visual -->
 ### Reading a <code>content://</code> URI
@@ -25,7 +25,7 @@ A content provider puts a narrow, permission-checked doorway in front of data th
 ]</script><figcaption>Use Previous, Next or Play; every step is also readable as text.</figcaption></figure>
 
 <!-- @after Startup Order Trap :: staff -->
-Read the merged manifest's `<provider>` list before you look at startup traces. Each SDK provider is code that runs before your `Application.onCreate()`, and removing or deferring them is often the cheapest cold-start win available.
+Read the merged manifest's `<provider>` list before you look at startup traces.
 
 <!-- @after Failure Modes :: check -->
 ### Check the doorway

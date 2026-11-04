@@ -1,0 +1,1043 @@
+{
+  "base_commit": "c0de5a37becd14e3912e5be1ff1239fb2de12434",
+  "html_files": 251,
+  "svg_count": 543,
+  "stylesheets": {
+    "theme.css": "3ef1cf42d955f362693c274c9f11720a7eaf4938a5310ac4bc510052fe6a9949",
+    "sequence.css": "a33ccb4fe675694859ed064213f1a309e39fa1be582e7ad78ca82a28eac6b85d",
+    "styles.css": "9dbda0ee30eeb2e63c154e6fac169b4d689f386bddcd4580d13e9028b6cb8e76",
+    "learning-path.css": "2b7dfab017342aa408cba57a6a5682599c59ff7492dffaf90c681493e414e350",
+    "tokens.css": "7ef883d5f3948460df1eef4cd23eddc269c31b402a5625a5c8ae982acb2c41da",
+    "flow.css": "0f297e71388365cc1953f89c3f92a800f9a4c2edbe8c32fc977bb5c5bb042b80",
+    "navigation.css": "c37d94ae9cd0823331baf2362983f664a65eba5e47a73d774ff67ad21b7a107a",
+    "blend.css": "e2a7898095be2e746ade1ca9097a232769e7e847f0c28435436f7d7c9aff0e23"
+  },
+  "svg_by_page": {
+    "index.html": [],
+    "distributed-systems/index.html": [],
+    "platform-engineering/index.html": [],
+    "computer-science/index.html": [],
+    "security/index.html": [],
+    "backend-for-mobile/index.html": [],
+    "release-engineering/index.html": [
+      "0d13c6ecbf12126d9fa5a7f5fa69f27e8d3644faf7547f2c0dd911d8d8c3aca9",
+      "55ec41d26b61322e2d14af772c9188ae133953f7d1611083926c970d0e1d3ed6"
+    ],
+    "mobile-system-design/index.html": [
+      "7cb208ce866fb471c79c8a1a955043395f8b55768cdaebc281f040d657948e46"
+    ],
+    "kotlin/index.html": [
+      "f14feecac6e805befc7c39f6dea3650fa50b58658b2660d860ffce21d4133f6f",
+      "141111e7f506a8dbed362791f818605b66ed2e047811756bfc9a9d2490dc2ad8"
+    ],
+    "observability/index.html": [],
+    "android/index.html": [
+      "e0c4ea915497747b59b808e720cab55cabc454494e9ad8e5fc1fba680693c01b",
+      "7cfdc8ea232dd885b8994b2caf9a1301f57598a2c4a60f216e130dbbd342d431"
+    ],
+    "design-system/index.html": [
+      "82a3d113e9cb37daa057ba4e511afc74b83c6c1e834e1eb0bd8900595cb07633",
+      "b977cc18cc687f3d966479ef760dab14ebc227f06626bffef952c2a18011c086",
+      "54e561ef67daabb033049318b28ed03573d456c189b4fc4025ed91622ef2341d",
+      "ad7780c53f518289c6dba0e4a7fd013a881b0786d76d068911ae92bac4ffc509",
+      "fe02b599b3bdbdfa682d6f4a757a19503bb81d6769a2ff1f2f8acfefb894e22c",
+      "819e67cd7529ce18ddc6800481d3f59b17eaca6effbac7c03f7a5c472452b025",
+      "6e4dd789231f36a9212475c8919c22133d1b72770afee9e926d3e4d0e50bffc9",
+      "8525880de2c247dbbee33ab19e0a5a10422b3104d8e85da4071bad1dd4aa0dd8",
+      "9841b7319dbccd741e7e81622c8bfd336cff71fc2b6d9219feea775b9a001026",
+      "857cb5c729685d4cb5f11bbb4455c77aac738c5b14ca6a96c7d222195925c7eb",
+      "93341a3eaef7949f8604fbdcdc46657dd15b769ccd00033c00a960ef77e9803c",
+      "f6e36529ee573d54273f917c233d8f89efc1b6810afe4bbadb60567b23b0b7d4",
+      "963c92f05d8fa611f483dd4c65e30e9622735fb915e7c8a9c1800b40c5c41d48",
+      "3a6ada4d591cf504be08b86452b6c751b31b33c674028eea7912410488ae39f1",
+      "c8ea0b69f0eefc19d73c774f66a2020b64961ea612f22448dc69228a2d158f3f"
+    ],
+    "engineering-fundamentals/index.html": [],
+    "engineering-fundamentals/state-machines/index.html": [
+      "a99246896867a299a6706f9e4bdf57f010079641742274eaa87c527c5fe3e985",
+      "a7204f0299c09adb8260b78f9e115715a32895d5be490ac5ee3d7782d4286ce9",
+      "3c42dd67dbb1e5ff51766b34f02fc3a6163446cc3a79eae3c29a5f0af3644e70",
+      "6b48cd5b171e12ab9ce8aab62b709f5b36a40856e067b4da142182b88e99e653"
+    ],
+    "engineering-fundamentals/immutability/index.html": [
+      "c9aa2bd0181288782365d6bc1cccce35301aff406a43f16b970aea0f50a1f9a1",
+      "7550a59cd66fa1362fcb015ebd29d586371b86fe4e2007aab7a3d5c2b826455e"
+    ],
+    "engineering-fundamentals/time-and-clocks/index.html": [
+      "d0f5ca453bf1bec27ee4af70a91c5c5d14632249c46f356823d28cff512710d5",
+      "cf16c06fce1d91750005bd388371dba5c1f2b552a53496e829516df17339f4a3",
+      "8525880de2c247dbbee33ab19e0a5a10422b3104d8e85da4071bad1dd4aa0dd8"
+    ],
+    "engineering-fundamentals/serialization/index.html": [
+      "7b735f97586f77de8fd81a77f0339693cb8d76fbe14620faeadcb306062e9568",
+      "6e273d075354ed1df368f0b545bf4f50b59d14d6c55fb1f1008c19351d9cbbb1"
+    ],
+    "engineering-fundamentals/backpressure/index.html": [
+      "f43c276aa76f0591106a510b10811aba4a84f2e1c8cf3e2eb20bcbc9d2c88698",
+      "c12adf93b8df8097439a130093de392a0a30f0f105ea24446d88cdcaefe064b2",
+      "6e4dd789231f36a9212475c8919c22133d1b72770afee9e926d3e4d0e50bffc9",
+      "53e0e94d3df8fb6e48d211d3313cc0d8eda2dc0b720e222de33a528566824c84",
+      "3640b5400a2762c7f7a4359c851ff9bbc3d641d312283bc531a18b0fab7fd6a9",
+      "4068af61a6d4fff76a5e6932cf8ff6f8ba62e873c6a59bc1807c877ffdd1d5cb"
+    ],
+    "engineering-fundamentals/event-driven-architecture/index.html": [
+      "2aab482133b0bfc47544c9116a25b35239a318cf450d386a6e2217209124325d",
+      "63f6ed10563aeff584d531b5832822e7e9cb5020faad38e98f071f4abbd47780"
+    ],
+    "engineering-fundamentals/complexity-analysis/index.html": [
+      "7fbb24d6150ae4b6f7ce018ff489f8cdd0f627e304d26391d0146b5f7b2f8c81",
+      "db14523aa189367e14931578e52222b002abae8c9f3fff1fd7d9f18760d9ccf6",
+      "2c7cc91fbf33114f0363f2edcec53e14cc73fe4882e3123c49f2c276d8ab4ad4"
+    ],
+    "engineering-fundamentals/fault-tolerance/index.html": [
+      "c03abadb5197b86b116eda8a6607fbdbb7ac86a46568b73d2b12731d77c4c2f7",
+      "f0bb20f76f4d1c9b5a40f77afb1e884bde6587c911cf0586fe39729e9c82eeb8",
+      "a1d2e306a919309581da18e2c228bebaecbc73913174ac23d65a85247ee715fb",
+      "c73fffb686500361713b454efdb13e0099e1c04fc8bd2cf20a94c016abde026f"
+    ],
+    "engineering-fundamentals/coupling-vs-cohesion/index.html": [
+      "a82d18b9161a12e355fa41c626bc6f40f6ab88d36a3640dfe204219eaa977bcd",
+      "3ca13029943a69ae0faf7bfe18f77fc1e5cda67b10a790dae223dada8c5678c9"
+    ],
+    "engineering-fundamentals/queues/index.html": [
+      "f6d35d24dc51b3ca59d071b5a5e30e893f516875bb9ce96506a03f0f41dc10e3",
+      "819e67cd7529ce18ddc6800481d3f59b17eaca6effbac7c03f7a5c472452b025"
+    ],
+    "engineering-fundamentals/latency-vs-throughput/index.html": [
+      "cd32dadc97adf52472f41bcbb548a42deb3bc1e955e6bb14510390dfdaafceed",
+      "de1613ef38879b6f37540ceab3e8dc3393a57755e42965046955768a3d60c43a",
+      "28b8782bd17cde86415ac8f95d466c34c6dc99b9b5bae359d900ecb6690d1a06",
+      "a401cfe5f0de92f529d63a121028045029e8f6a171d198cc39f64527aede7a38"
+    ],
+    "engineering-fundamentals/caching/index.html": [
+      "39d73363599f6c010d249107e864740ac46c3336eabdeb9dde503f21e7338cc8",
+      "142a067ccff5d714b4bb0daa5f0ec72372d14335ca7b806c5894ce19b093d8c6",
+      "8b4c6d9190aac2871800618320171d1ad9e06c086fae22abda82bdb9e38bfd82",
+      "c5b681a72b40ae7494677a6a1ddef93db30141ea51866934c52297eb704f7127",
+      "38aeb207639111dc199de0c259b7bf3ab3f9821222655bf85f2a95ff1165b8e2",
+      "0388aafbd92b47b28725e15c18e8e320c74bc2f310aa54eaff486705107a8c6e"
+    ],
+    "engineering-fundamentals/sync-vs-async/index.html": [
+      "fe02b599b3bdbdfa682d6f4a757a19503bb81d6769a2ff1f2f8acfefb894e22c",
+      "b1d23e3ab2373ec537c681f95704ada6cd5d43a59bb45d057a30ad177fe6901c",
+      "585315c6eb3f4574970bff61e224ace6b2b943bff1b0c518660f23d1267b47b4",
+      "f3b77c6987e0a33071b66c28eb40b65fdf0f66ed3e1bdb732d2b160bc3f8df75",
+      "66ada7fe293bbb79dab5ec3dd6e3df5bb3e5242719fbacdbad344755cee7bb54",
+      "77f62fe18ce56d9965030453b9cb3efa7b813f6137afb7ee768a16de544e3519",
+      "3869e6bfd8eaa202c06356509d672da69a49c65d4d17f0de6e363054e218993d"
+    ],
+    "android/media/camerax-capture-architecture/index.html": [
+      "3571a60adc73cfa23399eb21917a68934fdcccf42b83d31278c8dc48af3445ec"
+    ],
+    "android/media/media3-player-architecture/index.html": [
+      "d5c7af866611c01c1432774bdffec7221fe4202d6c6c8c679cadeb5c8e6952d0"
+    ],
+    "android/kotlin-multiplatform/shared-domain-boundaries/index.html": [
+      "81ee9d6565154d9715f3a83fae8d56f0a8825f3b982dd52ef75babab1a3fb2a4",
+      "0ee62b05bb7bb724cb656691b1050df91fcc74821d100079f8d6f37eaef800aa"
+    ],
+    "android/kotlin-multiplatform/binary-compatibility-api-evolution/index.html": [
+      "d4425d10c714e9cbb347b3aef86338cdcb6640a903c079d5c0701f12c1597822",
+      "6bc72299745fa67d9fa8cc39c9246c943e1b737f05c240f64a5ab683b01c82f9"
+    ],
+    "android/kotlin-multiplatform/kmp-observability-crash-symbolication/index.html": [
+      "5e87dd6b33461593ec6e90b273deb38181753cfcc77106507f79949f4322f1a8"
+    ],
+    "android/kotlin-multiplatform/kmp-decision-matrix/index.html": [],
+    "android/kotlin-multiplatform/ui-sharing/compose-multiplatform/index.html": [
+      "b1b1a0e0a1a099bcfb224a084495d9a4bdc735fa2b6292592d1a2867801c236f",
+      "b40ac1f01632f0e7b318e273af664dbce39d92c0dba293b67f0cbaa8afb161be",
+      "fb64dafcb1e14bc904e7bd329aa1eaa4a818626811e803d9546b056724980b85",
+      "3f91619301a2677bbbadf5221543f96b3271ae7e05a5755d89ad9dc1977ad493"
+    ],
+    "android/kotlin-multiplatform/ui-sharing/resource-sharing/index.html": [
+      "3488fe1f4ff78377bd5cee3bed662bf03c7f7ca87c5ec89c75fdb7439f776efe",
+      "c4ba7059de2ab1c0d84c8e47651e863e3f8a4dd80a7ef491a5c4f6a821345f37",
+      "51e9d8f619675eba92d75da1e3d91368e781b302d27aa3742bc507de2e147190",
+      "61cedf6fad575be22b334a65f7c2bf4a95c080d871a4779c55158e1426d06a1e"
+    ],
+    "android/kotlin-multiplatform/production/testing-and-mocking/index.html": [
+      "a8589b2a58bcf1a580436b5a4a30ae1298d5e4480f40e9e9078a1e3d6845128a",
+      "3285eb23f6cce0a0a93c59f28a6df88447576dd57b5a4cb52b23f3cf5b464f7e"
+    ],
+    "android/kotlin-multiplatform/production/ci-cd-for-kmp/index.html": [
+      "2f33fae79809d71eb9cdc867348b33180fa4dbf2274570fa21e81a6dc8ebb003",
+      "ef2ad79020ca9bfc8e021e515233107194b5ffda16acc1ecc55c48dc0573c61f"
+    ],
+    "android/kotlin-multiplatform/production/adoption-and-migration/index.html": [
+      "a5a71ce4685daef31a608af8861bb095897d7e361a5ffd770fda075540b24482"
+    ],
+    "android/kotlin-multiplatform/production/concurrency-and-memory/index.html": [
+      "7262bc37f5301d71de55ccf5e0f7e138f6b579dd5c00f1d6c4a8d96ddbb8cc0b",
+      "f8920b507cd6d41e485b31436339d05b6285f76db55a667d640a17dbbf0fc177",
+      "94a5c07eeb0c253e5111c0cb18dca0475a08aa9c2451ffcbe137ab626fe01c94",
+      "25142058721bb13d47a65b6af9bdc62cffcc0e3e9d7a7283eddb4abc2a42e36b"
+    ],
+    "android/kotlin-multiplatform/foundations/overview-and-k1-vs-k2/index.html": [
+      "aba782fe3018a1c7ef63debc4e49555baf72b34b7889e32e589b9081b1220d4a",
+      "8addf35b52e58ec36654f3c3a797eb9ce6a3a14491296108bc31b57b1e53d619",
+      "e33dd6c0cd057759a4c7a9f080d9c351a3e347d7f24b66be22c5a963502f557c"
+    ],
+    "android/kotlin-multiplatform/foundations/architecture-and-module-boundaries/index.html": [
+      "af249d124e12cb026c74d153a23b59ee97332fc2e9017b13eac657ecc52696ab",
+      "699f60039ec4995a14d01299e6ab7badbb7310f0c0aa8f72798311be96075a17",
+      "45cbb4da8ab158f071237037ba91f4e67375e12ae16c1d10019b3c973a060ee5"
+    ],
+    "android/kotlin-multiplatform/tooling/ios-distribution/index.html": [
+      "b0b0f864fcb5febb13a10c685c2863cd6c8824530451cf5bed68013a23736b7f",
+      "8a2fac48511933d4f891b776463af70765ccab34d81b28dd810c9c73121591b9",
+      "aebcc2de257d7325bb0909dca8f1a8de6bcd90c57232cb523d7b5f4757c11dd2",
+      "10ce36ab7d8fd0f723f113325dc2262d7eba9601b9bbc9d0b48a6f111ec16d9b"
+    ],
+    "android/kotlin-multiplatform/tooling/swift-interop/index.html": [
+      "16976a39acefe53ad938843f5e5540d68f2baba4d003094538ef9d4afd9cc490",
+      "1a5f92c664b2e43728926875d0b07ad4fec32a2091bcb8c09acf37383dc0b4c4"
+    ],
+    "android/kotlin-multiplatform/tooling/build-system-and-source-sets/index.html": [
+      "cc603bc8c700d14e188a6f3b8c14d69925f8cacccfcf03edee651a7febb59602",
+      "b0b0a7ffef8082f582334c2f736f0be3b381b0aa273138b0e47f0761ec6e8b8b",
+      "302d1bee0460019773495f6edbccada640e42aa19a06c6589eeef1c35acc8906"
+    ],
+    "android/kotlin-multiplatform/ecosystem/networking-with-ktor/index.html": [
+      "b5a21132a681144827d0c2f173a2d815e96fcfe7178a5907c6ddd18ec133b428"
+    ],
+    "android/kotlin-multiplatform/ecosystem/persistence/index.html": [
+      "c341656895a24b7a6bdebbbd2ac879b5d361d419076bef1188954d6b6e46dc5d",
+      "b53f93d09041d03af5ce12e98a904263e6be4075cacd957246b3d5ec0b206ebf"
+    ],
+    "android/kotlin-multiplatform/ecosystem/libraries-ecosystem/index.html": [
+      "ae10a3e267387ddc5cbb8770146407e42a29da71fd6383c9d5dfb9a5ed772d08",
+      "691ff05a7409a89758ae18029b0fbfac91bea507b6b8e1b7eec8f9825add7898"
+    ],
+    "android/kotlin-multiplatform/ecosystem/dependency-injection/index.html": [
+      "7b29de08916a95c5017280d7a1f90cf59af2dbb3796f9966cec62ba05dd0fcd4",
+      "4392eecf61a77463154aecc93c5be36b3421da32c8bfae247cb1316671d0957f"
+    ],
+    "android/performance/thermal-low-end-device-strategy/index.html": [
+      "91cfe0cd9fd848f49e5eae23a3e894b10d40a7bf654668539101f8b4b980d1d0"
+    ],
+    "android/performance/baseline-profiles/index.html": [
+      "6484794857efd67979df972a1fc0fdbfb7bbdeb3478487ce29fa4516962a5a6e",
+      "56a1c25d670b3d1e81d4afc96d2a5c79ba8dcc8f77bb8f2462ac648de0c285a2"
+    ],
+    "android/performance/native-memory-bitmaps/index.html": [
+      "27aeb036e318751476406e18d086ed339c5cee9087a7c8b323a469bcf11474b2"
+    ],
+    "android/performance/battery-power-profiling/index.html": [
+      "c3951e4053d70ecfd74d886c1b1e787c85c4e468213af16fce3ee5089829c188"
+    ],
+    "android/performance/app-size-and-r8/index.html": [
+      "db56f7e5ca4a317515c1407798252592626aec44b2e0e876e82f22c54845be4c",
+      "39700163468a8510d48ebc62e20da0642ff9411a9ef976fbe4d26588578fefab",
+      "3ba1e4241321a6046254e1b5bc6d3697f8574675f591691cdbfa88585bcbbc4b"
+    ],
+    "android/performance/macrobenchmark-and-perfetto/index.html": [
+      "fe8b73f123fedda782e05daccbb39e947375c312f9b289ad8721df5e614393f3"
+    ],
+    "android/performance/anrs/index.html": [
+      "5975a35a25ace3c512de28bc4a5eeb36a069113c121d5984d576b1923a2e5750",
+      "941061887577ff1fb39139fcbeeded7aaa529726e69733360b05d55a4b7bd01d"
+    ],
+    "android/performance/memory-management-and-leaks/index.html": [
+      "b60a6c20fc84b6889c3d198c9248aaf9552ff2d33dd8ad13cb25a70a565333d6",
+      "4f1fc96d9b2aee253c605c32b2e7bde5e0c22aedf2b4dad9a17ee276788f52a9",
+      "4ff6fd5ddf48b3fe4757564038c8db344718be30c09a08a65ef964a024edec82",
+      "a15c454ae136f67c08cd0cf8f25c128cdbf89937c98febfa87af241d8ef8926a"
+    ],
+    "android/performance/rendering/index.html": [
+      "5fefcb164e9cbf6b76d5ee911e06068b08d1e1df28a7c30a1077b73db04c4479",
+      "149806c2da555227647787347579bb4eceb0133e7e52ba275870239fb4032820",
+      "69cc46423824e9353a2c6f0c29ab9b33191d0ae703b45dbe051cc1ae16ff49bb",
+      "06a0c26f847a70992d19206d13ca9ca394c48a35b08886b0b9db29165f1c6ce0"
+    ],
+    "android/performance/network-radio-wakeups/index.html": [
+      "8cd81450b50f661dee0e642bde285e88db85ea9774d4e1e1dc1699154f139995",
+      "952999a801c765f508dbc920f3c0b66bf20d5200a2d8ef975776a54f2a7e372e",
+      "6ab0efa3d600cbcaf427cd37df0d2de0dfc85ea26ef69f8775f76bbf073bcb0e"
+    ],
+    "android/performance/jank/index.html": [
+      "66e1e6af519154ae01b11d4f4792ee7a184861511fc11c6396d3e6681cb80357",
+      "24dc51f6851c06126c927e3d44e5d3aaccabccb1084b1e735ce4e3677716c7b0"
+    ],
+    "android/performance/startup/index.html": [
+      "05a4ce62a611c4db4ed6afed0a4d99f4652b32b8b14750f7ac7214c30351067a",
+      "b585ed6cfab2449047f0d45295f3ac92dc4c7176530eb7eb4da290364519b70e",
+      "61e9dd87cbc81577865d701d2f8a8e2e058782a33bb865283fb36b513649f664",
+      "d0d50eb18d9da75f2a222880d32d0dea2a17f92edca3d7323e95a0de0a676dbe"
+    ],
+    "android/networking-and-security/device-connectivity-and-location/index.html": [
+      "8d51e8e2c4833d183c295324a55fdb39ae312551b91eaa6af9caac6da0492e99",
+      "bf65b2854b4ef07cbc1240d982190ecb3daa6437b23d0f219798e364f1bd2fa2"
+    ],
+    "android/networking-and-security/ktor-vs-retrofit/index.html": [
+      "a451c1b3c3b2a2bd820b2be953267f67efd0d7d46f326e51b9b75fd4aab28b2f",
+      "32e1511b6512f96847ffedc37681b928844ac8d0ee2e881ca3c314fba294245f",
+      "46fa381922579a0e1a26f66412870660ca43cd6944d0a93e5a064d8ad2470d94",
+      "3bb289288e1aa6f47755f93f60d77543805c8fb97cceb6fdfea837d66cf3702c"
+    ],
+    "android/networking-and-security/security-and-keystore/index.html": [
+      "b4a50783fd9abe7f5a0e13d7f9e1af98dddc6cabd891dcb4412ec00284fba97c",
+      "abc246f75236e068d946105f2c7dc64465aa47814d121177ada56cd733566ba4"
+    ],
+    "android/networking-and-security/graphql/index.html": [
+      "d4142e997bc1a37b04ab61b8cfbe5ffbf86812c0d968fb71863a6aedb1ca6936",
+      "c87f76745cb45eb1be049975219a3406472adc4bae120c0b0557c6bdfe014305"
+    ],
+    "android/networking-and-security/webview-and-hybrid/index.html": [
+      "67bae4c9eb96ca8c3c5a70f05fcfec423341c270f6fe7bd46324c030b74d2a26"
+    ],
+    "android/networking-and-security/retrofit-and-okhttp/index.html": [
+      "ef3b0b4a8fba6d16b2bc09c522669c3dec97e4d61bb0d3a567eb46cd4de8ded5",
+      "ace25ca8eba8edb8d12412ed7f7fdcc161de8180dd0d83d1d2bf560681f3ff69",
+      "46e849f110117a82e0257a169e000c7029d537ed169eacc795f142c851d7a929"
+    ],
+    "android/networking-and-security/networkcallback-metered-vpn-captive-portal/index.html": [
+      "4e15f3bff7ceb91d34653205897e8149aac557154cfc01ba551d2d4f3ab38a65"
+    ],
+    "android/architecture/savedstatehandle/index.html": [
+      "59bdeb1b42dc60ddb1b25f1613c85fbe1b8eafc72a9d54cbac58dc4452492cac"
+    ],
+    "android/architecture/viewmodel/index.html": [
+      "93341a3eaef7949f8604fbdcdc46657dd15b769ccd00033c00a960ef77e9803c",
+      "cfbc1e78181dd69e94b242dc0493b1d429439f3b2236f31dbefb057ec680ba99"
+    ],
+    "android/architecture/activity/index.html": [
+      "96071a02c4c40c57ee8eafb0a7f797f657c81a5cdfc8876978d65085f94c293d",
+      "b7c7be6959be4bcbd6d4f0e376b6810691d8c01605ef946b01583f8e4579f010",
+      "493822c53cecb6ebfe1dad06b45561df30ac1f0c6842db3ae3c154e2609abdff",
+      "5143fe8c148d18bec693758dca64976b1c9dc0abfaea04f5ead52596c27ad9d2"
+    ],
+    "android/architecture/navigation/index.html": [
+      "020cdbb955eb8c94bda9f8992f306b1882ea13c54dcdc97f2862247367f981f3",
+      "899c4b32df28cffc79b20a9eb8a851a5548c3f82c955696284ba734c91003341"
+    ],
+    "android/architecture/process-death-and-state-restoration/index.html": [
+      "70915daae16d7f60af46074dc3f92ca5f3ea45fb66366904e7c856d6d28db3d7",
+      "9158c1194aacfff196b1ee770526cf9bc2bc52e7ad219707fe23a3ea669c5d13"
+    ],
+    "android/architecture/mvvm-vs-mvi/index.html": [
+      "f0df6cdf877f11c6f9661f9f4a0b14b2a918aec9daa9775a228adee85d8ea622",
+      "83193156e82473d9880f30c50a4254c9c366abae6857cecd898335c54b285cfb",
+      "b1c5686079865953849bf82d487c711dacaae1cfac43ef07c32d7d228d452ff1"
+    ],
+    "android/architecture/structured-concurrency/index.html": [
+      "167d913b69e934dd04aaec53c564acb7261f2ea18e166fca944526b92208fdd0",
+      "7917f9f3d58867ebd1e931fb351637031a52c22d2755ff092a5056a771e06186"
+    ],
+    "android/architecture/state-management/index.html": [
+      "cce0abf61ce6cfb86a2e94d45547f7fa08bd175a402694e8f794a0ea510ec08e",
+      "59d9d788fddde88fbafd7038adf455251c3ee603411d2b10ca3ca0c2af9d9524",
+      "7651c6c3565ca2d8c2a9ea54e6fbb4aaaea3ecadfd2788e3f052a4fc29db7fa4"
+    ],
+    "android/architecture/fragment/index.html": [
+      "dd13d9539da58e93fba2cbbc25aa4676f16722d73ddacba484d7c74ba232d861",
+      "316828b939ed9fd43b7807743591e205805f2a70fdcf16fadf0f2163c858d8da",
+      "e59241e83f2943a4d8ff3e1df5be4a4ec9bbbd5e3af584d98bf28d73e6c4a3f4"
+    ],
+    "android/architecture/modularization-strategies/index.html": [
+      "fa3112fefc050069f2b269f0a613df2338493dc1286ee264ead63c1706fb589b",
+      "b083b8dec62194d8711ead40bd7f883087bbfc6d8b5f399c66957c2d98218bed",
+      "c23637906c2a9aec233a555d0e61ea572cf818eeb8720153a2de889dddd4e075",
+      "801c236d7a0c706aca9879033ce76bee043d4e09090fc2c3f46897dcdada2ed2"
+    ],
+    "android/architecture/flow/index.html": [
+      "aebf79df1b677854bb0b0496790b8ada74f813e303061c5764bcb8a6ecfb7a36",
+      "0f4d843e8deb20477f7b0abd6908657e96d4dc66bffd82ce0edded8b3b0a5537",
+      "ad7780c53f518289c6dba0e4a7fd013a881b0786d76d068911ae92bac4ffc509"
+    ],
+    "android/concurrency/synchronization-and-mutex/index.html": [
+      "f9e4e29b64565e15381211b32d111391bbc78d96bedc14d9c281ae2a7770ca3c",
+      "bfe444ac227a11b8d13dbf680a7796ace1950534977f4d93bb95c19cf4227699"
+    ],
+    "android/concurrency/workmanager/index.html": [
+      "088ed5f7341c46a0ecfef39064bb67d34a1d0ce6be690257db834d672e6b9ad1",
+      "77245affda8622fc8b1d3ded09099a7f1a74c94cdd89664966990aa461511feb"
+    ],
+    "android/concurrency/coroutines-under-the-hood/index.html": [
+      "a7048123c428bfa0048e2a56abf659c828092f74244c037e2857fba7cbdb781f",
+      "2ff4598eff98ec4422409a136c8fd702aebac004e342f80765a1ab95f6aaeeb4",
+      "a2fd58e5e9281fc1baec845f0ea2f28d0b3d127c608e640552940aaed639c0ba"
+    ],
+    "android/concurrency/shared-flow-and-state-flow/index.html": [
+      "394e1f9f6c3d1fc46cbdc8720a41e980cbb469ec3a0d872f99d72e298e33a6d3"
+    ],
+    "android/concurrency/threads-and-looper/index.html": [
+      "b4f4af66245a0de36ea8a0cf20f9a4bb9f5ad9ed57c422b2287455c8ec06f13e",
+      "b06f376fa380a1d03b37a30fcf5ac0ccdd7a1e10908f217650b5c4a327499496"
+    ],
+    "android/concurrency/battery-optimizations/index.html": [
+      "25e6e3d3331a8c8576fa37a4b314de7a2a1892cb4b354838458a4f7bd49c6c75",
+      "702a08ef80fbfbd48f02471db9e8dd3bf54321b646bb4c560b2a76a7bb0406fe"
+    ],
+    "android/concurrency/services/index.html": [
+      "5f542170008e5c9f461a266bfe48f73b167916640802fe8f8c7002de8065c06a",
+      "446a1a205f185b587f4d53d9357d8e2ee8556296b2b6d5d9480dfce2b1cb1630",
+      "7d551405accda4a429eb7d88c44ac6bc02fa2d9b0002101653a9b6fc63ba86a7"
+    ],
+    "android/testing/ui-testing/index.html": [
+      "3aad2ebbd9b7bcda5ee39a34644afd4dd7f27f64c289bdcbfe425712fcbfb3b8"
+    ],
+    "android/testing/unit-testing/index.html": [
+      "2e39cdf9c4313a880edda3f24b36f4706871f39df157a294ca12c3d8226d923b"
+    ],
+    "android/testing/testing-strategy/index.html": [
+      "8c1b2b219fbf5113751e0661d45e7b7d78b5236e24253fdd0c2eb16cd32b6d4e",
+      "861cd47d46d9c33b160b9ff3115ca2dbcb02eb107ac1b2d627da5de5c39e1ce2",
+      "cb2d395d91509d484e422c13159a5380b18c47ab819bd2bc39dbf274849798d5"
+    ],
+    "android/observability/crash-monitoring/index.html": [
+      "f69f2438fff83f0f1a6b6f9d4e3ceac2116c62716ee684205f46db543d3121be",
+      "0ac86253d067f64da52ef483992ef81620dd2358eae49327e776712e45dc9494",
+      "f5c36f8c811ac46ef0c3e61d2d8bdf3aa19e94808b39294ffdd44f6265611763",
+      "6bad0fb523474452fa2fe32a79e945fde14ad6f858728205dffcd57b8d437cf4"
+    ],
+    "android/observability/mobile-apm-and-rum/index.html": [
+      "e811cd646d8b965fcdf161311648c039488436dbe0c7ad946b9bcb3e51205b1c",
+      "4f066ad5bdc9786a5747558b5dc865d4f2e1c277b527ea639f6998e7c477667f"
+    ],
+    "android/observability/logging/index.html": [
+      "ba21983cbaed41a1a05f6cbf90487c826fb551891bd93265587e1e94bfb5ec1f",
+      "4044d81864f2df0f917d0604d59c7608627709fbbd0d2c07c7f30c4ce3130931",
+      "f1c5970370922ee8ec5c45ea8caf986e754424189ccac25342129b9a87f2c09c",
+      "406f3ae847f2146dc29083a257ee3e5a522df2127926410f52d6c96ba3dfedc9"
+    ],
+    "android/os-internals/the-zygote/index.html": [
+      "54e561ef67daabb033049318b28ed03573d456c189b4fc4025ed91622ef2341d",
+      "d3c07f666a35acaafb66ca9a8b864e09c4c74409c868f99636ad120112316291"
+    ],
+    "android/os-internals/intent-resolution-and-manifest/index.html": [
+      "047596c92d1fa868799966912f7dd57f5a2efa62c0576c648d41528c0d8a901b",
+      "e45b01cd994ee850e1dd172737b2da75c4c8010ea40b4c8b901e0108b4c93db0"
+    ],
+    "android/os-internals/broadcast-receivers/index.html": [
+      "f7dd4d6b0f075368bcdcfc022ce564d15ee73da9e4de55b238bd9b80a0a0458f",
+      "082298eda1722c94e879b14aae79e8b07a20670a2d689b62a8fbd150556b629c",
+      "13a7b8cf5589afbc7abbcba83d775982bf874201f9d65cadc7913f839ad1204b"
+    ],
+    "android/os-internals/package-manager-installation-classloading/index.html": [
+      "8e79d388e0af440ba23673bde447d021a46f828edbcb9c3be4d58b174711fa89",
+      "06f0db00f2a8afa2747a1b46742590220c7dbf981ba2f053628f598667773c83"
+    ],
+    "android/os-internals/the-binder/index.html": [
+      "b977cc18cc687f3d966479ef760dab14ebc227f06626bffef952c2a18011c086"
+    ],
+    "android/os-internals/content-providers-and-contentresolver/index.html": [
+      "1bbed4c197b82f11ad3394596852c8b7ef943d5c51905bcce990fe76439826fb",
+      "7ad4671361c552308f7a53dc4691cffeebb26f479ce0e5156d13ba331e3a6465"
+    ],
+    "android/os-internals/activitymanager-process-lifecycle/index.html": [
+      "5638f0ca3a5a6f7f08ac745641f69cbc64a667359e75cded9a395b545b71a449",
+      "a32d0485dae76b589f9163d61dea7cff670cd2fdbed11960644a2ad5d83ab444",
+      "f1be11198f19d379617ebda2883ef20ebf342e9644e393d8fc501d6b74fd99f9"
+    ],
+    "android/os-internals/art-and-dalvik/index.html": [
+      "f43012d20221b0fe805730eef3f57d9fca98ec12e63f43ffde06b80709ea56ac",
+      "5bbc88e8a08ac17c8efeea12cfcde076a69ff7edc7c1f043d9414702b5c0ed90"
+    ],
+    "android/os-internals/permissions-and-app-ops/index.html": [
+      "4e816d41d9edd2ed550ea41b19fba88e06709249294de2f087dc65de99e68db2",
+      "e7d7cc3af11a1a650c121b4a950f6fe645652d550a208c45a4910659077541fc",
+      "72e8b353c02b3c11f960669505803ff6dfd0bd8db62b3c825947815a40ee9d59"
+    ],
+    "android/compose/custom-layout-measurement/index.html": [
+      "e2e6bea003a0037897d9e5c537d245976c01fd2f5037c0e65a8cec68e3545ca9"
+    ],
+    "android/compose/compose-navigation/index.html": [
+      "ce139f4556103f58646ca094609c1e0f99ea692ca362c51f71a1305dd3136980",
+      "af644664fb833bad018e2c656901cd3803b4011116dba0e525898f6fc69a3a59"
+    ],
+    "android/compose/snapshot-system/index.html": [
+      "b10b596e168fc3024ff350d6403dbbf317a560230310ebb76e4b77e2963171d9"
+    ],
+    "android/compose/compose-accessibility/index.html": [
+      "363ef015dc1ecbcc4404c3fba5ad4d18b613f97be875fe26424b9a796bc64eb9"
+    ],
+    "android/compose/stability/index.html": [
+      "0d5603b784b2a492f6d5b304ead5c4c26bbfb23a1526f779f2645a0feb7cff5c"
+    ],
+    "android/compose/recomposition-and-state/index.html": [
+      "72707ba02645e88b3e69d5a30a1c24587c0fc48a8eb45dd99a7b28cc5a955def",
+      "ea164ba5a34fcd137d404ea3e558e11f5ce9e0572d37b207c13d323b3bdcb7c9"
+    ],
+    "android/compose/adaptive-compose-large-screens/index.html": [
+      "7d934a1159b93976253134c36083fe4d7d0d6c13f4a3f587814b72f83197f238"
+    ],
+    "android/compose/compose-runtime/index.html": [
+      "3104781ac5816f968e5d3ec2f9b338f94555d8b3cd0bc84bc2dd3b04f46182d4",
+      "7c9e562c1e0c3367c56473370533986c1eb563a6d72ed8273e7a84fbc09aea60"
+    ],
+    "android/compose/compose-performance-tooling/index.html": [
+      "90179f3d723696bfda92eac9179ae6555dec3ddc1c6c9681ee4642341a4b2268"
+    ],
+    "android/compose/view-interop-and-migration/index.html": [
+      "76716c53ca2d0bdc91ff896685bef240317a96778bcd19bd191cb280cf7050c2",
+      "dd37dc138ed49ce3f2b356d5253ea617b5b5d92e215aaa02f16011acb9c2c98e"
+    ],
+    "android/compose/modifiers-and-layout/index.html": [
+      "fbcf54a3552db32691e9b49124f7773e9c0446e9f2f483d3dd2b96c6e7787e0c"
+    ],
+    "android/compose/form-factors-matrix/index.html": [
+      "e00707ad1c87d1ac31b2c744e7311f256d160774896afc1fa7816cd16767612f"
+    ],
+    "android/compose/side-effects/index.html": [
+      "ddb0123663e51d1a65839e86449865393597ed9e9dd8acc1b13fe4ee12d61c20"
+    ],
+    "android/data-and-di/health-connect/index.html": [
+      "3b153795db7e4228af4b6e34acc2aaf8e0c6e4ea63f0467f54f952df85f75bb6"
+    ],
+    "android/data-and-di/room-vs-datastore/index.html": [
+      "02667df3c3972bdad36d352f978d6d0dbd6c69f81ce5a034588d4b840e07fc39",
+      "d2e839194e0aa39c8de51b04138a374e9203a2ef29db61e6926d4fda7feb53ff"
+    ],
+    "android/data-and-di/room/index.html": [
+      "82a3d113e9cb37daa057ba4e511afc74b83c6c1e834e1eb0bd8900595cb07633",
+      "9ca846c925fdd83adff0f8035da4caa387b84ece4ac56d15118edc82250d13c4",
+      "9da467a68e0b9ad424e53fadedbeb7675d10363de0683ef863071dcf220a4d40",
+      "27749676c832f164eda8bd267dd3caaa5a00f6fb63ef47cbbcb3393c865955fb"
+    ],
+    "android/data-and-di/repository-source-of-truth/index.html": [
+      "b7e843d2e78591638d1c79de24160081b9fc50842d2cf2fee33d2636b9ad24b1",
+      "8e9a1cadbfd6b5076f9fae2244cb10695d836a452e5c78b8d9568b267fae5684",
+      "91151b7d09786976299ef5bf553e25337fb065d397525fa8f1b51242ce67f53e"
+    ],
+    "android/data-and-di/storage-and-content-sharing/index.html": [
+      "51555a6ed49ccdafc5b1548271d473bddeba573b6b587bcee378acadf8a487d9",
+      "38f20522daac580e264d7fb2c2d6048b00bdd4099860f91c71e25bed1c40d46c",
+      "e3d4ab2b7405e534c89e3c8198b98848dc4eea2ddf42efe8cbd5660e59383605"
+    ],
+    "android/data-and-di/datastore/index.html": [
+      "2c97e6415a423627946d79ea46ffc72a5626ebcb5ee82e3c02692512a4cd204e",
+      "0bd14af260fdf4b4083e79666fcdc53e621202f636b42eff4fb252bb14dd6693"
+    ],
+    "android/data-and-di/components/index.html": [
+      "9cc91e20ba8f4ff592c27d0864444aa26b5cc345374e2f64903f7713ed162bd1",
+      "9928a739317d265b76ca8c168d0d989056868b2a1fb92a415b2ac3328f8ed2df",
+      "40912a43374870366aca16e1f597865380a374236b653b7fa1a3eeebbefafde6",
+      "bef649510b9f27de7fbdd0224941639dc16fce51b5abe7859f59b5c9ac284124"
+    ],
+    "android/data-and-di/paging/index.html": [
+      "7ba9b650b403a0283f485f8e4f9266f26a122193885a21d17d6ece479f0d2eda",
+      "56acdca98d7524cb3df389ebb557571fb504177999ea0271572c93c1539f4be8",
+      "0f5efb71a7db505ec251a1580f9574d5191314130725c98f734dd897309abbe1"
+    ],
+    "android/data-and-di/hilt-vs-koin-vs-manual-di/index.html": [
+      "d783179c85e94e7c4bbe7997c7667e6d765eca466195b76b0ef6b18e4f4affe1"
+    ],
+    "android/data-and-di/scopes/index.html": [
+      "fb58f05088972274858d86341dd801b56e2668707c9580eea4973aca39d489f1"
+    ],
+    "android/data-and-di/dependency-injection/index.html": [
+      "be2f40b9bf790014754d51060cf6c81b2368942db52e9f6113e5bdeb9879ffb3",
+      "0645fb13b4c82b44c18e63b704d76b6d8df680bb5c2d5b0994b2358db31cab84",
+      "4dd559b9fd39ef6f1b4752d9207dc79d1758e5ecaf5f2b5b51dd49da5763b09c",
+      "31b409a76d7249212e01e31899a7e49c4854913d0a10b5a24b7050197655ca91"
+    ],
+    "android/build-tooling/ksp/index.html": [
+      "7166d5aa5b6873267324db7647e5228795f0472212bcc6a60499fb1819c882ae",
+      "0585cde33df4f2e33b649e3b5ab5f317a79ecf15b0a7113bff932bbaccd23743"
+    ],
+    "android/build-tooling/convention-plugins/index.html": [
+      "85a08ee74d44e0f0146aa83d36d2a788ee8d6ba45e3d30ffca6b513106647e7b",
+      "144696c5f018091eef9c0a1b69672b31ac028b71a0d54ab7ce974bacc3ceaf32"
+    ],
+    "android/build-tooling/gradle-and-build-systems/index.html": [
+      "792241ec9a7bfd7336c77a07411d672c0cec9d9c9c7cff5877a435f50068e4b8",
+      "b988511322e9aac29ba9cd651360d33d22cb808a72338fbf70d1dd39be18b314",
+      "5f5e10ebf1e855af0b81d0eebf8257e421803ce267214b766c7cc797ce85619b"
+    ],
+    "android/build-tooling/multi-module/index.html": [
+      "787ac42ee84b6ce23552b2c8ca51feb605cfef6dcc2543cb5728bfdf9df43360"
+    ],
+    "observability/alerting/index.html": [
+      "c595c7a6e25a81b7e5c7605b3a73747d3313cb715f68981a0c3c965523d85373",
+      "a0e33959d19d58026ddded5bd0b5f7f89c75473576ec5d37c72898d7f75f8865"
+    ],
+    "observability/metrics/index.html": [
+      "7b6f5ea4a0373da58478d02be9d03d801835d8cdb106a883516d774a00448a92"
+    ],
+    "observability/tracing/index.html": [
+      "d25a76bbdd149bf59b5583ab420b67a8bc0f877092b8b8d6a6c9500853295860",
+      "ac70a00e279216d9d8e6001c2bf381d47247392c02b25977fc41c488fc0a29b2"
+    ],
+    "observability/error-budgets/index.html": [
+      "53dfc4be5e3edf34dddb730b6b4a8ad5797fb8dd425c02343e11f279fbfe3fbf"
+    ],
+    "observability/slis/index.html": [
+      "909ae7f18a9b5b5e8a6ce1e41c32f9d290175d795f64799052c9ccfce84eb1f0"
+    ],
+    "observability/telemetry-taxonomy/index.html": [],
+    "observability/dashboards/index.html": [
+      "d27836fa5d7f15321325a72fa28d706ced4bccf1660beb2d3e8748e8aed89f32"
+    ],
+    "observability/slos/index.html": [
+      "af24301d3d836f42da20bba2b97e3f7d315507b004e41caf65757b865d2874ec"
+    ],
+    "observability/distributed-tracing/index.html": [
+      "575d037f83a31ab7bc801360c6c28c24c7ec13e709ec181fee193556dd5dc4e5"
+    ],
+    "observability/structured-logging/index.html": [
+      "c433f885cf2e81e99a86def35f93e162d9fd40068217e02b79db676af8293903"
+    ],
+    "observability/logging/index.html": [
+      "b6b0e4bad66f914615b0dbadd5f5059fd35e8354356898bf2061e8a15119382f"
+    ],
+    "kotlin/coroutines-and-flow/callbackflow-and-bridging-callbacks/index.html": [
+      "b885b578d20cbf6ebd1d8ecce8d9fd25b237601358b4187a7c89d6fd1c91f4ab"
+    ],
+    "kotlin/coroutines-and-flow/channels-and-select/index.html": [
+      "9841b7319dbccd741e7e81622c8bfd336cff71fc2b6d9219feea775b9a001026",
+      "7c49809faba431ac0408cea0ca5f33be625b3de1b174d9ae3d0d3eb630283ea5",
+      "e8f64ffd6b2e271a63fc35780aca92a43989f09feb9ff04331d5cb64ce48f261"
+    ],
+    "kotlin/coroutines-and-flow/flow-operators-and-backpressure/index.html": [
+      "594e8f8b63cb47698c9b76cca31c7333e93b3d12e3fd8034b4f222066082907b",
+      "5f3ff689100b47232907a079bbbbff22387a71cebeba88e9110cdd2f6ec2f1ed",
+      "07a69177588d92fce2c418a2a0042a9c3f4acbcdb95700a796907aba901b6d67",
+      "e65d73e43c48df77aee4d74ff0fe742cb875aac9059e04d40be07afd2b3137ad"
+    ],
+    "kotlin/coroutines-and-flow/test-dispatchers-virtual-time/index.html": [
+      "12a17c206bb8dcd899716f16c409403e48bac9e6b2ecbf6a599dca8c224313ee",
+      "f3acbb2eabba0f3416d8abd5d43c8a50e989e8b196373bcd62ab93be9d3a95b2"
+    ],
+    "kotlin/coroutines-and-flow/coroutines/index.html": [
+      "c6d0c322e7df504f725b14dde758aac421a89c564976565bc56aa9f6a1231df6",
+      "b0c2064c6aafad7e37d1272fda261df632310b5db46fc400632c593fea66f171"
+    ],
+    "kotlin/coroutines-and-flow/coroutines-debugging-and-profiling/index.html": [
+      "3460ba20e042fb1a4a88c3afa49eeec8bf79eb1ad600e18c259e4bd362f61ca2",
+      "35b95bebdf1dc8372a4fc1ee43bcd6dbef0ddc09bed01839f7ced119053b1e24",
+      "07cddd798dbda6d9cc4602725477807428a31d1f4e982f603122d6ff40808ef0"
+    ],
+    "kotlin/version-updates/kotlin-2-4-update/index.html": [
+      "bd221091d97c1672a110d71b2dbb3be9a059ee87618974b7a0f2f6988219fbce",
+      "53a251bfbd21df3f8604bf0f0647ca2df37a26b90a6b02032f4f76796a036a52",
+      "2f303a6b3f866c4fce49468c889c5f92d3ff2c31bb05439b13d51486d9812aa0",
+      "3ac634ddde5b93efa76e84757dcd66a456ecf3c409a61d8506e788f4bf040aa3",
+      "693cbcb702772c5b34bf45409e7029a29e4e70c36895fedb83e92de688422f07"
+    ],
+    "kotlin/compiler-features/reified-types/index.html": [
+      "6192590457bea54f9ca2a1d385dc9d899dd83bf292cd52e1b81846868058cd7f",
+      "4cab8f2dc553adf41b5580bac19d2a7cab79208df49c60a32722dcaba790e0f5",
+      "1102eeff2a8b753c1b145057103ab4e5a490ab95f29a6ba119381c55bdc3a950"
+    ],
+    "kotlin/compiler-features/inline-functions/index.html": [
+      "d11eb9909bcd04f29a7f829c4ca639f3a147982a4ec201e6db0583bc25ee1933",
+      "28257c4e2acb41c944a544ca396456bc40c856ffb1b877bc63359428bc2977a2"
+    ],
+    "kotlin/language-core/data-classes/index.html": [
+      "32ff227639cf4e993e9c02436fb493405e4fd1d7e2ae171049005415f6be483e",
+      "83873ff0521180e40bf54399c1e1f7dd398da62daea70f35ef292d182a7facd5"
+    ],
+    "kotlin/language-core/value-classes/index.html": [
+      "feeb7a3d96e37dd9be03c4e44f726c0287f9d8b046af4970541a0a603ac59024",
+      "5cd16006f2034dfa14eb22002e748dd39a5076e26c2db6b39df38db040e7adaf"
+    ],
+    "kotlin/language-core/null-safety/index.html": [
+      "e295e4f0d489dba00d6d3627f7cc822e015642c976146b36f8b3d606c4f2c704",
+      "9dd8f24d0bb8bcb9d99045428f19c230ba8d2028f60f541a624713ca25c3b98c",
+      "c31cc14135d3ca7210915653661c3a592080ccf45087cecfc3568d52a8794b88",
+      "e05ab2aa987134bc957aa2a99802707e1b71100b8b02723096c89dd4b4758a3e",
+      "235607706e433c91c01fd35209f81e82c1ff4d61c7501a3a27b6ac065b3888c0",
+      "c533930a954ee9d0baa1daf334bda376f9472c012b22543d238dad566a73ca25"
+    ],
+    "kotlin/language-core/sealed-classes/index.html": [
+      "19553cf48d6edfecb64f7939ec8abc7b7a6213cb5b1dc506f5ed373a656f9ae8",
+      "18bc22b70797822970e03037c1c94dfb1dc9c17d053b16f4cde701da37da2773",
+      "fc4f50d3e64571bf78f51583b711c0b5c0970ffc2761f9cef60ee7d7cdf34d14"
+    ],
+    "kotlin/language-core/delegation/index.html": [
+      "9cbfe478ca37d0d7fcab6804673222182bcf58fe374f841c9e8879cb9eb5793a",
+      "d2016dc7d3266ccd131f293b5492c9d362f98e138448538a85a40d6b4137ce58"
+    ],
+    "kotlin/language-core/extensions/index.html": [
+      "7224df16cb41c2fc29554e58bae6176aef473ed52364dea8f42ce1302615b124",
+      "a0a89c68e370edd266116e31f03556ce134083e6030542aa4f2a37bf9d874f95"
+    ],
+    "kotlin/language-core/variables/index.html": [
+      "038c70ad24d0574988df7c4a430733767f5e6e0196b11497cf2775805460c9c7",
+      "10e0887b0edd978bbddedf083d28943f7499503b6d90e1c235214f77dedd4f97",
+      "6f060ac7e7707d6c824a68775c9864b130a7ff070fffe58f6d8ed6c75bdb5dfa",
+      "c8ea0b69f0eefc19d73c774f66a2020b64961ea612f22448dc69228a2d158f3f"
+    ],
+    "kotlin/language-core/functions/index.html": [
+      "98120842351027718b8af04fc6c1371160f692c9ce4ec49adeec0d36e065d762",
+      "9f82625bc0db5e8c766323761a111a3fa03be173dfe5a19c523dec8bf01323d9"
+    ],
+    "kotlin/type-system/generics/index.html": [
+      "53233477e97ed81be5441ec4cf4b2448a074543dea41a449e67f4560cc3cd866",
+      "0ff7bba9615e20547100b455bba731623ad91f5202223d89f7886a106d250298",
+      "53bd17af68df9f12f208b0053b6b1e05ae260909c068207685b9b08c282928ed"
+    ],
+    "kotlin/type-system/variance/index.html": [
+      "3a80ea7b7b3ab9000c93de2818147369d3353788c31576f25c5b4b00c15d8956",
+      "95e62da340b836f766c66779992fe21d3d41880f2377565e3b903adf55f95a3c",
+      "05e3f48d2843513740288913adef44f3d0928b0a34d1f4df0a72fab71ee830e3",
+      "4b1068477f66e45b11649f0853b22f982c0ae98924889a9bb18fc226366a3641"
+    ],
+    "kotlin/runtime-and-jvm/jvm-interop/index.html": [
+      "d3f8b6b4afa23f4ff005241f48a764b68b4a226f4f789da4861b18b4cb84daba",
+      "a445fd384ff22e2bab648ed236698d64f93b682c2aef9baf2eb12474709e061a"
+    ],
+    "kotlin/runtime-and-jvm/memory-model/index.html": [
+      "f998e66be014d17a72319916597a597ba5bdfe50c2e260182fe71552ada358e9",
+      "5b735ea3a86a91c4eb4c2b222385551113db0fb90a970d3b30316de5839a1c2c",
+      "45bf4188caef0f6b3b963c422226a98e6790a4b17d47b0c4f4e4bd63c9a4d899",
+      "61f191d9f5c1627442afecf7cd65058a6a4c13a2a3ca336b20ed2ba234cdabe4",
+      "48ec77cca61f080b7d11e2d69305384bc0df7bb17431f5a2d5212d80d65e97c0"
+    ],
+    "kotlin/runtime-and-jvm/bytecode/index.html": [
+      "881d64118badd1293c7f24fbc729431aab83edf90cace57ec59ba9141544a72e",
+      "857cb5c729685d4cb5f11bbb4455c77aac738c5b14ca6a96c7d222195925c7eb",
+      "1ff4eb23937cd23f5a28324b9167884b124d62545ba5955ec95a956b80da14dd",
+      "b97063a44d31baae29f6660700b7400341e09f73fd7b3ceeb8f86bcf1bc02a92"
+    ],
+    "mobile-system-design/security-and-privacy/index.html": [
+      "cdf3e01bea2e97e1afcc5d661640ca13cebfe82b8918f0c4f4061e53536fcb7f"
+    ],
+    "mobile-system-design/pagination/index.html": [
+      "b88c64fe3fbc83d8e5ca1b4497366720a4a97088cd1dc23c6550b5e8adfd46f6",
+      "b839df35857c42e97946b01226fbf9abfa1403b92497585edb98375a875632c4",
+      "c960f70844b0275d600acbd53bb43d22b4abd4d52db7cebb0484702e2fbe8982"
+    ],
+    "mobile-system-design/ride-hailing/index.html": [
+      "733ad8c1c49be43fecd570e7ba03b921bf6a43ce29f7ac8c36c36b2badd02e97",
+      "44a3f47686c25913f1d3b05afaf3394de1d1bb06269a88f8c965922e8fd3ecad",
+      "1ef40edf5950fda182fdea9a1e013b2c72950ec956f50e2d24e8d3666eddf86b"
+    ],
+    "mobile-system-design/design-framework/index.html": [
+      "1be3f295583912311b1471337d1fd2fd218846f6a223457f1c2efe65d8380b75",
+      "8c678763298a527f6438fd3cc9a2fad7a711ae8688aa1701725e300e58c28dcd"
+    ],
+    "mobile-system-design/telemetry-sdk/index.html": [
+      "c7b0b50e0b2a516ef1c4560b6165e2681984d2eab3529f7d77a70c883f71c0ea",
+      "5f64b60ef5f3f87cddbb6de674a255aa0a6062decfab8fba714e9e829c9e9f39",
+      "f5b04ecb0aaf7559e77ef3a27286026f2c00386209c922c7fa7ce62e136c6d5d"
+    ],
+    "mobile-system-design/notification-system/index.html": [
+      "db0518d869ea999bb9583df7357bdb5ca34d187770186bba1bb720f22b63a0d6",
+      "83e024f3b63e07ad9373f5f88819c3256a52311774b3730907ef122d2e76085d",
+      "e409a76b5f60b551cb4a75f3fe75ebfdba22ce9b12b68e4dacef9824fb7f089a",
+      "c12acc5c524366a25fbcfb0527c88396eecbe969e5cd7b03b2875cc87d4154b7"
+    ],
+    "mobile-system-design/non-functional-requirements/index.html": [
+      "8c3892d01a8b525a5f0a4c84b5e164142f8edbde4ed7be8bf95620edfe2264f7"
+    ],
+    "mobile-system-design/feature-flags-and-remote-config/index.html": [
+      "6a06748aef56653f43f654516a7cf58185c964a2c54f2f202173abbfec568773",
+      "756b2f0a897143055f2d2a2497a01bbfecb69a05123d1fc1ac2a9e7376b79508",
+      "df8a913f7808fd7c421ed4d5c94e212cc7101aa03be4e1adefa4bd14a3486f02",
+      "b371f64744133a2e90ca32b15eeafaf4bf167adf831d5cf4bbbee6c94ff46884"
+    ],
+    "mobile-system-design/file-downloader/index.html": [
+      "4ce232e693a9e395ba9a88e0c2fba8aa885c6e0448389ff8de34c736b98c88f3",
+      "fc492376e28890d245e662e616e99f5494f46a55202f81cdbf0dc34af5744738",
+      "1c673f47fee8cbcc90eeac5a0e0111c74385f1800c6723ae4397b1b63b01b6e4",
+      "e993fc6986b9803da74bca3fabb5c4d9751cf7efa7f75ade8ce3bc33f1c825f8"
+    ],
+    "mobile-system-design/typeahead-autocomplete-search/index.html": [
+      "c2a97d88f59f32cffb9cf803a0b9676e5653e83419c5ddaf9f8204d127e9d189",
+      "e4d0be614ead1c3ab28140f707194fbc60f1535e44d69f15b916fcce403d7527",
+      "dd29552cd910b068ddc4515caaa941fe7ae3fa055e7ba80070d4c8acb8cd4c3a"
+    ],
+    "mobile-system-design/search/index.html": [
+      "8e27f9c0db24f108611df85aff7fe5347ed640716d4486f50d583a4ced6cb32d",
+      "8c388369179ed8746c337de7befd8f631553ee8df3c9a60f87c705e403d17bda",
+      "ab313d03ec222dfa90d5993d216fa7dd9d24d5fb921b7a163ba3c4981e4d342e"
+    ],
+    "mobile-system-design/analytics-sdk/index.html": [
+      "83b841da3ea86e4b895e8846b976b6dbab8103cc26ee36ae7d223cb7320350ce",
+      "40c0668d542cb2064fa2d858c04a7089e4d9f65457254c5a33946f5305204db9",
+      "ecdaffe37ae0ba253570538ad82a392849474d0e33e4e72dc2619eff1e0be8de"
+    ],
+    "mobile-system-design/localization-and-internationalization/index.html": [
+      "c272b4799dfb680fb79c1ddf1ab2edd994ff7958b74b9dc6fcf8591983bf0a24"
+    ],
+    "mobile-system-design/push-notifications/index.html": [
+      "9d750d20cf60359cea27af27533ee010265dce913bbdfeb196153b2bf06de6c0",
+      "ea8fd4eec18830c56a66d237fc698f1a114c7a3b27e4c4c5b1056a864866088e",
+      "63b7dbec59faa66f6afbe957cbaeeefe89f944c0a41cf7d7b9c37e0de64c4548"
+    ],
+    "mobile-system-design/play-billing-and-subscriptions/index.html": [
+      "ddf2e51c9e536ff1e523e7a019b4f07df1e7f9995ed64deaab219f11d5d5e972",
+      "328b098de18b29bbc6a1f617bb94b5752d605ade709d4169e3b44ee1f62fd99a"
+    ],
+    "mobile-system-design/on-device-ai/index.html": [
+      "f80c119a151c7022a79cc4494882635e62725351df662f8340fe9956b03aa67f"
+    ],
+    "mobile-system-design/image-loading/index.html": [
+      "7d4fdc86cc9e337ecd471a5c8ce5738ee9e3c02b7a1c2f4e4bc330d20ee0ea2b",
+      "856eda12a2d4520e93b9b28201e8daf55e03444148137d75a2f8b58c1447f08b",
+      "19147f089b09afad1c99a1606d6fabdcf4bbf426a9605a7a9a5597df50a871dd"
+    ],
+    "mobile-system-design/stock-trading-app/index.html": [
+      "250c96dd7f139942920293ae42f1d1d2ed5fb7f66f5c66d6aacc5a723ef577a5",
+      "4f7d2d6ba32abc9610c78ccc600f89e15f32840b8c8d881722c10e0d90828751"
+    ],
+    "mobile-system-design/news-feed/index.html": [
+      "b6454c8d7799dd041154db4d42426b02bcabb422ed9e2d65bc6436b7b225d841",
+      "f15ba06b3b99213f389a52fb9d381ec0dc241cb6b3c66f864b38d7810e7d7f79",
+      "32c8d4c01f1c05fc66c3ef4b733f679b76abdff5894bf3a5e6150ed012eb5f25"
+    ],
+    "mobile-system-design/experimentation-platform/index.html": [
+      "a61a07d7ebf6101f09511a05d8da76dfd3d25e726fbab27ca290645b2060e1d5",
+      "717b39b94f54d9abf77cbe5b596253d75f282a6e8b505018d67ab8532dd78495"
+    ],
+    "mobile-system-design/offline-sync/index.html": [
+      "9399a137b4c75d7ed199a571c7a8e1898e02a4306fcd26ffbe86e1f2b24e4d45",
+      "6c117d8c6afbf8f0ce7d4d981ec04febbcfb38530267fd55ba26f2571c222ed8",
+      "3acd8a5356914b87ad431ccdc92c2e09531692a5b8a2e04e2b95dfc24552c4a5"
+    ],
+    "mobile-system-design/deep-links-and-universal-links/index.html": [
+      "dacdc9b5a715a03fb0c30b563f533e30bc2d56ff40788f7827b59d9a9029fcd5",
+      "5f3bdce1e1354f5670a8d8662f3a9afd4e292b63dfa9cddded4050427b9cd3d5",
+      "2266261f2b689b26473b5f3179ac83e8e782e1acdcd92ad3cc66a1899cce4366"
+    ],
+    "mobile-system-design/youtube-video-streaming/index.html": [
+      "0faedc2d6e0ae91794e18331a2b8ea8b541441e14cabd7155c28c5fd91900af3",
+      "17bfb904da11418d9cc15353d578aa525cc8f2ecdf4592b49709539d83ff07fb"
+    ],
+    "mobile-system-design/versioning-and-backward-compatibility/index.html": [
+      "a20ac7b92dff75c7b12b04c5ff4d30f6c42addea17ecf50f746b9caaf3f73738",
+      "4cfa13fb0eed1597b5431a5762f451c90534d99dafcbd62eb07eaeb11c19fd7b"
+    ],
+    "mobile-system-design/collaborative-editing/index.html": [
+      "9fadee6fc6837f3a462ddad8def52735d71528081568a481d7e6deb6ba4e4577",
+      "37bba06a89f6449727aeeb4fdfb4666cfe45756c0de1f8b61e63e84d1cae15a5",
+      "94a224ed43adac6e8108772ca523f5c05630a621376e88bdc0dd20a02dd5942e",
+      "dc84ba376f26beedb550a4137f01b825f322e0c631242906bb07342ab1cc5990"
+    ],
+    "mobile-system-design/payment-flow/index.html": [
+      "99bbb8c48a162cba82ea6116e1e77d31a5bfb00c32925f23f94a3e55aac36fbc",
+      "b00412f24f40916e721f6634e2c5228ad01b840b4d1c9458019b2241b780b882",
+      "331ca6f4de87ebf9ffc921ac47a57ba87c30f863fd67d60d623caba6bade2df4"
+    ],
+    "mobile-system-design/caching-library/index.html": [
+      "a7ca32d16e4b2a6d3e6a8d381496ad6f3d5dbc2969a8e80fd55ad57add3e848d",
+      "1a4496048cf2315df7d5835d33b30462005aeb770fe0e27852487e48cdf1b733",
+      "54a0d219a5c890080fb4e166503f84bca5fee48c6681fe7f44e703a7d215f55f",
+      "1f4c1606a3690a92e18d6a925b9ead5a322b94c2b3eddac4c8f61fb4a986851d"
+    ],
+    "mobile-system-design/performance/index.html": [
+      "62f1d250cca82c16613fa4571092a08be95d450b7148512e709bc98c44689861",
+      "3150ade882a36ca9e4fa836baa71586237260eea924a21c1727057157353dbf0"
+    ],
+    "mobile-system-design/google-maps-location-system/index.html": [
+      "24f63c11d57250a2fded27f202b7911d796ff51c1098cfa2e8c9fe003791a740",
+      "28a4c0149a14bb80dce6c93c570116645036d2a19b18263d31de536c8b8c2259"
+    ],
+    "mobile-system-design/accessibility/index.html": [
+      "17bf7d2d946b60c638520fee10e9c96dc4d9290dbe4ef403be655571909eebaf"
+    ],
+    "mobile-system-design/authentication/index.html": [
+      "ad065180718ce1c513777ddbb06e6071ad90aaadf6713a24c41e844323e6429a",
+      "441e43b098cf2af78d2d3516dac36b5c0a99f1c45bc541e9be9749e4a69d382d",
+      "b3d876ed65a6221ba8f666d559776762570d38939f550fae4ccf62a4c287616b"
+    ],
+    "mobile-system-design/chat-messaging/index.html": [
+      "5d1c2dcd18e3e4063a37edfbff7400e606ef186fb2ce009de97847a48048d850",
+      "f5661faffa76de6c3585cbbaf57a403856de15ce20143dc61b6bb5261b7eb3a8",
+      "24901896b718b87e56f1789cfdfddd61d844ea86212abbd063ddff95017e0e30",
+      "944ee5ebfc481bdedd9c4fed0c7fe4fd743f9380b948ef56b44b45cd0110084f"
+    ],
+    "mobile-system-design/server-driven-ui/index.html": [
+      "ca113333d50993a5440a333a5329a1a1f2121119ad921a96ba3a7a74fadd05ba"
+    ],
+    "mobile-system-design/a-b-testing-infrastructure/index.html": [
+      "a091ef248cbc4c53e38d81144d1c0c385c914bd6ab815797f68676f08ee087c9",
+      "5a7e2d4e9be5a6077281edb00744c923dfdf0fd8972d943f4db4ab2cf974ba5f"
+    ],
+    "mobile-system-design/app-startup/index.html": [
+      "24b4b406caee70d113b20ee71f7540d237f73ffa0e582c3d05956ef09f5f7d18",
+      "f01d93032a6ae48ff9a22dd0cb89ace6c331e6bdbbc01c5db3519d247f0ecd64"
+    ],
+    "release-engineering/android-platform-compatibility/index.html": [
+      "4e0099091541d6345dc8d7b7bd6c542ff3ab8f6ee59d85f25fd3189ecf3392aa"
+    ],
+    "release-engineering/release-strategy/index.html": [
+      "415f7ec0d28e9d228be242fa789d122aaba6a898dffa998b9a95067c071f09b1",
+      "c7ec9a8f11501bc389174bab966f37b8dc57b038e8da4fa700f6f89d0cedcd78",
+      "7a9e7b0b9034dcb2d7d95eaeb226aaade39f2ee0fc37396a083429ecca8b4165",
+      "0af303ab3e59c2ec924eef14182e6e997ab38a8bfac45ae22d8e3c62743397d8",
+      "0f67a01caf9f30a7881420406fd2f4404e6ee7b11ecfc94f023e71bb0c687297"
+    ],
+    "release-engineering/ci-cd-for-mobile/index.html": [
+      "887f4cb658b6895ece9ec8893ab351ee32e21af318a12f3f3e196b4855b557db"
+    ],
+    "release-engineering/staged-rollouts/index.html": [
+      "411e3ea1d3bfeda1ec84e6f8747c5d28dabee244e178fef7cfc83ac0b989f8ec",
+      "efab8c25e1a1cedfd357d089ad4ddc032407c1600a905ef41719be6db5a87b68",
+      "c98256911eab4d18556d5b8cbb53be9ae80191fac2ef323134338f3e9d06642c"
+    ],
+    "release-engineering/play-store-internals/index.html": [
+      "07a6962077830a154d25aa0af1a9791ba558402582f7f670291e5fd77a22a9b4"
+    ],
+    "release-engineering/crash-rate-gating/index.html": [
+      "bcb4c4b88e6fa77facf81780f7ba52edacb62835faad1ac5c173e4bd3b37d1fb",
+      "b50664309f084fa50d37006709c8c2ed8b3a9f9951844ecd7b6c66feee1e374d"
+    ],
+    "release-engineering/android-developer-verification/index.html": [
+      "cea69e5f2780244a49592ffa85ec20abaa366859c74c14edc24837e090b9fbcc"
+    ],
+    "release-engineering/kill-switches/index.html": [
+      "904a6bc5dbefe2ece195a6fe5ed05ce9827b1c39b6ee1dab629d85b722b2db8a",
+      "cc945a8c68debab1b27aabe2b68e6572f65a0d976d3a2757cc4071f050400436",
+      "883a6fd37b7f9cc79530d3d6ded6d79c9f9aadabff2baacac929b994e147e584"
+    ],
+    "release-engineering/16kb-page-sizes/index.html": [
+      "4d848ef6f554d74d128bd0cae0c697c9d50c18ee738ae9fc31165d465f894137"
+    ],
+    "release-engineering/code-signing/index.html": [
+      "156f6fca1b871f4de2ad812a167eca7ce19c5e0f060fa5853ce5e467f460a115",
+      "9b4d1621c253d20b7300ed759e9fbbb32dd62eb4715a133f563baa2db436f8ea"
+    ],
+    "release-engineering/app-bundles/index.html": [
+      "c3a2f546ad3f272c40d1c494a0a6c0df93377be1b34abfd9d9108a68ee52dd16"
+    ],
+    "backend-for-mobile/data-formats/index.html": [
+      "8c1c34811d8b71d9edaa1bf8270640b32219e5c29a067835a06c48cee1d02068"
+    ],
+    "backend-for-mobile/transport-protocols/index.html": [
+      "2741a19baae29535afc7320cf13a2e588e9275168d7c1b109becb9f3370a10fc"
+    ],
+    "backend-for-mobile/api-design-for-mobile/index.html": [
+      "acea9c4a8db8dc71266913a97bb1a3cded0c2f52df3f8eb7d22454374bc2801d"
+    ],
+    "backend-for-mobile/graphql-vs-rest/index.html": [
+      "ee974fcdc35416e9ac284c9bc3d011f52ceead35aaf440e2886e9dea73f2768b"
+    ],
+    "backend-for-mobile/rate-limiting/index.html": [
+      "5f9e021f888dc106d61c25d30fd02a1ace6de308c0d5c0f3028fbd3e8427b1dc",
+      "e3253d8019c5a41fbcf6ab9134e4cc66b6802c29a22e428c49b8ee628efb4955"
+    ],
+    "backend-for-mobile/bff-pattern/index.html": [
+      "6fcbad1908eb89601561d23ad34f975412bd099bbf6701f6d6e79c28f5a0badd",
+      "41eeeb407848e5fc34634b9378aa80f73453fcde008f663cbd981c2069c79d19"
+    ],
+    "backend-for-mobile/sse-vs-websockets/index.html": [
+      "5fdc6116595ee6420da1ade0800067b967935b98820b6e658e3380ffa3a2ea5d",
+      "1b088afa6239ff7ecbc233659e1df8050b0a00679c678beb18e68278a5e328db",
+      "6283c112830d98ee2c41b0ec2225621364efe04d77bfecdb8fa3d62ea58c779f"
+    ],
+    "backend-for-mobile/push-vs-poll-vs-sse-vs-websockets/index.html": [
+      "8caff3a2c682a5acc42cf3e15169aab565fdf8ee9d185422f9efafa163d33dd1"
+    ],
+    "security/privacy-sandbox/index.html": [
+      "fc134e689b4a0d13dd239bd594a8d5f56eae4724877544bdfcbc80856e722f0f",
+      "8eea58df8fef951f209d206ebd318b77de09a2b4aa9d18f94c5e20a3d690d41d"
+    ],
+    "security/privacy-gdpr-data-residency/index.html": [
+      "5ff28cbe96a10ea67de1d9466883bc7a271eb57fe7761b6aa2b40a39ec7d352b"
+    ],
+    "security/certificate-pinning/index.html": [
+      "c18a909ef65485fef4725da7208f5e7057e90b0f6d8128f038ca709ed3731a14",
+      "372c9e156ba188d4ca2b491df44492f9a9d8a726a00fbc6ba35141cab16d8b81"
+    ],
+    "security/auth-on-mobile/index.html": [
+      "fcbf2199e26386fe297a48671e85dbdfd369dd0a2268add4a9a715981a676079",
+      "3a6ada4d591cf504be08b86452b6c751b31b33c674028eea7912410488ae39f1"
+    ],
+    "security/key-management/index.html": [
+      "784b77f05ea44b159bc2bb38dc337d265217c7e88c036a7a7b7ce47055aff2f8"
+    ],
+    "security/secure-storage-on-android/index.html": [
+      "754c146161b77034c4686da179e1b45d26f47108d31eb487f9ae8b45ba325bc8"
+    ],
+    "security/attestation/index.html": [
+      "1e9461262fd247a9291d88c3033d0e24d3d680fc32d57f05ea4582a84e655d12",
+      "0b4de03809ee8483a00a3e29d50ce053babda0bdc541a0cfec784b5d337d489c",
+      "af3e4d518af0b0bda788cdaa05633f9dbcb239342db2a8436ca97ab7190948f8"
+    ],
+    "computer-science/recursion-backtracking/index.html": [],
+    "computer-science/trees/index.html": [
+      "3e8adb84982e0cb9c4b2017a636e9419d3f4d59f3998bf0ffd3a9be5274ce343"
+    ],
+    "computer-science/linked-lists-stacks-queues/index.html": [],
+    "computer-science/sorting-and-searching/index.html": [],
+    "computer-science/greedy-and-intervals/index.html": [],
+    "computer-science/hashing/index.html": [
+      "1b5a759c04b82773a54c11abbbddc65cf0fa26d391821886df4bc6f03e039166"
+    ],
+    "computer-science/system-complexity/index.html": [
+      "d45d9060f884d8a7fe6c3d5fc35b46465b74826d1a89d003f02c47d1a8285c00",
+      "3f585807fd528b30f848166ec13ebeab88babe3be8bbdf6d294a07a3545384fc"
+    ],
+    "computer-science/dynamic-programming/index.html": [],
+    "computer-science/big-o/index.html": [],
+    "computer-science/graphs/index.html": [
+      "9bc64641e18eb48ffb57840ba68dbec2938ad9339dd1ee7c4e7169d54ffa7deb"
+    ],
+    "computer-science/arrays-and-strings/index.html": [],
+    "computer-science/heaps-and-priority-queues/index.html": [],
+    "platform-engineering/sdk-distribution/index.html": [
+      "c22b170b3437650cfba9c0f83491e671d519226fcf75f300604af439bee78a6c",
+      "fc4905afb1e1f5b486aeb5f7b64f23e3d46f11c1339f22873c89f5cb6510cd39"
+    ],
+    "platform-engineering/library-versioning/index.html": [],
+    "platform-engineering/internal-developer-platforms/index.html": [
+      "31c49f352362d4a56d59ee97699d5fc8735bd61bcd09b63b21cc64db938832be"
+    ],
+    "platform-engineering/design-systems-architecture/index.html": [
+      "1d87df0a615bd4571bf3590d5161aec7645dd45a7bdb80d638e143882de1ee69"
+    ],
+    "platform-engineering/build-graph-scaling/index.html": [
+      "5f8a1856ca8e020b5dcacea33826dc7f0e6f82a0df5d48fc647854ca29f59ceb",
+      "bc772ab0d3bd56249d6ae468c7fef01fe04668fca853e752c4e9f23863718188"
+    ],
+    "platform-engineering/custom-lint-and-static-analysis/index.html": [],
+    "distributed-systems/cap-theorem/index.html": [
+      "0769c07575f436f02832af3c0fa8ca53a6220e10933ce8fd4a4287224d216988",
+      "05c206688c434744edc7ccfd069c62da4b87c32ae19a28a8f1b2dd95fde233b1",
+      "8eb66ad02402706a28a3d3fa22f359334b41a95f0f3846006f8c73035a0e6944"
+    ],
+    "distributed-systems/delivery-semantics/index.html": [
+      "f6e36529ee573d54273f917c233d8f89efc1b6810afe4bbadb60567b23b0b7d4",
+      "61512673f42cf12eb481ecce324d2d8e2acf5fb97b04fc922133218897977e50",
+      "580e2e047be4a15b4882bb69516f51ab0cc31a295228358c86632602cc6cd827",
+      "4ad5f7174a60c88c88a14a7ce801065e48241baf8ec6cc2d1e9ae21fa0f30e1d",
+      "0b4a60264fd314a1e59e817b32dbe00ba5c14369d4f4b59efc29afc3b63a6d92",
+      "425b79509e7c5f6ae5b1198bd0d77658958b86aca88490e3f0e4092343fb5b0a",
+      "b55346330f7ccde273815e633b9db2e144dfd9c779493ba89cdacadfe5259a4e"
+    ],
+    "distributed-systems/consistency-models/index.html": [
+      "61d1f9143c73be632af3513d7ee30542b2abdd30381e150c556dfb5209104f90",
+      "b63b349dba20bc847165fb33322eb2a3b7d1203d26e9d6a0c5e78403d3509b26",
+      "aa8b66f650bc2595cc813409b5762e28d2644f28183048b1b53e7b72bbfcd0a4"
+    ],
+    "distributed-systems/idempotency/index.html": [
+      "272da0b48ff160f19f02881956ec8683aad6ab4a7fe6a2984821cf2ee6cd975e",
+      "63ae3879dc0780ef8d9cbea1b377a5abb41f8294ec70c10cd6d7473d601cf3b9",
+      "623d4ff085461e325c7937c4791b13a133cf0566069cae1dc17867a125232dbd"
+    ],
+    "distributed-systems/lww-vs-crdt/index.html": [
+      "685c10c1b7a795b7c4f5fe5006ca451d904814a37d2a2f8be38b57e3491ab42d"
+    ],
+    "distributed-systems/mobile-client-consistency-contracts/index.html": [
+      "c02d9262f6a5c7fa95869af382b65610c0dceadc1998b28c92c935be1b7149f1"
+    ],
+    "distributed-systems/replication-and-leader-election/index.html": [
+      "7b5a594c6cbedb3155a370902b02a184f2d89d22d34afde8f6735dafc9e7f62d"
+    ],
+    "distributed-systems/crdts/index.html": [
+      "963c92f05d8fa611f483dd4c65e30e9622735fb915e7c8a9c1800b40c5c41d48",
+      "1a1cf6ad80da29bbbc6eb46750a2d0ae5e4b79bd1e8fed704e8b76eb04fdf01e",
+      "778493945902206eca6be5e3feee523ccfc14715304e558c856a30b58e9fce61"
+    ],
+    "distributed-systems/consensus-basics/index.html": [
+      "b72e6f6fe77636ca9a9890a8d8e934599cdf9c1b18efc5a2792235f477a919ed",
+      "eb525f1b42d37c706643c6443f64dc7dc2607f461d0177b8a5dfc28d1767b3fc",
+      "59883f46375c3679b999bebc86d86a9ab47704713471db3eb115ff4863e05618",
+      "3404089da4798a64010e03b41d2025a3a5d199cb813ea80dacb92a70c26360c3"
+    ],
+    "distributed-systems/distributed-tracing/index.html": [],
+    "distributed-systems/streaming-logs-partitioning/index.html": [
+      "588606df68067a7c472b27bb093dec7b0512a5a7da493012ac780001968abed3"
+    ],
+    "distributed-systems/vector-clocks/index.html": [
+      "b71ac57f8068daefbbb7401482d4a109f307e85531c86d79a26a92bb0fd36d9b",
+      "ade3ca09aea191389a2e040e5b58563803d625fb7ed134f0981750872aa38bf4",
+      "dea4fd224d0501459a05f2eb4cae9b0b159239760f0de79daf8772fa3d3bf048"
+    ]
+  },
+  "all_svg_identical": true,
+  "all_css_identical": true
+}
