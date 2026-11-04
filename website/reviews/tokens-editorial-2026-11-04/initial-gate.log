@@ -1,0 +1,9 @@
+Review data: 295 triage rows, 23 amended IDs / 24 replacements, 251 source hashes verified.
+Traceback (most recent call last):
+  File "/Users/swaransinghaulakh/AndroidStudioProjects/android-staff-engineer-playbook-website-tokens-editorial/website/scripts/build.py", line 984, in <module>
+    check_completion.check()
+    ~~~~~~~~~~~~~~~~~~~~~~^^
+  File "/Users/swaransinghaulakh/AndroidStudioProjects/android-staff-engineer-playbook-website-tokens-editorial/website/scripts/check_completion.py", line 92, in check
+    assert browser['done'] and {p['href'].removeprefix(build.BASE if p['href'].startswith(build.BASE) else '/').strip('/') for p in browser['pages']}=={p.removesuffix('.md') for p in build.PAGES} and all(p['ok'] for p in browser['pages'])
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError

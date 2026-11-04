@@ -1,0 +1,36 @@
+{
+  "input_commit": "ede75aa",
+  "input_fingerprint_sha256": "8accbd6d3df8e8db1240db4765e4fc4f9874f5b457cacab52c95abd6c7c08977",
+  "initial_six_suite_run": {
+    "command": "python website/tools/dev.py audit tokens-editorial-2026-11-04",
+    "exit_code": 1,
+    "browser_passed": 248,
+    "browser_total": 249,
+    "other_suites": "all passed",
+    "diagnostics": "initial-browser.json",
+    "runner_log": "initial-audit.log"
+  },
+  "focused_index_probe": {
+    "runs": 5,
+    "all_passed": true,
+    "evidence": "readiness-probe.json"
+  },
+  "full_page_rerun": {
+    "command": "node website/tools/run_audits.mjs <puppeteer> <same-QA-copy> <rerun-folder> browser.json",
+    "exit_code": 0,
+    "browser_passed": 249,
+    "browser_total": 249,
+    "evidence": "browser.json",
+    "reader_or_audit_inputs_changed_between_runs": false
+  },
+  "initial_gate_attempt": {
+    "result": "rejected initial failed browser evidence",
+    "reason": "Evidence handoff used system Python without markdown_it and stopped before copying the passing rerun. Corrected using the website virtual environment.",
+    "diagnostics": "initial-gate.log"
+  },
+  "final_gate": {
+    "command": "TZ=Asia/Kolkata python website/tools/dev.py gate tokens-editorial-2026-11-04",
+    "exit_code": 0,
+    "log": "gate-build.log"
+  }
+}
