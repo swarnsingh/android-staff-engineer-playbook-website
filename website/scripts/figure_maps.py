@@ -9,6 +9,7 @@ patterns come from tokens.json through design-system/components/bundle.css.
 from pathlib import Path
 from html import escape
 import json, math
+import design_tokens
 
 WEB = Path(__file__).resolve().parents[1]
 ROLES = {'client': 'Devices and clients', 'runtime': 'Execution', 'storage': 'Stored data',
@@ -18,10 +19,12 @@ FIGURE = {t['name']: str(t['value']) for t in json.loads((WEB / 'design-system/t
 px = lambda name: float(FIGURE[name].removesuffix('px'))
 CARD_W, MARGIN, LINE = px('figure-card-width'), px('figure-margin'), px('figure-line')
 FRAME_W, MAP_SCALE, MAP_FRAME_W = px('figure-frame-width'), float(FIGURE['figure-map-scale']), px('figure-map-frame-width')
-GRID = (CARD_W + 40, 120)
+GEOMETRY = design_tokens.geometry_values()
+geometry_value = GEOMETRY.__getitem__
+GRID = (CARD_W + geometry_value('grid-column-gap'), geometry_value('grid-row-pitch'))
 # Conservative advance widths per em for the faces bundle.css assigns; used to reject clipped labels.
-GLYPH = {'title': .58 * px('figure-title-size'), 'detail': .608 * px('figure-detail-size'),
-         'label': .5615 * px('figure-label-size'), 'note': .608 * px('figure-note-size')}
+GLYPH = {'title': geometry_value('glyph-title-advance') * px('figure-title-size'), 'detail': geometry_value('glyph-detail-advance') * px('figure-detail-size'),
+         'label': geometry_value('glyph-label-advance') * px('figure-label-size'), 'note': geometry_value('glyph-note-advance') * px('figure-note-size')}
 
 
 def width(text, kind):
@@ -66,7 +69,7 @@ def check(row):
             raise ValueError(f'Figure {key}: {n["id"]} needs a title and a known role')
         if 'x' not in n and 'col' not in n:
             continue  # auto_layout sizes these cards and checks them itself
-        room = n.get('w', CARD_W) - 28
+        room = n.get('w', CARD_W) - int(px('figure-card-text-inset'))
         if any(width(t, 'title') > room for t in lines(n['title'])) or any(width(d, 'detail') > room for d in lines(n.get('detail'))):
             raise ValueError(f'Figure {key}: label of {n["id"]} would be clipped; widen the card or shorten it')
     if row['kind'] == 'map':
@@ -126,8 +129,8 @@ class Canvas:
         x0, y0, x1, y1 = self.box
         x0, y0, x1, y1 = x0 - MARGIN, y0 - MARGIN, x1 + MARGIN, y1 + MARGIN
         w, h = x1 - x0, y1 - y0
-        marker = (f'<defs><marker id="{self.marker_id}" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" '
-                  f'markerHeight="8" orient="auto-start-reverse"><path class="fm-arrowhead" d="M1 1L9 5L1 9z"/></marker></defs>')
+        marker = (f'<defs><marker id="{self.marker_id}" viewBox="{geometry_value('arrow-marker-viewbox')}" refX="{geometry_value('arrow-marker-ref-x')}" refY="{geometry_value('arrow-marker-ref-y')}" markerWidth="{geometry_value('arrow-marker-width')}" '
+                  f'markerHeight="{geometry_value('arrow-marker-height')}" orient="auto-start-reverse"><path class="fm-arrowhead" d="{geometry_value('arrow-marker-path')}"/></marker></defs>')
         return (f'<svg class="fm-svg" viewBox="{x0:.0f} {y0:.0f} {w:.0f} {h:.0f}" width="{w:.0f}" height="{h:.0f}" '
                 f'style="min-width:{w:.0f}px;max-width:{w:.0f}px" role="img" aria-labelledby="{prefix}-t {prefix}-d">'
                 f'<title id="{prefix}-t">{escape(title)}</title><desc id="{prefix}-d">{escape(desc)}</desc>'
@@ -136,32 +139,32 @@ class Canvas:
 
 def card_height(n):
     if n.get('shape') in ('start', 'end'):
-        return 24
-    return n.get('h', 30 + LINE * (len(lines(n['title'])) + len(lines(n.get('detail'))) + bool(n.get('state'))))
+        return geometry_value('terminal-size')
+    return n.get('h', geometry_value('card-height-padding') + LINE * (len(lines(n['title'])) + len(lines(n.get('detail'))) + bool(n.get('state'))))
 
 
 def card(c, n):
     x, y, w, h, role = n['x'], n['y'], n['w'], n['h'], n.get('role', 'neutral')
     if n.get('shape') == 'start':
-        c.add(f'<circle class="fm-start" cx="{x+12}" cy="{y+12}" r="10"/>', x, y, x + 24, y + 24)
-        c.boxes.append((n['id'], (x, y, x + 24, y + 24)))
+        c.add(f'<circle class="fm-start" cx="{x+geometry_value('terminal-centre')}" cy="{y+geometry_value('terminal-centre')}" r="{geometry_value('start-radius')}"/>', x, y, x + geometry_value('terminal-size'), y + geometry_value('terminal-size'))
+        c.boxes.append((n['id'], (x, y, x + geometry_value('terminal-size'), y + geometry_value('terminal-size'))))
         return
     if n.get('shape') == 'end':
-        c.add(f'<g class="fm-end"><circle cx="{x+12}" cy="{y+12}" r="11"/><circle cx="{x+12}" cy="{y+12}" r="6"/></g>',
-              x, y, x + 24, y + 24)
-        c.boxes.append((n['id'], (x, y, x + 24, y + 24)))
+        c.add(f'<g class="fm-end"><circle cx="{x+geometry_value('terminal-centre')}" cy="{y+geometry_value('terminal-centre')}" r="{geometry_value('end-outer-radius')}"/><circle cx="{x+geometry_value('terminal-centre')}" cy="{y+geometry_value('terminal-centre')}" r="{geometry_value('end-inner-radius')}"/></g>',
+              x, y, x + geometry_value('terminal-size'), y + geometry_value('terminal-size'))
+        c.boxes.append((n['id'], (x, y, x + geometry_value('terminal-size'), y + geometry_value('terminal-size'))))
         return
     cls = f'fm-node actor-{role}' + (' is-key' if n.get('key') else '')
-    inner = (f'<rect class="fm-card-inner" x="{x+4}" y="{y+4}" width="{w-8}" height="{h-8}" rx="8"/>'
+    inner = (f'<rect class="fm-card-inner" x="{x+geometry_value('storage-inner-inset')}" y="{y+geometry_value('storage-inner-inset')}" width="{w-2*geometry_value('storage-inner-inset')}" height="{h-2*geometry_value('storage-inner-inset')}" rx="{geometry_value('storage-inner-radius')}"/>'
              if role == 'storage' else '')
     rows = [('fm-title', t) for t in lines(n['title'])] + [('fm-detail', d) for d in lines(n.get('detail'))]
     state_labels={'warn':'Warning','error':'Warning','ghost':'Inactive example','active':'Current focus','done':'Shown outcome'}
     state=state_labels.get(n.get('state'))
-    top = y + h / 2 - (len(rows) - 1) * LINE / 2 - (2 if len(rows) > 1 else 0) + (LINE/2 if state else 0)
-    texts = ''.join(f'<text class="{cls_}" x="{x+w/2}" y="{top + i*LINE + (4 if i else 0):.1f}" dominant-baseline="central">{escape(t)}</text>'
+    top = y + h / 2 - (len(rows) - 1) * LINE / 2 - (geometry_value('multiline-baseline-adjustment') if len(rows) > 1 else 0) + (LINE/2 if state else 0)
+    texts = ''.join(f'<text class="{cls_}" x="{x+w/2}" y="{top + i*LINE + (geometry_value('detail-baseline-offset') if i else 0):.1f}" dominant-baseline="central">{escape(t)}</text>'
                     for i, (cls_, t) in enumerate(rows))
     status=f'<text class="fm-detail fm-status" x="{x+w/2}" y="{y+LINE}" dominant-baseline="central">{escape(state)}</text>' if state else ''
-    c.add(f'<g class="{cls}"><rect class="fm-card" x="{x}" y="{y}" width="{w}" height="{h}" rx="12"/>{inner}{status}{texts}</g>',
+    c.add(f'<g class="{cls}"><rect class="fm-card" x="{x}" y="{y}" width="{w}" height="{h}" rx="{geometry_value('card-radius')}"/>{inner}{status}{texts}</g>',
           x, y, x + w, y + h)
     c.boxes.append((n['id'], (x, y, x + w, y + h)))
 
@@ -169,13 +172,13 @@ def card(c, n):
 def pill(c, x, y, number, label):
     """A numbered relationship label centred at (x, y), on the sheet colour above the line."""
     rows = lines(label)
-    w = 30 + max(width(r, 'label') for r in rows) + 12
-    h = 26 + LINE * (len(rows) - 1)
+    w = geometry_value('pill-number-gutter') + max(width(r, 'label') for r in rows) + geometry_value('pill-end-inset')
+    h = geometry_value('pill-base-height') + LINE * (len(rows) - 1)
     left, top = x - w / 2, y - h / 2
-    texts = ''.join(f'<text class="l" x="{left+28:.1f}" y="{top + 13 + i*LINE:.1f}" dominant-baseline="central">{escape(r)}</text>'
+    texts = ''.join(f'<text class="l" x="{left+geometry_value('pill-text-left'):.1f}" y="{top + geometry_value('pill-baseline') + i*LINE:.1f}" dominant-baseline="central">{escape(r)}</text>'
                     for i, r in enumerate(rows))
-    c.add(f'<g class="fm-pill"><rect x="{left:.1f}" y="{top:.1f}" width="{w:.1f}" height="{h}" rx="13"/>'
-          f'<circle cx="{left+14:.1f}" cy="{top+13:.1f}" r="9"/><text class="n" x="{left+14:.1f}" y="{top+13:.1f}" dominant-baseline="central">{number}</text>'
+    c.add(f'<g class="fm-pill"><rect x="{left:.1f}" y="{top:.1f}" width="{w:.1f}" height="{h}" rx="{geometry_value('pill-radius')}"/>'
+          f'<circle cx="{left+geometry_value('pill-badge-left'):.1f}" cy="{top+geometry_value('pill-baseline'):.1f}" r="{geometry_value('pill-badge-radius')}"/><text class="n" x="{left+geometry_value('pill-badge-left'):.1f}" y="{top+geometry_value('pill-baseline'):.1f}" dominant-baseline="central">{number}</text>'
           f'{texts}</g>', left, top, left + w, top + h)
     c.pills.append((' '.join(rows), (left, top, left + w, top + h)))
 
@@ -191,16 +194,16 @@ def anchors(a, b, e):
     if route == 'straight' and not e.get('from_dx') and not e.get('to_dx'):
         # Cards that share a band of height or width get an orthogonal line through that band.
         lo, hi = max(a['y'], b['y']), min(a['y'] + a['h'], b['y'] + b['h'])
-        if hi - lo > 16 and (a['x'] + a['w'] <= b['x'] or b['x'] + b['w'] <= a['x']):
+        if hi - lo > geometry_value('straight-anchor-overlap') and (a['x'] + a['w'] <= b['x'] or b['x'] + b['w'] <= a['x']):
             y = (lo + hi) / 2
             return [(a['x'] + a['w'] if right else a['x'], y), (b['x'] if right else b['x'] + b['w'], y)], route
         lo, hi = max(a['x'], b['x']), min(a['x'] + a['w'], b['x'] + b['w'])
-        if hi - lo > 16 and (a['y'] + a['h'] <= b['y'] or b['y'] + b['h'] <= a['y']):
+        if hi - lo > geometry_value('straight-anchor-overlap') and (a['y'] + a['h'] <= b['y'] or b['y'] + b['h'] <= a['y']):
             x = (lo + hi) / 2
             return [(x, bottom(a) if down else top(a)), (x, top(b) if down else bottom(b))], route
     if a is b:
-        x, off = a['x'] + a['w'], e.get('off', 46)
-        return [(x, acy - 12), (x + off, acy - 12), (x + off, acy + 12), (x, acy + 12)], 'loop'
+        x, off = a['x'] + a['w'], e.get('off', geometry_value('self-loop-outset'))
+        return [(x, acy - geometry_value('self-loop-half-height')), (x + off, acy - geometry_value('self-loop-half-height')), (x + off, acy + geometry_value('self-loop-half-height')), (x, acy + geometry_value('self-loop-half-height'))], 'loop'
     if route == 'straight' and abs(acy - bcy) < 1:
         return [(a['x'] + a['w'] if right else a['x'], acy), (b['x'] if right else b['x'] + b['w'], bcy)], route
     if route in ('straight', 'curve'):
@@ -218,14 +221,14 @@ def anchors(a, b, e):
         return [(acx, bottom(a) if down else top(a)), (acx, mid), (bcx, mid), (bcx, top(b) if down else bottom(b))], route
     if route == 'around':
         if e.get('side', 'right') == 'right':
-            x = max(a['x'] + a['w'], b['x'] + b['w']) + e.get('off', 60)
+            x = max(a['x'] + a['w'], b['x'] + b['w']) + e.get('off', geometry_value('around-route-outset'))
             return [(a['x'] + a['w'], acy), (x, acy), (x, bcy), (b['x'] + b['w'], bcy)], route
-        x = min(a['x'], b['x']) - e.get('off', 60)
+        x = min(a['x'], b['x']) - e.get('off', geometry_value('around-route-outset'))
         return [(a['x'], acy), (x, acy), (x, bcy), (b['x'], bcy)], route
     raise ValueError(f'unknown route {route}')
 
 
-def wrap_label(text, limit=22):
+def wrap_label(text, limit=geometry_value('edge-label-wrap')):
     """Long relationship labels become short lines, so pills fit between columns."""
     if isinstance(text, list):
         return text
@@ -251,7 +254,7 @@ def wrap_label(text, limit=22):
 
 def pill_size(label):
     rows = lines(label)
-    return 30 + max(width(r, 'label') for r in rows) + 12, 26 + LINE * (len(rows) - 1)
+    return geometry_value('pill-number-gutter') + max(width(r, 'label') for r in rows) + geometry_value('pill-end-inset'), geometry_value('pill-base-height') + LINE * (len(rows) - 1)
 
 
 def auto_layout(row, key):
@@ -324,13 +327,13 @@ def auto_layout(row, key):
             need = [width(t, 'title') + inset for n in nodes if n['_col'] == c for t in lines(n['title'])]
             need += [width(d, 'detail') + inset for n in nodes if n['_col'] == c for d in lines(n.get('detail'))]
             cards_need = min(card_max, math.ceil(max(need)))
-            boundary_need = max([len(labels[g]) * 8.6 + 36 - 48 + 2 for g in labels if root(g) == k], default=0)
+            boundary_need = max([len(labels[g]) * geometry_value('boundary-glyph-advance') + geometry_value('boundary-label-inset-total') - 2 * geometry_value('boundary-card-inset') + geometry_value('boundary-label-clearance') for g in labels if root(g) == k], default=0)
             colw.append(math.ceil(max(card_min, cards_need, boundary_need)))
-        gap_x, gap_y = row.get('gap_x', 230), row.get('gap_y', 96)
+        gap_x, gap_y = row.get('gap_x', geometry_value('column-gap')), row.get('gap_y', geometry_value('row-gap'))
         # Columns that would make the figure wider than its frame continue on a band below.
         band, xs, x = [0] * len(columns), [0] * len(columns), 0
         for c in range(len(columns)):
-            if c and x + colw[c] > row.get('max_w', 780):
+            if c and x + colw[c] > row.get('max_w', geometry_value('automatic-width')):
                 band[c], x = band[c - 1] + 1, 0
             elif c:
                 band[c] = band[c - 1]
@@ -353,8 +356,8 @@ def auto_layout(row, key):
         ys, y = {}, 0
         band_of_row = {n['_row']: band[n['_col']] for n in nodes}
         for r in range(len(used)):
-            y += 44 if nested_first.get(r) and r else 0
-            y += 60 if r and band_of_row[r] != band_of_row[r - 1] else 0
+            y += geometry_value('nested-boundary-header-gap') if nested_first.get(r) and r else 0
+            y += geometry_value('column-band-gap') if r and band_of_row[r] != band_of_row[r - 1] else 0
             ys[r] = y
             y += heights[r] + gap_y
         for n in nodes:
@@ -364,7 +367,7 @@ def auto_layout(row, key):
     obstacles = []
     for g in groups:
         x0, y0, _, _ = group_box(g, geo, groups)
-        obstacles.append((x0 + 10, y0 + 10, x0 + 24 + len(g['label']) * 8.6, y0 + 42))
+        obstacles.append((x0 + geometry_value('boundary-label-obstacle-inset'), y0 + geometry_value('boundary-label-obstacle-inset'), x0 + geometry_value('boundary-card-inset') + len(g['label']) * geometry_value('boundary-glyph-advance'), y0 + geometry_value('boundary-label-obstacle-height')))
 
     def hits_card(pts, ends):
         for (x0, y0), (x1, y1) in zip(pts, pts[1:]):
@@ -372,12 +375,12 @@ def auto_layout(row, key):
             for s in range(1, steps):
                 x, y = x0 + (x1 - x0) * s / steps, y0 + (y1 - y0) * s / steps
                 for name, (bx0, by0, bx1, by1) in cards:
-                    if name not in ends and bx0 - 6 < x < bx1 + 6 and by0 - 6 < y < by1 + 6:
+                    if name not in ends and bx0 - geometry_value('route-card-clearance') < x < bx1 + geometry_value('route-card-clearance') and by0 - geometry_value('route-card-clearance') < y < by1 + geometry_value('route-card-clearance'):
                         return True
         return False
 
     def free(rect):
-        def over(a, b, pad=4):
+        def over(a, b, pad=geometry_value('route-label-clearance')):
             return a[0] < b[2] + pad and b[0] < a[2] + pad and a[1] < b[3] + pad and b[1] < a[3] + pad
         return not any(over(rect, b) for _, b in cards) and not any(over(rect, o) for o in obstacles)
 
@@ -399,18 +402,18 @@ def auto_layout(row, key):
         if a is b:
             options = [{}]
         elif twin:
-            options = [{'route': 'curve', 'bend': 70 * (1 if twin % 2 else -1)}, {'route': 'around', 'side': 'right', 'off': 60 * twin}]
+            options = [{'route': 'curve', 'bend': geometry_value('twin-edge-bend') * (1 if twin % 2 else -1)}, {'route': 'around', 'side': 'right', 'off': geometry_value('twin-edge-outset') * twin}]
         elif a['_col'] == b['_col'] or a['_row'] == b['_row']:
             options = [{'route': 'straight'}]
         elif row.get('layout') == 'layers':
             # Turn in the gap just above the target's row, so the line never crosses an earlier row.
-            above = b['y'] - row.get('gap_y', 116) / 2 if b['y'] > a['y'] else None
+            above = b['y'] - row.get('gap_y', geometry_value('layer-row-gap')) / 2 if b['y'] > a['y'] else None
             options = ([{'route': 'vhv', 'mid': above}] if above else []) + [{'route': 'vhv'}, {'route': 'straight'}, {'route': 'vh'}, {'route': 'hv'}]
         else:
             options = [{'route': 'vh'}, {'route': 'hv'}, {'route': 'vhv'}, {'route': 'straight'}]
         if a is not b:
-            options += [{'route': 'around', 'side': side, 'off': off} for off in (70, 120, 180) for side in ('right', 'left')]
-            options += [{'route': 'curve', 'bend': bend} for bend in (70, -70, 120, -120)]
+            options += [{'route': 'around', 'side': side, 'off': off} for off in geometry_value('around-route-candidates') for side in ('right', 'left')]
+            options += [{'route': 'curve', 'bend': bend} for bend in geometry_value('curve-route-candidates')]
         def crossings(pts):
             count = 0
             for (p1, p2) in zip(pts, pts[1:]):
@@ -446,7 +449,7 @@ def auto_layout(row, key):
             else:
                 order = sorted(range(len(pts) - 1), key=lambda s_: -math.hypot(pts[s_+1][0]-pts[s_][0], pts[s_+1][1]-pts[s_][1]))
                 for s_ in order:
-                    for t in (.5, .35, .65, .25, .75, .15, .85):
+                    for t in geometry_value('edge-label-positions'):
                         (sx, sy), (tx, ty) = pts[s_], pts[s_ + 1]
                         x, y = sx + (tx - sx) * t, sy + (ty - sy) * t
                         rect = (x - w / 2, y - h / 2, x + w / 2, y + h / 2)
@@ -479,11 +482,11 @@ def auto_layout(row, key):
 
 def place_flow(row, nodes, rank):
     """Layered rows for trees and fan-outs, or a wrapped snake for long pipelines."""
-    w = max(180, min(330, math.ceil(max([width(t, 'title') + 28 for n in nodes for t in lines(n['title'])] +
-                                        [width(d, 'detail') + 28 for n in nodes for d in lines(n.get('detail'))]))))
-    max_w = row.get('max_w', 820)
+    w = max(geometry_value('flow-card-min'), min(int(px('figure-auto-card-max')), math.ceil(max([width(t, 'title') + int(px('figure-card-text-inset')) for n in nodes for t in lines(n['title'])] +
+                                        [width(d, 'detail') + int(px('figure-card-text-inset')) for n in nodes for d in lines(n.get('detail'))]))))
+    max_w = row.get('max_w', geometry_value('flow-width'))
     if row['layout'] == 'snake':
-        gap_x, gap_y = row.get('gap_x', 190), row.get('gap_y', 90)
+        gap_x, gap_y = row.get('gap_x', geometry_value('snake-column-gap')), row.get('gap_y', geometry_value('snake-row-gap'))
         per = max(1, int((max_w + gap_x) // (w + gap_x)))
         ordered = sorted(nodes, key=lambda n: (rank[n['id']], nodes.index(n)))
         rows = [ordered[i:i + per] for i in range(0, len(ordered), per)]
@@ -492,7 +495,7 @@ def place_flow(row, nodes, rank):
             for i, n in enumerate(members):
                 slots.append((n, r, i if r % 2 == 0 else per - 1 - i))
     else:
-        gap_x, gap_y = row.get('gap_x', 60), row.get('gap_y', 116)
+        gap_x, gap_y = row.get('gap_x', geometry_value('layer-column-gap')), row.get('gap_y', geometry_value('layer-row-gap'))
         per = max(1, int((max_w + gap_x) // (w + gap_x)))
         rows, place = [], {}
         for k in sorted(set(rank.values())):
@@ -523,16 +526,16 @@ def place_flow(row, nodes, rank):
 def group_box(g, nodes, groups):
     """A boundary encloses its own members and every nested boundary."""
     members = [nodes[m] for m in g['nodes']]
-    boxes = [(m['x'] - 24, m['y'] - 52, m['x'] + m['w'] + 24, m['y'] + m['h'] + 24) for m in members]
+    boxes = [(m['x'] - geometry_value('boundary-card-inset'), m['y'] - geometry_value('boundary-header-inset'), m['x'] + m['w'] + geometry_value('boundary-card-inset'), m['y'] + m['h'] + geometry_value('boundary-card-inset')) for m in members]
     for child in groups:
         if child.get('parent') == g['id']:
             cx0, cy0, cx1, cy1 = group_box(child, nodes, groups)
-            boxes.append((cx0 - 14, cy0 - 44, cx1 + 14, cy1 + 14))
+            boxes.append((cx0 - geometry_value('nested-boundary-inset'), cy0 - geometry_value('nested-boundary-header-gap'), cx1 + geometry_value('nested-boundary-inset'), cy1 + geometry_value('nested-boundary-inset')))
     return min(b[0] for b in boxes), min(b[1] for b in boxes), max(b[2] for b in boxes), max(b[3] for b in boxes)
 
 
 # Progressively tighter spacing for automatic layouts, until the figure fits the shared frame.
-FIT_STEPS = [{}, {'gap_x': 180}, {'gap_x': 180, 'max_w': 640}, {'gap_x': 140, 'max_w': 560}, {'gap_x': 120, 'max_w': 480}]
+FIT_STEPS = geometry_value('fit-steps')
 
 
 def render_map(row, key):
@@ -562,7 +565,7 @@ def draw_map(row, key):
     nodes = {}
     for n in row['nodes']:
         m = dict(n)
-        m['w'] = 24 if n.get('shape') in ('start', 'end') else n.get('w', row.get('card_w', CARD_W))
+        m['w'] = geometry_value('terminal-size') if n.get('shape') in ('start', 'end') else n.get('w', row.get('card_w', CARD_W))
         m['h'] = card_height(n)
         m['x'] = n['x'] if 'x' in n else n['col'] * gx
         m['y'] = n['y'] if 'y' in n else n['row'] * gy
@@ -576,10 +579,10 @@ def draw_map(row, key):
         for nid, m in nodes.items():
             if nid not in owned(g) and m['x'] < x1 and x0 < m['x'] + m['w'] and m['y'] < y1 and y0 < m['y'] + m['h']:
                 raise ValueError(f'Figure {key}: boundary "{g["label"]}" overlaps card {nid}, which it does not own')
-        if len(g['label']) * 8.6 > x1 - x0 - 36:
+        if len(g['label']) * geometry_value('boundary-glyph-advance') > x1 - x0 - geometry_value('boundary-label-inset-total'):
             raise ValueError(f'Figure {key}: boundary label "{g["label"]}" is wider than its boundary')
-        c.add(f'<g class="fm-group"><rect x="{x0}" y="{y0}" width="{x1-x0}" height="{y1-y0}" rx="18"/>'
-              f'<text x="{x0+18}" y="{y0+26}" dominant-baseline="central">{escape(g["label"])}</text></g>', x0, y0, x1, y1)
+        c.add(f'<g class="fm-group"><rect x="{x0}" y="{y0}" width="{x1-x0}" height="{y1-y0}" rx="{geometry_value('boundary-radius')}"/>'
+              f'<text x="{x0+geometry_value('boundary-label-x')}" y="{y0+geometry_value('boundary-label-y')}" dominant-baseline="central">{escape(g["label"])}</text></g>', x0, y0, x1, y1)
     edges, pills, numbers = [], [], {}
     for e in row.get('edges', []):
         a, b = nodes[e['from']], nodes[e['to']]
@@ -587,14 +590,14 @@ def draw_map(row, key):
         # Stop the line short of the card so the arrowhead touches the border.
         (px, py), (qx, qy) = pts[-2], pts[-1]
         d_ = math.hypot(qx - px, qy - py) or 1
-        pts[-1] = (qx - (qx - px) / d_ * 2, qy - (qy - py) / d_ * 2)
+        pts[-1] = (qx - (qx - px) / d_ * geometry_value('arrow-end-inset'), qy - (qy - py) / d_ * geometry_value('arrow-end-inset'))
         cls = 'fm-edge' + (' is-dashed' if e.get('style') == 'dashed' else '')
         start = f' marker-start="url(#{c.marker_id})"' if e.get('both') else ''
         if kind == 'curve':
             (sx, sy), (tx, ty) = pts
             length = math.hypot(tx - sx, ty - sy) or 1
             nx, ny = -(ty - sy) / length, (tx - sx) / length
-            bend = e.get('bend', 60)
+            bend = e.get('bend', geometry_value('curve-bend'))
             cx_, cy_ = (sx + tx) / 2 + nx * bend, (sy + ty) / 2 + ny * bend
             path = f'M{sx:.1f} {sy:.1f} Q{cx_:.1f} {cy_:.1f} {tx:.1f} {ty:.1f}'
             label_at = ((sx + 2 * cx_ + tx) / 4, (sy + 2 * cy_ + ty) / 4)
@@ -606,7 +609,7 @@ def draw_map(row, key):
             for x, y in pts:
                 c.grow(x, y, x, y)
             if kind == 'loop':
-                label_at = (pts[1][0] + 6, (pts[1][1] + pts[2][1]) / 2)
+                label_at = (pts[1][0] + geometry_value('self-loop-label-inset'), (pts[1][1] + pts[2][1]) / 2)
             else:
                 seg = e.get('at')
                 if seg is None:
@@ -622,7 +625,7 @@ def draw_map(row, key):
         number = len(numbers) + 1
         numbers[bus or id(e)] = number
         if kind == 'loop':
-            w = 30 + max(width(r, 'label') for r in lines(e['label'])) + 12
+            w = geometry_value('pill-number-gutter') + max(width(r, 'label') for r in lines(e['label'])) + geometry_value('pill-end-inset')
             label_at = (label_at[0] + w / 2, label_at[1])
         pills.append((label_at, number, e['label']))
     c.parts.extend(edges)
@@ -637,26 +640,26 @@ def render_sequence(row, key):
     """Lanes fit the shared frame: spacing shrinks to max_w and long labels wrap instead of widening it."""
     c = Canvas(key)
     n = len(row['participants'])
-    max_w = row.get('max_w', 880)
-    gap = min(row.get('lane_gap', 420), (max_w - CARD_W - 16) / (n - 1)) if n > 1 else 0
-    card_w = min(CARD_W, gap - 16) if n > 1 else CARD_W
-    left = 8 + card_w / 2
+    max_w = row.get('max_w', geometry_value('sequence-width'))
+    gap = min(row.get('lane_gap', geometry_value('sequence-lane-gap')), (max_w - CARD_W - geometry_value('sequence-lane-inset')) / (n - 1)) if n > 1 else 0
+    card_w = min(CARD_W, gap - geometry_value('sequence-lane-inset')) if n > 1 else CARD_W
+    left = geometry_value('sequence-origin') + card_w / 2
     lanes = {p['id']: left + i * gap for i, p in enumerate(row['participants'])}
     right_edge = left + (n - 1) * gap + card_w / 2
-    fit = lambda text, room: wrap_label(text, max(10, int((room - 42) / GLYPH['label'])))
+    fit = lambda text, room: wrap_label(text, max(geometry_value('sequence-label-min-chars'), int((room - geometry_value('sequence-label-inset')) / GLYPH['label'])))
     participants = []
     for p in row['participants']:
         p = dict(p)
-        if any(width(t, 'title') + 28 > card_w for t in lines(p['title'])):
-            p['title'] = [part for t in lines(p['title']) for part in lines(wrap_label(t, max(8, int((card_w - 28) / GLYPH['title']))))]
-        if any(width(d, 'detail') + 28 > card_w for d in lines(p.get('detail'))):
-            p['detail'] = [part for d in lines(p['detail']) for part in lines(wrap_label(d, max(8, int((card_w - 28) / GLYPH['detail']))))]
+        if any(width(t, 'title') + int(px('figure-card-text-inset')) > card_w for t in lines(p['title'])):
+            p['title'] = [part for t in lines(p['title']) for part in lines(wrap_label(t, max(geometry_value('sequence-card-min-chars'), int((card_w - int(px('figure-card-text-inset'))) / GLYPH['title']))))]
+        if any(width(d, 'detail') + int(px('figure-card-text-inset')) > card_w for d in lines(p.get('detail'))):
+            p['detail'] = [part for d in lines(p['detail']) for part in lines(wrap_label(d, max(geometry_value('sequence-card-min-chars'), int((card_w - int(px('figure-card-text-inset'))) / GLYPH['detail']))))]
         participants.append(p)
     row = dict(row, participants=participants)
     for p in participants:
         card(c, dict(p, x=lanes[p['id']] - card_w / 2, y=0, w=card_w, h=card_height(p)))
     head = max(card_height(p) for p in participants)
-    y, number, body = head + 44, 0, []
+    y, number, body = head + geometry_value('sequence-header-gap'), 0, []
     for event in row['events']:
         tallest = 0
         for e in event if isinstance(event, list) else [event]:
@@ -664,46 +667,46 @@ def render_sequence(row, key):
                 over = e['over'] if isinstance(e['over'], list) else [e['over']]
                 centre = sum(lanes[o] for o in over) / len(over)
                 span = max(lanes[o] for o in over) - min(lanes[o] for o in over)
-                room = min(max(span + card_w, gap * 1.6, 240), max_w - 16)
-                text = lines(wrap_label(e['text'], max(12, int((room - 32) / GLYPH['note']))))
-                w = max(width(t, 'note') for t in text) + 32
-                h = 34 + LINE * (len(text) - 1)
+                room = min(max(span + card_w, gap * geometry_value('sequence-note-lane-span'), geometry_value('sequence-note-min-width')), max_w - geometry_value('sequence-lane-inset'))
+                text = lines(wrap_label(e['text'], max(geometry_value('sequence-note-min-chars'), int((room - geometry_value('sequence-note-inset')) / GLYPH['note']))))
+                w = max(width(t, 'note') for t in text) + geometry_value('sequence-note-inset')
+                h = geometry_value('sequence-note-height') + LINE * (len(text) - 1)
                 x = min(max(centre - w / 2, 0), right_edge - w)
-                rows_ = ''.join(f'<text x="{x + w / 2:.1f}" y="{y - h / 2 + 17 + i * LINE:.1f}" dominant-baseline="central">{escape(t)}</text>'
+                rows_ = ''.join(f'<text x="{x + w / 2:.1f}" y="{y - h / 2 + geometry_value('sequence-note-baseline') + i * LINE:.1f}" dominant-baseline="central">{escape(t)}</text>'
                                 for i, t in enumerate(text))
-                body.append(f'<g class="fm-note actor-{e.get("role", "storage")}"><rect x="{x:.1f}" y="{y - h / 2:.1f}" width="{w:.1f}" height="{h}" rx="9"/>{rows_}</g>')
+                body.append(f'<g class="fm-note actor-{e.get("role", "storage")}"><rect x="{x:.1f}" y="{y - h / 2:.1f}" width="{w:.1f}" height="{h}" rx="{geometry_value('sequence-note-radius')}"/>{rows_}</g>')
                 c.grow(x, y - h / 2, x + w, y + h / 2)
                 tallest = max(tallest, h)
             elif 'at' in e:
                 number += 1
                 lx = lanes[e['at']]
-                body.append(f'<path class="fm-edge" d="M{lx} {y-14} C{lx+70} {y-18} {lx+70} {y+18} {lx+4} {y+16}" marker-end="url(#{c.marker_id})"/>')
-                c.grow(lx, y - 18, lx + 60, y + 18)
-                room = right_edge - (lx + 74)
-                if room >= 150:
+                body.append(f'<path class="fm-edge" d="M{lx} {y-geometry_value('sequence-loop-start-y')} C{lx+geometry_value('sequence-loop-control-x')} {y-geometry_value('sequence-loop-control-y')} {lx+geometry_value('sequence-loop-control-x')} {y+geometry_value('sequence-loop-control-y')} {lx+geometry_value('sequence-loop-end-x')} {y+geometry_value('sequence-loop-end-y')}" marker-end="url(#{c.marker_id})"/>')
+                c.grow(lx, y - geometry_value('sequence-loop-control-y'), lx + geometry_value('sequence-loop-bounds-width'), y + geometry_value('sequence-loop-control-y'))
+                room = right_edge - (lx + geometry_value('sequence-loop-label-right'))
+                if room >= geometry_value('sequence-loop-right-min-room'):
                     label = fit(e['label'], room)
                     w, h = pill_size(label)
-                    pill_x = lx + 74 + w / 2
+                    pill_x = lx + geometry_value('sequence-loop-label-right') + w / 2
                 else:
                     # No room on the right of the last lane: put the label on the left of the loop.
-                    label = fit(e['label'], min(gap, lx) - 16)
+                    label = fit(e['label'], min(gap, lx) - geometry_value('sequence-lane-inset'))
                     w, h = pill_size(label)
-                    pill_x = lx - 10 - w / 2
+                    pill_x = lx - geometry_value('sequence-loop-label-left') - w / 2
                 body.append(('pill', pill_x, y, number, label))
-                tallest = max(tallest, max(40, h + 10))
+                tallest = max(tallest, max(geometry_value('sequence-loop-min-height'), h + geometry_value('sequence-loop-gap')))
             else:
                 number += 1
                 x0, x1 = lanes[e['from']], lanes[e['to']]
-                step = 6 if x1 > x0 else -6
+                step = geometry_value('sequence-message-inset') if x1 > x0 else -geometry_value('sequence-message-inset')
                 dashed = ' is-dashed' if e.get('style') == 'dashed' else ''
-                label = fit(e['label'], max(abs(x1 - x0) - 16, 170))
+                label = fit(e['label'], max(abs(x1 - x0) - geometry_value('sequence-lane-inset'), geometry_value('sequence-message-min-width')))
                 w, h = pill_size(label)
-                body.append(f'<path class="fm-edge{dashed}" d="M{x0+step} {y+8} L{x1-step} {y+8}" marker-end="url(#{c.marker_id})"/>')
-                body.append(('pill', (x0 + x1) / 2, y + 8 - h / 2 - 6, number, label))
-                tallest = max(tallest, h + 22)
-        y += tallest + 26
-    end = y - 10
-    lifelines = [f'<line class="fm-lifeline" x1="{lanes[p["id"]]}" y1="{card_height(p)+2}" x2="{lanes[p["id"]]}" y2="{end}"/>'
+                body.append(f'<path class="fm-edge{dashed}" d="M{x0+step} {y+geometry_value('sequence-message-y')} L{x1-step} {y+geometry_value('sequence-message-y')}" marker-end="url(#{c.marker_id})"/>')
+                body.append(('pill', (x0 + x1) / 2, y + geometry_value('sequence-message-y') - h / 2 - geometry_value('sequence-message-label-gap'), number, label))
+                tallest = max(tallest, h + geometry_value('sequence-message-row-gap'))
+        y += tallest + geometry_value('sequence-event-gap')
+    end = y - geometry_value('sequence-footer-inset')
+    lifelines = [f'<line class="fm-lifeline" x1="{lanes[p["id"]]}" y1="{card_height(p)+geometry_value('sequence-lifeline-inset')}" x2="{lanes[p["id"]]}" y2="{end}"/>'
                  for p in row['participants']]
     c.grow(0, 0, 0, end)
     c.parts = lifelines + c.parts

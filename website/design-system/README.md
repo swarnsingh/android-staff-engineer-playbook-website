@@ -126,3 +126,7 @@ The existing `.stepper` data format supports `visuals: {actorId: patch}` in each
 Learning paths present phase counts, chapter choices and a start action. Lesson pages retain reading controls and only populated supplemental views. The current track is the default curriculum scope; All topics opens the full catalog. Focus mode retains the topic drawer on desktop as well as smaller widths.
 
 Current-step captions and controls form one interaction area. Equivalent actions use Previous, Next and Reset; temporal playback uses Play/Pause. Reusable instructions and the full textual transcript share one optional disclosure. Each dedicated question is followed immediately by a clearly labelled answer. Verified corrections read normally; their detailed history is available under About this lesson. Inline-code chips belong to prose; fenced examples use one uninterrupted code surface, even inside a list. See the [UX review and browser evidence](../reviews/ux-2026-10-28/REPORT.md) for the verification scope.
+
+## Component values
+
+ReaderShell styles and FigureMap defaults now share token ownership in `tokens.json`. `componentCss` stores selector-named CSS values, expanded by `scripts/design_tokens.py` before stylesheet emission; `figureGeometry` stores numeric SVG layout defaults. See the [ReaderShell contract](components/ReaderShell/README.md) and [FigureMap contract](components/FigureMap/README.md) for authoring and validation. The extraction changes source ownership while preserving emitted styles and drawings.

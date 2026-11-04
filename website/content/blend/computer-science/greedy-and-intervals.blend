@@ -2,8 +2,6 @@
 <!-- @opening -->
 <p class="story-lead">A calendar app must fit the most meetings into one room. Picking the shortest meetings first looks sensible and is wrong. Picking the meeting that ends earliest is right, and the difference is a proof, not a hunch.</p>
 
-A greedy algorithm makes the locally best choice and never revisits it. It is fast and simple, but it is correct only when you can show an earlier choice never needs undoing. Interval problems are where greedy choices are easiest to prove.
-
 <!-- @before Core Patterns :: guide -->
 ### Sort first, then sweep
 

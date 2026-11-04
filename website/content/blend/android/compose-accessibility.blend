@@ -5,7 +5,7 @@
 <!-- @opening -->
 <p class="story-lead">A TalkBack user opens an inbox. A custom row handles taps with pointerInput/detectTapGestures but exposes no accessibility click action. Sender and subject are separate stops, and double-tapping either cannot open the message. The screen looks finished; to this user it does not work.</p>
 
-Accessibility services do not see pixels or composables. They see the **semantics tree**: what each element is, what state it has and what it can do. Compose builds a good tree for built-in components, and custom components must describe themselves. This chapter covers labels, merging, state and errors, traversal, large text, touch targets, and how to test all of them.
+Accessibility services do not see pixels or composables. They see the **semantics tree**: what each element is, what state it has and what it can do. Compose builds a good tree for built-in components, and custom components must describe themselves.
 
 <!-- @after Accessibility Model :: visual -->
 ### Two trees for one screen

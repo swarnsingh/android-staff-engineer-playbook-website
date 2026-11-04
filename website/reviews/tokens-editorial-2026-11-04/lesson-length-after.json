@@ -1,0 +1,3634 @@
+[
+  {
+    "path": "engineering-fundamentals/complexity-analysis.md",
+    "original_prose": 2095,
+    "added_prose": 309,
+    "hero_prose": 15,
+    "ratio": 0.147,
+    "stub": false,
+    "above_target": false,
+    "parts": {
+      "('opening', '')": 71,
+      "('after', 'Mental Model', 'guide')": 90,
+      "('after', 'Android Example', 'visual')": 66,
+      "('after', 'Staff Engineer Thinking', 'staff')": 67
+    }
+  },
+  {
+    "path": "engineering-fundamentals/latency-vs-throughput.md",
+    "original_prose": 3305,
+    "added_prose": 307,
+    "hero_prose": 14,
+    "ratio": 0.093,
+    "stub": false,
+    "above_target": false,
+    "parts": {
+      "('opening', '')": 65,
+      "('after', 'First Principles', 'visual')": 80,
+      "('after', 'Failure Modes', 'guide')": 76,
+      "('after', 'Reliability Considerations', 'staff')": 72
+    }
+  },
+  {
+    "path": "engineering-fundamentals/sync-vs-async.md",
+    "original_prose": 3479,
+    "added_prose": 288,
+    "hero_prose": 13,
+    "ratio": 0.083,
+    "stub": false,
+    "above_target": false,
+    "parts": {
+      "('opening', '')": 72,
+      "('after', 'First Principles', 'animation')": 66,
+      "('after', 'Android Example', 'guide')": 67,
+      "('after', 'Reliability Considerations', 'staff')": 70
+    }
+  },
+  {
+    "path": "engineering-fundamentals/coupling-vs-cohesion.md",
+    "original_prose": 1828,
+    "added_prose": 252,
+    "hero_prose": 12,
+    "ratio": 0.138,
+    "stub": false,
+    "above_target": false,
+    "parts": {
+      "('opening', '')": 65,
+      "('after', 'Internal Mechanics', 'visual')": 70,
+      "('after', 'Staff Engineer Thinking', 'staff')": 105
+    }
+  },
+  {
+    "path": "engineering-fundamentals/immutability.md",
+    "original_prose": 1746,
+    "added_prose": 308,
+    "hero_prose": 13,
+    "ratio": 0.176,
+    "stub": false,
+    "above_target": false,
+    "parts": {
+      "('opening', '')": 75,
+      "('after', 'Internal Mechanics', 'visual')": 75,
+      "('after', 'Production Example', 'guide')": 72,
+      "('after', 'Staff Engineer Thinking', 'staff')": 73
+    }
+  },
+  {
+    "path": "engineering-fundamentals/state-machines.md",
+    "original_prose": 3699,
+    "added_prose": 300,
+    "hero_prose": 9,
+    "ratio": 0.081,
+    "stub": false,
+    "above_target": false,
+    "parts": {
+      "('opening', '')": 75,
+      "('before', 'Internal Mechanics', 'guide')": 104,
+      "('after', 'Architecture', 'visual')": 42,
+      "('after', 'Reliability Considerations', 'staff')": 70
+    }
+  },
+  {
+    "path": "engineering-fundamentals/queues.md",
+    "original_prose": 1686,
+    "added_prose": 276,
+    "hero_prose": 8,
+    "ratio": 0.164,
+    "stub": false,
+    "above_target": false,
+    "parts": {
+      "('opening', '')": 66,
+      "('before', 'Internal Mechanics', 'guide')": 75,
+      "('after', 'Architecture', 'animation')": 40,
+      "('after', 'Failure Modes', 'staff')": 87
+    }
+  },
+  {
+    "path": "engineering-fundamentals/event-driven-architecture.md",
+    "original_prose": 1717,
+    "added_prose": 325,
+    "hero_prose": 11,
+    "ratio": 0.189,
+    "stub": false,
+    "above_target": false,
+    "parts": {
+      "('opening', '')": 65,
+      "('before', 'Internal Mechanics', 'guide')": 96,
+      "('after', 'Architecture', 'visual')": 52,
+      "('after', 'Failure Modes', 'staff')": 101
+    }
+  },
+  {
+    "path": "engineering-fundamentals/serialization.md",
+    "original_prose": 2064,
+    "added_prose": 316,
+    "hero_prose": 10,
+    "ratio": 0.153,
+    "stub": false,
+    "above_target": false,
+    "parts": {
+      "('opening', '')": 59,
+      "('before', 'Internal Mechanics', 'guide')": 99,
+      "('after', 'Architecture', 'visual')": 57,
+      "('after', 'Failure Modes', 'staff')": 91
+    }
+  },
+  {
+    "path": "engineering-fundamentals/caching.md",
+    "original_prose": 3687,
+    "added_prose": 303,
+    "hero_prose": 14,
+    "ratio": 0.082,
+    "stub": false,
+    "above_target": false,
+    "parts": {
+      "('opening', '')": 74,
+      "('before', 'Internal Mechanics', 'guide')": 77,
+      "('after', 'Internal Mechanics', 'visual')": 62,
+      "('after', 'Reliability Considerations', 'staff')": 76
+    }
+  },
+  {
+    "path": "engineering-fundamentals/backpressure.md",
+    "original_prose": 3137,
+    "added_prose": 278,
+    "hero_prose": 16,
+    "ratio": 0.089,
+    "stub": false,
+    "above_target": false,
+    "parts": {
+      "('opening', '')": 75,
+      "('before', 'Internal Mechanics', 'guide')": 80,
+      "('after', 'Internal Mechanics', 'animation')": 54,
+      "('after', 'Failure Modes', 'staff')": 53
+    }
+  },
+  {
+    "path": "engineering-fundamentals/time-and-clocks.md",
+    "original_prose": 3864,
+    "added_prose": 335,
+    "hero_prose": 17,
+    "ratio": 0.087,
+    "stub": false,
+    "above_target": false,
+    "parts": {
+      "('opening', '')": 72,
+      "('before', 'Internal Mechanics', 'guide')": 101,
+      "('after', 'Architecture', 'animation')": 62,
+      "('after', 'Reliability Considerations', 'staff')": 83
+    }
+  },
+  {
+    "path": "engineering-fundamentals/fault-tolerance.md",
+    "original_prose": 3374,
+    "added_prose": 323,
+    "hero_prose": 14,
+    "ratio": 0.096,
+    "stub": false,
+    "above_target": false,
+    "parts": {
+      "('opening', '')": 67,
+      "('before', 'Internal Mechanics', 'guide')": 69,
+      "('after', 'Internal Mechanics', 'visual')": 64,
+      "('after', 'Failure Modes', 'staff')": 109
+    }
+  },
+  {
+    "path": "computer-science/big-o.md",
+    "original_prose": 21,
+    "added_prose": 65,
+    "hero_prose": 28,
+    "ratio": 3.095,
+    "stub": true,
+    "above_target": false,
+    "parts": {
+      "('opening', '')": 37
+    }
+  },
+  {
+    "path": "computer-science/arrays-and-strings.md",
+    "original_prose": 1321,
+    "added_prose": 314,
+    "hero_prose": 25,
+    "ratio": 0.238,
+    "stub": false,
+    "above_target": false,
+    "parts": {
+      "('opening', '')": 91,
+      "('before', 'Core Patterns', 'guide')": 74,
+      "('after', 'Core Patterns', 'check')": 86,
+      "('after', 'Staff Engineer Thinking', 'staff')": 38
+    }
+  },
+  {
+    "path": "computer-science/linked-lists-stacks-queues.md",
+    "original_prose": 1081,
+    "added_prose": 257,
+    "hero_prose": 23,
+    "ratio": 0.238,
+    "stub": false,
+    "above_target": false,
+    "parts": {
+      "('opening', '')": 38,
+      "('before', 'Common Patterns', 'guide')": 78,
+      "('after', 'Common Patterns', 'check')": 92,
+      "('after', 'Staff Engineer Thinking', 'staff')": 26
+    }
+  },
+  {
+    "path": "computer-science/hashing.md",
+    "original_prose": 4678,
+    "added_prose": 340,
+    "hero_prose": 23,
+    "ratio": 0.073,
+    "stub": false,
+    "above_target": false,
+    "parts": {
+      "('opening', '')": 87,
+      "('before', 'Internal Mechanics', 'guide')": 105,
+      "('after', 'Internal Mechanics', 'check')": 92,
+      "('after', 'Staff Engineer Thinking', 'staff')": 33
+    }
+  },
+  {
+    "path": "computer-science/trees.md",
+    "original_prose": 4350,
+    "added_prose": 358,
+    "hero_prose": 20,
+    "ratio": 0.082,
+    "stub": false,
+    "above_target": false,
+    "parts": {
+      "('opening', '')": 81,
+      "('before', 'Internal Mechanics', 'guide')": 101,
+      "('after', 'Internal Mechanics', 'check')": 119,
+      "('after', 'Staff Engineer Thinking', 'staff')": 37
+    }
+  },
+  {
+    "path": "computer-science/graphs.md",
+    "original_prose": 4137,
+    "added_prose": 349,
+    "hero_prose": 23,
+    "ratio": 0.084,
+    "stub": false,
+    "above_target": false,
+    "parts": {
+      "('opening', '')": 78,
+      "('before', 'Internal Mechanics', 'guide')": 94,
+      "('after', 'Internal Mechanics', 'check')": 129,
+      "('after', 'Staff Engineer Thinking', 'staff')": 25
+    }
+  },
+  {
+    "path": "computer-science/heaps-and-priority-queues.md",
+    "original_prose": 1041,
+    "added_prose": 295,
+    "hero_prose": 23,
+    "ratio": 0.283,
+    "stub": false,
+    "above_target": true,
+    "parts": {
+      "('opening', '')": 42,
+      "('before', 'Core Patterns', 'guide')": 103,
+      "('after', 'Core Patterns', 'check')": 98,
+      "('after', 'Staff Engineer Thinking', 'staff')": 29
+    }
+  },
+  {
+    "path": "computer-science/sorting-and-searching.md",
+    "original_prose": 1053,
+    "added_prose": 344,
+    "hero_prose": 22,
+    "ratio": 0.327,
+    "stub": false,
+    "above_target": true,
+    "parts": {
+      "('opening', '')": 74,
+      "('before', 'Binary Search', 'guide')": 100,
+      "('after', 'Binary Search', 'check')": 112,
+      "('after', 'Staff Engineer Thinking', 'staff')": 36
+    }
+  },
+  {
+    "path": "computer-science/recursion-backtracking.md",
+    "original_prose": 820,
+    "added_prose": 293,
+    "hero_prose": 22,
+    "ratio": 0.357,
+    "stub": false,
+    "above_target": true,
+    "parts": {
+      "('opening', '')": 37,
+      "('before', 'Backtracking Pattern', 'guide')": 96,
+      "('after', 'Backtracking Pattern', 'check')": 91,
+      "('after', 'Kotlin Tail Recursion', 'check')": 47
+    }
+  },
+  {
+    "path": "computer-science/dynamic-programming.md",
+    "original_prose": 947,
+    "added_prose": 295,
+    "hero_prose": 21,
+    "ratio": 0.312,
+    "stub": false,
+    "above_target": true,
+    "parts": {
+      "('opening', '')": 49,
+      "('before', 'State Design', 'guide')": 92,
+      "('after', 'State Design', 'check')": 103,
+      "('after', 'Staff Engineer Thinking', 'staff')": 30
+    }
+  },
+  {
+    "path": "computer-science/greedy-and-intervals.md",
+    "original_prose": 1015,
+    "added_prose": 283,
+    "hero_prose": 22,
+    "ratio": 0.279,
+    "stub": false,
+    "above_target": true,
+    "parts": {
+      "('opening', '')": 38,
+      "('before', 'Core Patterns', 'guide')": 89,
+      "('after', 'Core Patterns', 'check')": 102,
+      "('after', 'Staff Engineer Thinking', 'staff')": 32
+    }
+  },
+  {
+    "path": "computer-science/system-complexity.md",
+    "original_prose": 3678,
+    "added_prose": 327,
+    "hero_prose": 17,
+    "ratio": 0.089,
+    "stub": false,
+    "above_target": false,
+    "parts": {
+      "('opening', '')": 68,
+      "('before', 'Internal Mechanics', 'guide')": 106,
+      "('after', 'Internal Mechanics', 'check')": 104,
+      "('after', 'Staff Engineer Thinking', 'staff')": 32
+    }
+  },
+  {
+    "path": "platform-engineering/internal-developer-platforms.md",
+    "original_prose": 2718,
+    "added_prose": 24,
+    "hero_prose": 24,
+    "ratio": 0.009,
+    "stub": false,
+    "above_target": false,
+    "parts": {}
+  },
+  {
+    "path": "platform-engineering/design-systems-architecture.md",
+    "original_prose": 1858,
+    "added_prose": 22,
+    "hero_prose": 22,
+    "ratio": 0.012,
+    "stub": false,
+    "above_target": false,
+    "parts": {}
+  },
+  {
+    "path": "platform-engineering/library-versioning.md",
+    "original_prose": 1926,
+    "added_prose": 21,
+    "hero_prose": 21,
+    "ratio": 0.011,
+    "stub": false,
+    "above_target": false,
+    "parts": {}
+  },
+  {
+    "path": "platform-engineering/sdk-distribution.md",
+    "original_prose": 2162,
+    "added_prose": 24,
+    "hero_prose": 24,
+    "ratio": 0.011,
+    "stub": false,
+    "above_target": false,
+    "parts": {}
+  },
+  {
+    "path": "platform-engineering/custom-lint-and-static-analysis.md",
+    "original_prose": 800,
+    "added_prose": 25,
+    "hero_prose": 25,
+    "ratio": 0.031,
+    "stub": false,
+    "above_target": false,
+    "parts": {}
+  },
+  {
+    "path": "platform-engineering/build-graph-scaling.md",
+    "original_prose": 2246,
+    "added_prose": 21,
+    "hero_prose": 21,
+    "ratio": 0.009,
+    "stub": false,
+    "above_target": false,
+    "parts": {}
+  },
+  {
+    "path": "kotlin/language-core/variables.md",
+    "original_prose": 3996,
+    "added_prose": 435,
+    "hero_prose": 31,
+    "ratio": 0.109,
+    "stub": false,
+    "above_target": false,
+    "parts": {
+      "('opening', '')": 116,
+      "('before', 'First Principles', 'animation')": 44,
+      "('after', 'First Principles', 'visual')": 36,
+      "('after', 'Historical Context', 'bridge')": 22,
+      "('after', 'Mental Model', 'check')": 148,
+      "('diagram', '2570aeb49af05293')": 4,
+      "('after', 'Internal Mechanics', 'animation')": 8,
+      "('before', 'Production Example', 'visual')": 6,
+      "('after', 'Android Example', 'bridge')": 20
+    }
+  },
+  {
+    "path": "kotlin/language-core/null-safety.md",
+    "original_prose": 2835,
+    "added_prose": 366,
+    "hero_prose": 30,
+    "ratio": 0.129,
+    "stub": false,
+    "above_target": false,
+    "parts": {
+      "('opening', '')": 105,
+      "('after', 'Overview', 'visual')": 5,
+      "('before', 'The Operators — When to Use What', 'visual')": 29,
+      "('after', 'The Operators — When to Use What', 'animation')": 5,
+      "('after', 'Smart Casts — When the Compiler Auto-Narrows', 'animation')": 9,
+      "('after', 'Platform Types — The Java Boundary Hole', 'visual')": 8,
+      "('after', 'Reflection-Based Libraries Can Lie', 'animation')": 12,
+      "('after', 'Real Android NPE Traps', 'visual')": 6,
+      "('after', \"Don't Use null for Errors — Use Result or Sealed\", 'check')": 133,
+      "('after', 'Failure Modes', 'bridge')": 24
+    }
+  },
+  {
+    "path": "kotlin/language-core/functions.md",
+    "original_prose": 4105,
+    "added_prose": 364,
+    "hero_prose": 27,
+    "ratio": 0.089,
+    "stub": false,
+    "above_target": false,
+    "parts": {
+      "('opening', '')": 125,
+      "('before', 'First Principles', 'visual')": 26,
+      "('after', 'Mental Model', 'animation')": 7,
+      "('diagram', '983f07ec8005711a')": 5,
+      "('after', 'Failure Modes', 'animation')": 8,
+      "('after', 'Advanced Features', 'visual')": 30,
+      "('after', 'Production Example', 'check')": 136
+    }
+  },
+  {
+    "path": "kotlin/language-core/extensions.md",
+    "original_prose": 4222,
+    "added_prose": 343,
+    "hero_prose": 31,
+    "ratio": 0.081,
+    "stub": false,
+    "above_target": false,
+    "parts": {
+      "('opening', '')": 122,
+      "('after', 'Overview', 'visual')": 7,
+      "('after', 'First Principles', 'animation')": 9,
+      "('diagram', 'f551760c2d3cc682')": 6,
+      "('before', 'Advanced Features', 'visual')": 6,
+      "('after', 'Tradeoffs', 'check')": 162
+    }
+  },
+  {
+    "path": "kotlin/language-core/data-classes.md",
+    "original_prose": 2817,
+    "added_prose": 324,
+    "hero_prose": 28,
+    "ratio": 0.115,
+    "stub": false,
+    "above_target": false,
+    "parts": {
+      "('opening', '')": 117,
+      "('after', 'Why It Matters (Android Context)', 'visual')": 4,
+      "('before', 'The Six Most Common Pitfalls', 'animation')": 6,
+      "('after', 'The Six Most Common Pitfalls', 'animation')": 5,
+      "('after', 'Inheritance Restrictions', 'visual')": 5,
+      "('after', 'Equals/HashCode Contract', 'check')": 159
+    }
+  },
+  {
+    "path": "kotlin/language-core/value-classes.md",
+    "original_prose": 696,
+    "added_prose": 266,
+    "hero_prose": 26,
+    "ratio": 0.382,
+    "stub": false,
+    "above_target": true,
+    "parts": {
+      "('opening', '')": 105,
+      "('after', '1. Value Class vs Type Alias vs Data Class', 'visual')": 8,
+      "('after', '2. Boxing: the Rule That Decides Whether You Got the Performance', 'animation')": 7,
+      "('after', '3. Mangling and Java Interop', 'visual')": 9,
+      "('after', '4. Where They Earn Their Keep', 'check')": 111
+    }
+  },
+  {
+    "path": "kotlin/language-core/sealed-classes.md",
+    "original_prose": 2613,
+    "added_prose": 323,
+    "hero_prose": 27,
+    "ratio": 0.124,
+    "stub": false,
+    "above_target": false,
+    "parts": {
+      "('opening', '')": 123,
+      "('after', 'Why It Matters (Android Context)', 'visual')": 5,
+      "('before', 'When to Reach For Sealed — vs Alternatives', 'visual')": 5,
+      "('after', 'Exhaustive when — the Headline Feature', 'animation')": 10,
+      "('after', 'SDK and Public API Considerations', 'visual')": 7,
+      "('after', 'Failure Modes', 'check')": 146
+    }
+  },
+  {
+    "path": "kotlin/language-core/delegation.md",
+    "original_prose": 2810,
+    "added_prose": 288,
+    "hero_prose": 27,
+    "ratio": 0.102,
+    "stub": false,
+    "above_target": false,
+    "parts": {
+      "('opening', '')": 112,
+      "('after', 'Overview', 'visual')": 5,
+      "('after', 'Class Delegation', 'animation')": 5,
+      "('after', 'Property Delegation', 'animation')": 6,
+      "('after', 'Android Property Delegates Worth Knowing', 'visual')": 5,
+      "('after', 'How the Compiler Actually Implements This', 'check')": 128
+    }
+  },
+  {
+    "path": "kotlin/type-system/generics.md",
+    "original_prose": 2676,
+    "added_prose": 317,
+    "hero_prose": 29,
+    "ratio": 0.118,
+    "stub": false,
+    "above_target": false,
+    "parts": {
+      "('opening', '')": 118,
+      "('after', 'First Principles', 'visual')": 6,
+      "('after', 'Type Erasure — The Core Constraint', 'animation')": 6,
+      "('after', 'reified — Escaping Erasure with inline', 'visual')": 7,
+      "('after', \"Variance — in, out, and Why MutableList<Dog> Isn't MutableList<Animal>\", 'visual')": 9,
+      "('after', 'Type Tokens — The Reflection Workaround', 'check')": 142
+    }
+  },
+  {
+    "path": "kotlin/type-system/variance.md",
+    "original_prose": 3220,
+    "added_prose": 315,
+    "hero_prose": 31,
+    "ratio": 0.098,
+    "stub": false,
+    "above_target": false,
+    "parts": {
+      "('opening', '')": 125,
+      "('after', 'The Big Idea in One Sentence', 'animation')": 6,
+      "('after', 'The Java Arrays Catastrophe (Why This Matters)', 'animation')": 9,
+      "('after', 'First Principles', 'visual')": 7,
+      "('after', 'Function Types — Variance Built-In', 'visual')": 7,
+      "('after', 'Real Android Patterns', 'check')": 130
+    }
+  },
+  {
+    "path": "kotlin/compiler-features/inline-functions.md",
+    "original_prose": 2141,
+    "added_prose": 296,
+    "hero_prose": 28,
+    "ratio": 0.138,
+    "stub": false,
+    "above_target": false,
+    "parts": {
+      "('opening', '')": 127,
+      "('diagram', '867177bb2f66113e')": 7,
+      "('after', 'First Principles', 'visual')": 7,
+      "('after', 'Failure Modes', 'visual')": 6,
+      "('after', 'Staff Engineer Thinking', 'check')": 121
+    }
+  },
+  {
+    "path": "kotlin/compiler-features/reified-types.md",
+    "original_prose": 1978,
+    "added_prose": 289,
+    "hero_prose": 29,
+    "ratio": 0.146,
+    "stub": false,
+    "above_target": false,
+    "parts": {
+      "('opening', '')": 124,
+      "('after', 'Internal Mechanics', 'animation')": 9,
+      "('after', 'Bytecode Evidence', 'visual')": 7,
+      "('after', 'Failure Modes', 'visual')": 6,
+      "('after', 'Staff Engineer Thinking', 'check')": 114
+    }
+  },
+  {
+    "path": "kotlin/coroutines-and-flow/coroutines.md",
+    "original_prose": 3646,
+    "added_prose": 1020,
+    "hero_prose": 32,
+    "ratio": 0.28,
+    "stub": false,
+    "above_target": true,
+    "parts": {
+      "('opening', '')": 124,
+      "('after', 'Overview', 'visual')": 30,
+      "('after', 'The Four Dispatchers', 'visual')": 6,
+      "('after', 'launch vs async — Two Builders, Different Contracts', 'visual')": 10,
+      "('diagram', '4b00da8fd97c81d4')": 7,
+      "('after', 'Job Hierarchy and Cancellation', 'visual')": 9,
+      "('after', 'Android Lifecycle Integration', 'check')": 116,
+      "shared-content:coroutine-internals.html": 265,
+      "shared-content:coroutine-policies.html": 210,
+      "shared-content:coroutine-experiment.html": 100,
+      "shared-wrapper:92": 56,
+      "shared-wrapper:125": 55
+    }
+  },
+  {
+    "path": "kotlin/coroutines-and-flow/channels-and-select.md",
+    "original_prose": 1229,
+    "added_prose": 273,
+    "hero_prose": 27,
+    "ratio": 0.222,
+    "stub": false,
+    "above_target": false,
+    "parts": {
+      "('opening', '')": 107,
+      "('after', 'First Principles', 'visual')": 5,
+      "('after', 'Channel Capacities', 'animation')": 8,
+      "('after', 'Closing and Cancellation', 'visual')": 3,
+      "('after', 'Actor-Style State Ownership', 'visual')": 3,
+      "('after', 'Android Failure Modes', 'check')": 120
+    }
+  },
+  {
+    "path": "kotlin/coroutines-and-flow/flow-operators-and-backpressure.md",
+    "original_prose": 1191,
+    "added_prose": 304,
+    "hero_prose": 27,
+    "ratio": 0.255,
+    "stub": false,
+    "above_target": true,
+    "parts": {
+      "('opening', '')": 102,
+      "('after', 'First Principles', 'animation')": 7,
+      "('after', 'Context with flowOn', 'visual')": 7,
+      "('before', 'Backpressure and Buffering', 'visual')": 32,
+      "('after', 'Flattening Operators', 'visual')": 12,
+      "('after', 'Error Operators', 'visual')": 5,
+      "('after', 'Terminal Operators', 'check')": 112
+    }
+  },
+  {
+    "path": "kotlin/coroutines-and-flow/callbackflow-and-bridging-callbacks.md",
+    "original_prose": 798,
+    "added_prose": 256,
+    "hero_prose": 23,
+    "ratio": 0.321,
+    "stub": false,
+    "above_target": true,
+    "parts": {
+      "('opening', '')": 87,
+      "('after', 'Overview', 'animation')": 5,
+      "('after', 'Coldness and Duplicate Registration', 'visual')": 7,
+      "('after', 'Lifecycle Collection', 'visual')": 5,
+      "('after', 'Error and Completion Semantics', 'check')": 129
+    }
+  },
+  {
+    "path": "kotlin/coroutines-and-flow/coroutines-debugging-and-profiling.md",
+    "original_prose": 1074,
+    "added_prose": 226,
+    "hero_prose": 26,
+    "ratio": 0.21,
+    "stub": false,
+    "above_target": false,
+    "parts": {
+      "('opening', '')": 98,
+      "('after', 'The Debugging Model', 'visual')": 6,
+      "('after', 'Dispatcher Starvation', 'animation')": 8,
+      "('after', 'Flow-Specific Debugging', 'visual')": 6,
+      "('after', 'Deadlocks and Hangs', 'check')": 82
+    }
+  },
+  {
+    "path": "kotlin/coroutines-and-flow/test-dispatchers-virtual-time.md",
+    "original_prose": 724,
+    "added_prose": 249,
+    "hero_prose": 26,
+    "ratio": 0.344,
+    "stub": false,
+    "above_target": true,
+    "parts": {
+      "('opening', '')": 81,
+      "('after', 'The Test Scheduler', 'animation')": 6,
+      "('after', 'UnconfinedTestDispatcher', 'visual')": 3,
+      "('after', 'Dispatcher Injection', 'visual')": 7,
+      "('after', 'Testing Cancellation', 'check')": 126
+    }
+  },
+  {
+    "path": "kotlin/runtime-and-jvm/memory-model.md",
+    "original_prose": 3789,
+    "added_prose": 318,
+    "hero_prose": 29,
+    "ratio": 0.084,
+    "stub": false,
+    "above_target": false,
+    "parts": {
+      "('opening', '')": 149,
+      "('after', 'Stack vs Heap', 'visual')": 2,
+      "('after', 'Reference Strengths (the Four Kinds)', 'visual')": 5,
+      "('after', 'The Six Classic Android Leak Patterns', 'animation')": 6,
+      "('after', 'Detecting Leaks: LeakCanary + Memory Profiler', 'bridge')": 26,
+      "('after', 'Java Memory Model — Multithreading Semantics', 'animation')": 5,
+      "('after', 'OOM and the Heap Limit', 'check')": 92,
+      "('diagram', 'd0cfb3da8da17ff0')": 4
+    }
+  },
+  {
+    "path": "kotlin/runtime-and-jvm/jvm-interop.md",
+    "original_prose": 4522,
+    "added_prose": 291,
+    "hero_prose": 26,
+    "ratio": 0.064,
+    "stub": false,
+    "above_target": false,
+    "parts": {
+      "('opening', '')": 115,
+      "('after', 'Overview', 'visual')": 5,
+      "('diagram', 'f79ef8185c1b2d3d')": 10,
+      "('after', 'First Principles', 'visual')": 6,
+      "('after', 'Production Example', 'check')": 129
+    }
+  },
+  {
+    "path": "kotlin/runtime-and-jvm/bytecode.md",
+    "original_prose": 1194,
+    "added_prose": 224,
+    "hero_prose": 22,
+    "ratio": 0.188,
+    "stub": false,
+    "above_target": false,
+    "parts": {
+      "('opening', '')": 106,
+      "('diagram', '2e6c2f4790beb102')": 5,
+      "('after', '2. The JVM Stack Machine', 'animation')": 8,
+      "('after', '5. Bytecode For Common Kotlin Constructs', 'visual')": 5,
+      "('after', '8. Reading An Obfuscated Stack Trace', 'visual')": 4,
+      "('after', '10. Practical Workflow: Investigating \"Why Is This Slow?\"', 'check')": 74
+    }
+  },
+  {
+    "path": "kotlin/version-updates/kotlin-2-4-update.md",
+    "original_prose": 1023,
+    "added_prose": 191,
+    "hero_prose": 22,
+    "ratio": 0.187,
+    "stub": false,
+    "above_target": false,
+    "parts": {
+      "('opening', '')": 112,
+      "('after', 'Language Features', 'visual')": 5,
+      "('after', 'Kotlin/Native and Swift Export', 'visual')": 6,
+      "('before', 'Migration Review Checklist', 'visual')": 5,
+      "('after', 'Staff Engineer Guidance', 'check')": 41
+    }
+  },
+  {
+    "path": "android/architecture/activity.md",
+    "original_prose": 1811,
+    "added_prose": 423,
+    "hero_prose": 43,
+    "ratio": 0.234,
+    "stub": false,
+    "above_target": false,
+    "parts": {
+      "('opening', '')": 133,
+      "('after', 'Mental Model', 'check')": 125,
+      "('after', 'Internal Mechanics: The Lifecycle', 'animation')": 33,
+      "('diagram', '78af522b6d8797b3')": 9,
+      "('after', 'Production Example', 'visual')": 9,
+      "('after', 'Failure Modes', 'visual')": 9,
+      "('after', 'Common Misconceptions', 'staff')": 62
+    }
+  },
+  {
+    "path": "android/architecture/fragment.md",
+    "original_prose": 1761,
+    "added_prose": 397,
+    "hero_prose": 34,
+    "ratio": 0.225,
+    "stub": false,
+    "above_target": false,
+    "parts": {
+      "('opening', '')": 129,
+      "('after', 'First Principles', 'visual')": 6,
+      "('after', 'Internal Mechanics', 'animation')": 30,
+      "('diagram', '98e64fc6110a6da1')": 6,
+      "('after', 'Production Example', 'visual')": 6,
+      "('after', 'Failure Modes', 'check')": 134,
+      "('after', 'Staff Engineer Thinking', 'staff')": 52
+    }
+  },
+  {
+    "path": "android/architecture/viewmodel.md",
+    "original_prose": 1739,
+    "added_prose": 315,
+    "hero_prose": 34,
+    "ratio": 0.181,
+    "stub": false,
+    "above_target": false,
+    "parts": {
+      "('opening', '')": 126,
+      "('after', 'First Principles', 'visual')": 6,
+      "('after', 'Internal Mechanics', 'animation')": 9,
+      "('diagram', 'a81c01eac0dc0de7')": 7,
+      "('after', 'Staff Engineer Thinking', 'visual')": 8,
+      "('after', 'Common Misconceptions', 'check')": 125
+    }
+  },
+  {
+    "path": "android/architecture/savedstatehandle.md",
+    "original_prose": 1486,
+    "added_prose": 346,
+    "hero_prose": 29,
+    "ratio": 0.233,
+    "stub": false,
+    "above_target": false,
+    "parts": {
+      "('opening', '')": 137,
+      "('after', 'First Principles', 'animation')": 52,
+      "('diagram', '19d28b22e8ce623d')": 7,
+      "('after', 'Common Misconceptions', 'check')": 121
+    }
+  },
+  {
+    "path": "android/architecture/process-death-and-state-restoration.md",
+    "original_prose": 1883,
+    "added_prose": 314,
+    "hero_prose": 31,
+    "ratio": 0.167,
+    "stub": false,
+    "above_target": false,
+    "parts": {
+      "('opening', '')": 115,
+      "('after', 'First Principles', 'visual')": 4,
+      "('after', 'Internal Mechanics', 'animation')": 30,
+      "('diagram', '27f1ff10a08314da')": 6,
+      "('after', 'Common Misconceptions', 'check')": 128
+    }
+  },
+  {
+    "path": "android/architecture/navigation.md",
+    "original_prose": 1763,
+    "added_prose": 309,
+    "hero_prose": 34,
+    "ratio": 0.175,
+    "stub": false,
+    "above_target": false,
+    "parts": {
+      "('opening', '')": 129,
+      "('after', 'First Principles', 'visual')": 4,
+      "('after', 'Internal Mechanics', 'animation')": 8,
+      "('diagram', 'ff2ef9c55224ff49')": 6,
+      "('after', 'Failure Modes', 'visual')": 4,
+      "('after', 'Common Misconceptions', 'check')": 124
+    }
+  },
+  {
+    "path": "android/architecture/mvvm-vs-mvi.md",
+    "original_prose": 2043,
+    "added_prose": 267,
+    "hero_prose": 31,
+    "ratio": 0.131,
+    "stub": false,
+    "above_target": false,
+    "parts": {
+      "('opening', '')": 112,
+      "('after', 'The Problem with MVVM at Scale', 'animation')": 6,
+      "('after', 'The MVI Pattern', 'visual')": 3,
+      "('after', 'UI Events — State First, Best-Effort Effects by Exception', 'visual')": 5,
+      "('after', 'Decision: When to Use What', 'check')": 110
+    }
+  },
+  {
+    "path": "android/architecture/state-management.md",
+    "original_prose": 2579,
+    "added_prose": 274,
+    "hero_prose": 29,
+    "ratio": 0.106,
+    "stub": false,
+    "above_target": false,
+    "parts": {
+      "('opening', '')": 121,
+      "('after', 'Two Kinds of State', 'visual')": 6,
+      "('after', 'State Hoisting — The Core Pattern', 'animation')": 7,
+      "('after', 'Screen vs UI State — Concrete Examples', 'check')": 106,
+      "('diagram', 'f546d541ede4a6a1')": 5
+    }
+  },
+  {
+    "path": "android/architecture/modularization-strategies.md",
+    "original_prose": 2726,
+    "added_prose": 318,
+    "hero_prose": 30,
+    "ratio": 0.117,
+    "stub": false,
+    "above_target": false,
+    "parts": {
+      "('opening', '')": 128,
+      "('after', 'The Four Slicing Strategies', 'animation')": 26,
+      "('diagram', '93e91ce3e0c1490e')": 5,
+      "('diagram', '4f0ca5d18f390762')": 8,
+      "('after', 'api vs implementation Gradle Configurations', 'visual')": 5,
+      "('after', 'Common Pitfalls', 'check')": 116
+    }
+  },
+  {
+    "path": "android/data-and-di/repository-source-of-truth.md",
+    "original_prose": 654,
+    "added_prose": 176,
+    "hero_prose": 43,
+    "ratio": 0.269,
+    "stub": false,
+    "above_target": true,
+    "parts": {
+      "('opening', '')": 57,
+      "('after', 'Offline-First Read Pattern', 'visual')": 11,
+      "('after', 'Network-Bound Resource, Staff Version', 'visual')": 7,
+      "('after', 'Write Path: Outbox First', 'animation')": 9,
+      "('after', 'Merge Semantics', 'check')": 49
+    }
+  },
+  {
+    "path": "android/data-and-di/room.md",
+    "original_prose": 2214,
+    "added_prose": 326,
+    "hero_prose": 33,
+    "ratio": 0.147,
+    "stub": false,
+    "above_target": false,
+    "parts": {
+      "('opening', '')": 118,
+      "('after', 'Mental Model', 'visual')": 5,
+      "('after', 'Internal Mechanics', 'animation')": 6,
+      "('diagram', 'b33f8a4b14376953')": 7,
+      "('after', 'Schema Evolution Discipline', 'visual')": 6,
+      "('after', 'Common Misconceptions', 'check')": 151
+    }
+  },
+  {
+    "path": "android/data-and-di/datastore.md",
+    "original_prose": 2115,
+    "added_prose": 276,
+    "hero_prose": 31,
+    "ratio": 0.13,
+    "stub": false,
+    "above_target": false,
+    "parts": {
+      "('opening', '')": 123,
+      "('after', 'First Principles', 'visual')": 4,
+      "('after', 'Internal Mechanics', 'animation')": 6,
+      "('diagram', '7b83f402a7d01d38')": 6,
+      "('after', 'Failure Modes', 'check')": 106
+    }
+  },
+  {
+    "path": "android/data-and-di/room-vs-datastore.md",
+    "original_prose": 2615,
+    "added_prose": 256,
+    "hero_prose": 34,
+    "ratio": 0.098,
+    "stub": false,
+    "above_target": false,
+    "parts": {
+      "('opening', '')": 115,
+      "('after', 'TL;DR Decision Table', 'visual')": 7,
+      "('after', 'The Update-Pattern Difference (Why It Matters)', 'animation')": 7,
+      "('after', 'Backup Behavior', 'visual')": 5,
+      "('after', 'Common Pitfalls', 'check')": 88
+    }
+  },
+  {
+    "path": "android/data-and-di/storage-and-content-sharing.md",
+    "original_prose": 775,
+    "added_prose": 203,
+    "hero_prose": 42,
+    "ratio": 0.262,
+    "stub": false,
+    "above_target": true,
+    "parts": {
+      "('opening', '')": 59,
+      "('after', 'Decision Matrix', 'visual')": 7,
+      "('after', 'URI Ownership and Lifetime', 'animation')": 8,
+      "('after', 'Production Design', 'visual')": 7,
+      "('after', 'Failure Modes', 'check')": 80
+    }
+  },
+  {
+    "path": "android/data-and-di/paging.md",
+    "original_prose": 2034,
+    "added_prose": 272,
+    "hero_prose": 34,
+    "ratio": 0.134,
+    "stub": false,
+    "above_target": false,
+    "parts": {
+      "('opening', '')": 126,
+      "('after', 'First Principles', 'visual')": 4,
+      "('after', 'Internal Mechanics', 'animation')": 4,
+      "('diagram', '2301ffe70d644897')": 4,
+      "('after', 'Staff Engineer Thinking', 'check')": 100
+    }
+  },
+  {
+    "path": "android/data-and-di/dependency-injection.md",
+    "original_prose": 2112,
+    "added_prose": 259,
+    "hero_prose": 33,
+    "ratio": 0.123,
+    "stub": false,
+    "above_target": false,
+    "parts": {
+      "('opening', '')": 126,
+      "('after', 'First Principles', 'visual')": 5,
+      "('after', 'Internal Mechanics', 'animation')": 6,
+      "('after', 'Common Misconceptions', 'check')": 89
+    }
+  },
+  {
+    "path": "android/data-and-di/components.md",
+    "original_prose": 2487,
+    "added_prose": 260,
+    "hero_prose": 35,
+    "ratio": 0.105,
+    "stub": false,
+    "above_target": false,
+    "parts": {
+      "('opening', '')": 114,
+      "('after', 'The Hierarchy (Visualized)', 'animation')": 7,
+      "('after', 'EntryPoints — Escape Hatch for Non-Hilt Classes', 'visual')": 10,
+      "('after', 'Common Pitfalls', 'check')": 94
+    }
+  },
+  {
+    "path": "android/data-and-di/scopes.md",
+    "original_prose": 2368,
+    "added_prose": 253,
+    "hero_prose": 28,
+    "ratio": 0.107,
+    "stub": false,
+    "above_target": false,
+    "parts": {
+      "('opening', '')": 105,
+      "('after', 'Two Different \"Scope\" Concepts', 'visual')": 4,
+      "('after', \"How They Interact (or Don't)\", 'animation')": 6,
+      "('diagram', '2e121c614e2c3c07')": 4,
+      "('after', 'Common Pitfalls', 'check')": 106
+    }
+  },
+  {
+    "path": "android/data-and-di/hilt-vs-koin-vs-manual-di.md",
+    "original_prose": 2523,
+    "added_prose": 251,
+    "hero_prose": 32,
+    "ratio": 0.099,
+    "stub": false,
+    "above_target": false,
+    "parts": {
+      "('opening', '')": 123,
+      "('after', 'Why DI Matters (Briefly)', 'visual')": 6,
+      "('after', 'Manual DI vs Hilt vs Koin: Side-by-Side', 'animation')": 7,
+      "('after', 'When Each Wins', 'check')": 83
+    }
+  },
+  {
+    "path": "android/compose/compose-runtime.md",
+    "original_prose": 3522,
+    "added_prose": 305,
+    "hero_prose": 32,
+    "ratio": 0.087,
+    "stub": false,
+    "above_target": false,
+    "parts": {
+      "('opening', '')": 126,
+      "('diagram', '848679d1d075013c')": 4,
+      "('after', 'The Slot Table (Gap Buffer)', 'animation')": 8,
+      "('after', 'CompositionLocal — Implicit Tree Data', 'visual')": 5,
+      "('after', 'remember Under the Hood', 'check')": 130
+    }
+  },
+  {
+    "path": "android/compose/snapshot-system.md",
+    "original_prose": 2996,
+    "added_prose": 262,
+    "hero_prose": 23,
+    "ratio": 0.087,
+    "stub": false,
+    "above_target": false,
+    "parts": {
+      "('opening', '')": 113,
+      "('diagram', 'd5dca69ea44655b5')": 4,
+      "('after', 'MutableSnapshot — Atomic Multi-State Updates', 'animation')": 5,
+      "('after', 'snapshotFlow — Bridging to Coroutines', 'visual')": 7,
+      "('after', 'Common Pitfalls', 'check')": 110
+    }
+  },
+  {
+    "path": "android/compose/recomposition-and-state.md",
+    "original_prose": 1928,
+    "added_prose": 280,
+    "hero_prose": 28,
+    "ratio": 0.145,
+    "stub": false,
+    "above_target": false,
+    "parts": {
+      "('opening', '')": 118,
+      "('after', 'Internal Mechanics', 'animation')": 5,
+      "('diagram', '173316bf913dc7c2')": 4,
+      "('after', 'Failure Modes', 'check')": 125
+    }
+  },
+  {
+    "path": "android/compose/stability.md",
+    "original_prose": 2703,
+    "added_prose": 242,
+    "hero_prose": 29,
+    "ratio": 0.09,
+    "stub": false,
+    "above_target": false,
+    "parts": {
+      "('opening', '')": 120,
+      "('diagram', '05a1b2ae40d0f9a1')": 6,
+      "('after', 'Strong Skipping Mode', 'animation')": 7,
+      "('after', 'The Two Annotations', 'visual')": 4,
+      "('after', 'Common Pitfalls', 'check')": 76
+    }
+  },
+  {
+    "path": "android/compose/modifiers-and-layout.md",
+    "original_prose": 2022,
+    "added_prose": 279,
+    "hero_prose": 31,
+    "ratio": 0.138,
+    "stub": false,
+    "above_target": false,
+    "parts": {
+      "('opening', '')": 119,
+      "('after', 'Internal Mechanics', 'animation')": 8,
+      "('diagram', 'e21283fe0325389d')": 5,
+      "('after', 'Production Example', 'visual')": 4,
+      "('after', 'Common Misconceptions', 'check')": 112
+    }
+  },
+  {
+    "path": "android/compose/custom-layout-measurement.md",
+    "original_prose": 653,
+    "added_prose": 257,
+    "hero_prose": 30,
+    "ratio": 0.394,
+    "stub": false,
+    "above_target": true,
+    "parts": {
+      "('opening', '')": 99,
+      "('after', 'Layout Pipeline', 'visual')": 6,
+      "('after', 'Layout', 'animation')": 5,
+      "('after', 'Staff Engineer Review Checklist', 'check')": 117
+    }
+  },
+  {
+    "path": "android/compose/side-effects.md",
+    "original_prose": 1944,
+    "added_prose": 243,
+    "hero_prose": 30,
+    "ratio": 0.125,
+    "stub": false,
+    "above_target": false,
+    "parts": {
+      "('opening', '')": 110,
+      "('after', 'The Toolbelt (Mental Models)', 'visual')": 8,
+      "('after', 'Internal Mechanics', 'animation')": 4,
+      "('diagram', '03ceefc33d2b36f2')": 8,
+      "('after', 'Failure Modes', 'check')": 83
+    }
+  },
+  {
+    "path": "android/compose/compose-navigation.md",
+    "original_prose": 3386,
+    "added_prose": 275,
+    "hero_prose": 31,
+    "ratio": 0.081,
+    "stub": false,
+    "above_target": false,
+    "parts": {
+      "('opening', '')": 125,
+      "('after', 'Mental Model', 'visual')": 4,
+      "('diagram', 'dd33b36021f82e3d')": 5,
+      "('after', 'Per-Entry Lifecycle and ViewModel', 'animation')": 8,
+      "('after', 'When To Pick Each', 'check')": 102
+    }
+  },
+  {
+    "path": "android/compose/adaptive-compose-large-screens.md",
+    "original_prose": 884,
+    "added_prose": 246,
+    "hero_prose": 32,
+    "ratio": 0.278,
+    "stub": false,
+    "above_target": true,
+    "parts": {
+      "('opening', '')": 100,
+      "('after', 'Window Size Classes', 'visual')": 4,
+      "('after', 'State Preservation', 'animation')": 6,
+      "('after', 'Production Failure Modes', 'check')": 104
+    }
+  },
+  {
+    "path": "android/compose/form-factors-matrix.md",
+    "original_prose": 937,
+    "added_prose": 258,
+    "hero_prose": 36,
+    "ratio": 0.275,
+    "stub": false,
+    "above_target": true,
+    "parts": {
+      "('opening', '')": 104,
+      "('after', '1. The Matrix', 'visual')": 7,
+      "('after', '3. The Decision Framework', 'visual')": 6,
+      "('after', '4. Review Checklist', 'check')": 105
+    }
+  },
+  {
+    "path": "android/compose/compose-accessibility.md",
+    "original_prose": 628,
+    "added_prose": 235,
+    "hero_prose": 31,
+    "ratio": 0.374,
+    "stub": false,
+    "above_target": true,
+    "parts": {
+      "('opening', '')": 84,
+      "('after', 'Accessibility Model', 'visual')": 5,
+      "('after', 'Merging Semantics', 'animation')": 8,
+      "('after', 'Production Failure Modes', 'check')": 107
+    }
+  },
+  {
+    "path": "android/compose/view-interop-and-migration.md",
+    "original_prose": 797,
+    "added_prose": 238,
+    "hero_prose": 31,
+    "ratio": 0.299,
+    "stub": false,
+    "above_target": true,
+    "parts": {
+      "('opening', '')": 101,
+      "('after', '2. Views in Compose: AndroidView', 'animation')": 8,
+      "('after', '4. Migration Strategy (the part reviews actually probe)', 'visual')": 4,
+      "('after', '5. Review Checklist', 'check')": 94
+    }
+  },
+  {
+    "path": "android/compose/compose-performance-tooling.md",
+    "original_prose": 904,
+    "added_prose": 245,
+    "hero_prose": 29,
+    "ratio": 0.271,
+    "stub": false,
+    "above_target": true,
+    "parts": {
+      "('opening', '')": 97,
+      "('after', 'Measurement Stack', 'visual')": 6,
+      "('after', 'Trace the User Journey', 'animation')": 7,
+      "('after', 'Staff Engineer Review Checklist', 'check')": 106
+    }
+  },
+  {
+    "path": "android/architecture/structured-concurrency.md",
+    "original_prose": 1503,
+    "added_prose": 274,
+    "hero_prose": 30,
+    "ratio": 0.182,
+    "stub": false,
+    "above_target": false,
+    "parts": {
+      "('opening', '')": 123,
+      "('after', 'Internal Mechanics', 'animation')": 4,
+      "('diagram', '129074e829ea6904')": 6,
+      "('after', 'Common Misconceptions', 'check')": 111
+    }
+  },
+  {
+    "path": "android/architecture/flow.md",
+    "original_prose": 1615,
+    "added_prose": 270,
+    "hero_prose": 32,
+    "ratio": 0.167,
+    "stub": false,
+    "above_target": false,
+    "parts": {
+      "('opening', '')": 130,
+      "('after', 'First Principles', 'visual')": 7,
+      "('after', 'Production Example', 'animation')": 7,
+      "('diagram', '77fc2dd0a3b7000b')": 7,
+      "('after', 'Common Misconceptions', 'check')": 87
+    }
+  },
+  {
+    "path": "android/concurrency/coroutines-under-the-hood.md",
+    "original_prose": 1801,
+    "added_prose": 301,
+    "hero_prose": 30,
+    "ratio": 0.167,
+    "stub": false,
+    "above_target": false,
+    "parts": {
+      "('opening', '')": 124,
+      "('after', 'Internal Mechanics', 'animation')": 6,
+      "('diagram', '8a0f8b7b256c3ca5')": 4,
+      "('after', 'Common Misconceptions', 'check')": 137
+    }
+  },
+  {
+    "path": "android/concurrency/threads-and-looper.md",
+    "original_prose": 1736,
+    "added_prose": 275,
+    "hero_prose": 37,
+    "ratio": 0.158,
+    "stub": false,
+    "above_target": false,
+    "parts": {
+      "('opening', '')": 121,
+      "('after', 'First Principles', 'visual')": 6,
+      "('after', 'Internal Mechanics', 'animation')": 8,
+      "('diagram', 'ecb7e8b069453bfd')": 4,
+      "('after', 'Common Misconceptions', 'check')": 99
+    }
+  },
+  {
+    "path": "android/concurrency/shared-flow-and-state-flow.md",
+    "original_prose": 2209,
+    "added_prose": 235,
+    "hero_prose": 31,
+    "ratio": 0.106,
+    "stub": false,
+    "above_target": false,
+    "parts": {
+      "('opening', '')": 111,
+      "('after', 'Mental Model', 'visual')": 2,
+      "('after', 'The Single-Event Problem', 'animation')": 6,
+      "('after', 'Common Misconceptions', 'check')": 85
+    }
+  },
+  {
+    "path": "android/concurrency/synchronization-and-mutex.md",
+    "original_prose": 1832,
+    "added_prose": 246,
+    "hero_prose": 31,
+    "ratio": 0.134,
+    "stub": false,
+    "above_target": false,
+    "parts": {
+      "('opening', '')": 108,
+      "('after', 'The Toolbelt', 'visual')": 6,
+      "('after', 'Internal Mechanics', 'animation')": 4,
+      "('after', 'Common Misconceptions', 'check')": 97
+    }
+  },
+  {
+    "path": "android/concurrency/services.md",
+    "original_prose": 1799,
+    "added_prose": 294,
+    "hero_prose": 35,
+    "ratio": 0.163,
+    "stub": false,
+    "above_target": false,
+    "parts": {
+      "('opening', '')": 128,
+      "('after', 'First Principles', 'visual')": 6,
+      "('after', 'Internal Mechanics', 'animation')": 8,
+      "('after', 'Tradeoffs', 'check')": 117
+    }
+  },
+  {
+    "path": "android/concurrency/workmanager.md",
+    "original_prose": 1818,
+    "added_prose": 248,
+    "hero_prose": 24,
+    "ratio": 0.136,
+    "stub": false,
+    "above_target": false,
+    "parts": {
+      "('opening', '')": 115,
+      "('after', 'Internal Mechanics', 'animation')": 7,
+      "('diagram', '6b7c18c9f8073fff')": 3,
+      "('after', 'Tradeoffs', 'check')": 99
+    }
+  },
+  {
+    "path": "android/concurrency/battery-optimizations.md",
+    "original_prose": 1942,
+    "added_prose": 290,
+    "hero_prose": 36,
+    "ratio": 0.149,
+    "stub": false,
+    "above_target": false,
+    "parts": {
+      "('opening', '')": 128,
+      "('after', 'First Principles', 'animation')": 5,
+      "('diagram', '195946fb412e3416')": 5,
+      "('after', 'Common Misconceptions', 'check')": 116
+    }
+  },
+  {
+    "path": "android/networking-and-security/retrofit-and-okhttp.md",
+    "original_prose": 2578,
+    "added_prose": 221,
+    "hero_prose": 30,
+    "ratio": 0.086,
+    "stub": false,
+    "above_target": false,
+    "parts": {
+      "('opening', '')": 54,
+      "('after', 'Mental Model', 'visual')": 7,
+      "('after', 'Production Example', 'animation')": 5,
+      "('after', 'Common Misconceptions', 'check')": 119,
+      "('after', 'Internal Mechanics', 'animation')": 6
+    }
+  },
+  {
+    "path": "android/networking-and-security/ktor-vs-retrofit.md",
+    "original_prose": 3612,
+    "added_prose": 223,
+    "hero_prose": 38,
+    "ratio": 0.062,
+    "stub": false,
+    "above_target": false,
+    "parts": {
+      "('opening', '')": 49,
+      "('after', 'KMP — The Decisive Factor', 'visual')": 6,
+      "('after', 'Migration Patterns', 'visual')": 5,
+      "('after', 'Common Pitfalls', 'check')": 125
+    }
+  },
+  {
+    "path": "android/networking-and-security/graphql.md",
+    "original_prose": 2216,
+    "added_prose": 228,
+    "hero_prose": 41,
+    "ratio": 0.103,
+    "stub": false,
+    "above_target": false,
+    "parts": {
+      "('opening', '')": 53,
+      "('diagram', 'f99fb81083ab1479')": 8,
+      "('after', 'Production Example', 'animation')": 6,
+      "('after', 'Common Misconceptions', 'check')": 120
+    }
+  },
+  {
+    "path": "android/networking-and-security/networkcallback-metered-vpn-captive-portal.md",
+    "original_prose": 654,
+    "added_prose": 192,
+    "hero_prose": 34,
+    "ratio": 0.294,
+    "stub": false,
+    "above_target": true,
+    "parts": {
+      "('opening', '')": 41,
+      "('after', 'Request-Level Reality', 'animation')": 4,
+      "('after', 'Staff Engineer Review Checklist', 'check')": 105,
+      "('after', 'Capabilities to Check', 'visual')": 8
+    }
+  },
+  {
+    "path": "android/networking-and-security/security-and-keystore.md",
+    "original_prose": 553,
+    "added_prose": 179,
+    "hero_prose": 35,
+    "ratio": 0.324,
+    "stub": false,
+    "above_target": true,
+    "parts": {
+      "('opening', '')": 40,
+      "('after', 'Application Decisions', 'animation')": 5,
+      "('after', 'Review Checklist', 'check')": 92,
+      "('after', 'Failure Modes', 'animation')": 7
+    }
+  },
+  {
+    "path": "android/networking-and-security/device-connectivity-and-location.md",
+    "original_prose": 640,
+    "added_prose": 192,
+    "hero_prose": 39,
+    "ratio": 0.3,
+    "stub": false,
+    "above_target": true,
+    "parts": {
+      "('opening', '')": 36,
+      "('after', 'BLE Architecture', 'animation')": 4,
+      "('after', 'Reliability and Observability', 'check')": 106,
+      "('after', 'Reliability and Observability', 'animation')": 7
+    }
+  },
+  {
+    "path": "android/data-and-di/health-connect.md",
+    "original_prose": 908,
+    "added_prose": 428,
+    "hero_prose": 36,
+    "ratio": 0.471,
+    "stub": false,
+    "above_target": true,
+    "parts": {
+      "('opening', '')": 40,
+      "('after', 'Incremental Synchronization', 'animation')": 5,
+      "('after', 'Testing Strategy', 'check')": 58,
+      "('after', 'Staff-Level Review Questions', 'guide')": 289
+    }
+  },
+  {
+    "path": "android/networking-and-security/webview-and-hybrid.md",
+    "original_prose": 2100,
+    "added_prose": 202,
+    "hero_prose": 44,
+    "ratio": 0.096,
+    "stub": false,
+    "above_target": false,
+    "parts": {
+      "('opening', '')": 47,
+      "('after', 'Mental Model', 'visual')": 6,
+      "('after', 'Staff Engineer Thinking', 'animation')": 6,
+      "('after', 'Common Misconceptions', 'check')": 99
+    }
+  },
+  {
+    "path": "android/media/media3-player-architecture.md",
+    "original_prose": 1127,
+    "added_prose": 139,
+    "hero_prose": 35,
+    "ratio": 0.123,
+    "stub": false,
+    "above_target": false,
+    "parts": {
+      "('opening', '')": 39,
+      "('after', '2. Session Layer: Background Playback and External Control', 'visual')": 4,
+      "('after', '6. Player-as-Platform: the Single-Instance Question', 'animation')": 6,
+      "('after', '7. Observability', 'check')": 55
+    }
+  },
+  {
+    "path": "android/media/camerax-capture-architecture.md",
+    "original_prose": 656,
+    "added_prose": 157,
+    "hero_prose": 38,
+    "ratio": 0.239,
+    "stub": false,
+    "above_target": false,
+    "parts": {
+      "('opening', '')": 32,
+      "('after', 'Analysis Pipeline', 'animation')": 8,
+      "('after', 'Production Architecture', 'check')": 75,
+      "('after', 'Use-Case Model', 'visual')": 4
+    }
+  },
+  {
+    "path": "android/testing/testing-strategy.md",
+    "original_prose": 2302,
+    "added_prose": 229,
+    "hero_prose": 36,
+    "ratio": 0.099,
+    "stub": false,
+    "above_target": false,
+    "parts": {
+      "('opening', '')": 85,
+      "('after', 'Mental Model', 'visual')": 5,
+      "('diagram', '81a56c3560d46094')": 4,
+      "('after', 'Flakiness as a System, Not a Nuisance', 'animation')": 8,
+      "('after', 'Staff Engineer Thinking', 'check')": 91
+    }
+  },
+  {
+    "path": "android/testing/unit-testing.md",
+    "original_prose": 2646,
+    "added_prose": 232,
+    "hero_prose": 33,
+    "ratio": 0.088,
+    "stub": false,
+    "above_target": false,
+    "parts": {
+      "('opening', '')": 84,
+      "('diagram', 'd69c88c3cb1f2e4d')": 6,
+      "('after', 'Mocks, Fakes, and Spies', 'visual')": 4,
+      "('after', 'Testing Repositories', 'animation')": 7,
+      "('after', 'Test Naming and Structure', 'check')": 98
+    }
+  },
+  {
+    "path": "android/testing/ui-testing.md",
+    "original_prose": 2599,
+    "added_prose": 218,
+    "hero_prose": 36,
+    "ratio": 0.084,
+    "stub": false,
+    "above_target": false,
+    "parts": {
+      "('opening', '')": 87,
+      "('diagram', '169407b7471ca5c4')": 9,
+      "('after', 'The UI-Test Landscape', 'visual')": 3,
+      "('after', 'Real Patterns', 'animation')": 7,
+      "('after', 'Real Patterns', 'check')": 76
+    }
+  },
+  {
+    "path": "android/performance/startup.md",
+    "original_prose": 2694,
+    "added_prose": 279,
+    "hero_prose": 37,
+    "ratio": 0.104,
+    "stub": false,
+    "above_target": false,
+    "parts": {
+      "('opening', '')": 64,
+      "('after', 'The Cold-Start Pipeline', 'visual')": 6,
+      "('after', 'Macrobenchmark — Measuring Startup Properly', 'animation')": 7,
+      "('after', 'Diagnosing Slow Startup', 'staff')": 68,
+      "('before', 'Further Reading', 'check')": 87,
+      "('before', 'Further Reading', 'deeper')": 10
+    }
+  },
+  {
+    "path": "android/performance/jank.md",
+    "original_prose": 2194,
+    "added_prose": 254,
+    "hero_prose": 35,
+    "ratio": 0.116,
+    "stub": false,
+    "above_target": false,
+    "parts": {
+      "('opening', '')": 51,
+      "('after', 'First Principles', 'visual')": 7,
+      "('after', 'Staff Engineer Thinking', 'animation')": 4,
+      "('after', 'Staff Engineer Thinking', 'staff')": 67,
+      "('before', 'Further Reading', 'check')": 81,
+      "('before', 'Further Reading', 'deeper')": 9
+    }
+  },
+  {
+    "path": "android/performance/rendering.md",
+    "original_prose": 3053,
+    "added_prose": 250,
+    "hero_prose": 29,
+    "ratio": 0.082,
+    "stub": false,
+    "above_target": false,
+    "parts": {
+      "('opening', '')": 53,
+      "('after', 'The Rendering Pipeline (One Frame)', 'visual')": 7,
+      "('after', 'Vsync and Choreographer', 'animation')": 6,
+      "('after', 'Measuring Rendering — Tools', 'staff')": 70,
+      "('before', 'Further Reading', 'check')": 74,
+      "('before', 'Further Reading', 'deeper')": 11
+    }
+  },
+  {
+    "path": "android/performance/anrs.md",
+    "original_prose": 2246,
+    "added_prose": 270,
+    "hero_prose": 49,
+    "ratio": 0.12,
+    "stub": false,
+    "above_target": false,
+    "parts": {
+      "('opening', '')": 52,
+      "('after', 'Internal Mechanics', 'visual')": 4,
+      "('after', 'Staff Engineer Thinking', 'animation')": 5,
+      "('after', 'Staff Engineer Thinking', 'staff')": 68,
+      "('before', 'Further Reading', 'check')": 84,
+      "('before', 'Further Reading', 'deeper')": 8
+    }
+  },
+  {
+    "path": "android/performance/memory-management-and-leaks.md",
+    "original_prose": 2032,
+    "added_prose": 249,
+    "hero_prose": 34,
+    "ratio": 0.123,
+    "stub": false,
+    "above_target": false,
+    "parts": {
+      "('opening', '')": 55,
+      "('after', 'Internal Mechanics', 'visual')": 8,
+      "('after', 'Production Example', 'animation')": 5,
+      "('after', 'Staff Engineer Thinking', 'staff')": 73,
+      "('before', 'Further Reading', 'check')": 64,
+      "('before', 'Further Reading', 'deeper')": 10
+    }
+  },
+  {
+    "path": "android/performance/native-memory-bitmaps.md",
+    "original_prose": 721,
+    "added_prose": 233,
+    "hero_prose": 38,
+    "ratio": 0.323,
+    "stub": false,
+    "above_target": true,
+    "parts": {
+      "('opening', '')": 44,
+      "('after', 'Bitmaps', 'visual')": 6,
+      "('after', 'Caching Strategy', 'animation')": 6,
+      "('after', 'Native Memory Debugging', 'staff')": 70,
+      "('before', 'Further Reading', 'check')": 59,
+      "('before', 'Further Reading', 'deeper')": 10
+    }
+  },
+  {
+    "path": "android/performance/app-size-and-r8.md",
+    "original_prose": 2106,
+    "added_prose": 241,
+    "hero_prose": 36,
+    "ratio": 0.114,
+    "stub": false,
+    "above_target": false,
+    "parts": {
+      "('opening', '')": 48,
+      "('after', 'Architecture', 'visual')": 6,
+      "('after', 'Production Example', 'animation')": 5,
+      "('after', 'Staff Engineer Thinking', 'staff')": 71,
+      "('before', 'Further Reading', 'check')": 65,
+      "('before', 'Further Reading', 'deeper')": 10
+    }
+  },
+  {
+    "path": "android/performance/baseline-profiles.md",
+    "original_prose": 2202,
+    "added_prose": 244,
+    "hero_prose": 34,
+    "ratio": 0.111,
+    "stub": false,
+    "above_target": false,
+    "parts": {
+      "('opening', '')": 58,
+      "('after', 'First Principles', 'visual')": 6,
+      "('after', 'Architecture', 'animation')": 8,
+      "('after', 'Staff Engineer Thinking', 'staff')": 70,
+      "('before', 'Further Reading', 'check')": 58,
+      "('before', 'Further Reading', 'deeper')": 10
+    }
+  },
+  {
+    "path": "android/performance/macrobenchmark-and-perfetto.md",
+    "original_prose": 721,
+    "added_prose": 240,
+    "hero_prose": 30,
+    "ratio": 0.333,
+    "stub": false,
+    "above_target": true,
+    "parts": {
+      "('opening', '')": 47,
+      "('after', 'Macrobenchmark vs Microbenchmark', 'visual')": 5,
+      "('after', 'Perfetto Trace Workflow', 'animation')": 8,
+      "('after', 'CI and Regression Policy', 'staff')": 73,
+      "('before', 'Further Reading', 'check')": 68,
+      "('before', 'Further Reading', 'deeper')": 9
+    }
+  },
+  {
+    "path": "android/performance/battery-power-profiling.md",
+    "original_prose": 813,
+    "added_prose": 239,
+    "hero_prose": 33,
+    "ratio": 0.294,
+    "stub": false,
+    "above_target": true,
+    "parts": {
+      "('opening', '')": 50,
+      "('after', 'What Drains Battery', 'visual')": 5,
+      "('after', 'Profiling Protocol', 'animation')": 4,
+      "('after', 'Power Budgets', 'staff')": 72,
+      "('before', 'Further Reading', 'check')": 65,
+      "('before', 'Further Reading', 'deeper')": 10
+    }
+  },
+  {
+    "path": "android/performance/network-radio-wakeups.md",
+    "original_prose": 639,
+    "added_prose": 257,
+    "hero_prose": 38,
+    "ratio": 0.402,
+    "stub": false,
+    "above_target": true,
+    "parts": {
+      "('opening', '')": 53,
+      "('after', 'Batching', 'visual')": 6,
+      "('after', 'Retry Policy', 'animation')": 9,
+      "('after', 'Observability', 'staff')": 68,
+      "('before', 'Further Reading', 'check')": 73,
+      "('before', 'Further Reading', 'deeper')": 10
+    }
+  },
+  {
+    "path": "android/performance/thermal-low-end-device-strategy.md",
+    "original_prose": 781,
+    "added_prose": 253,
+    "hero_prose": 40,
+    "ratio": 0.324,
+    "stub": false,
+    "above_target": true,
+    "parts": {
+      "('opening', '')": 52,
+      "('after', 'Graceful Degradation Matrix', 'visual')": 6,
+      "('after', 'Thermal-Aware Work Scheduling', 'animation')": 7,
+      "('after', 'Observability', 'staff')": 74,
+      "('before', 'Further Reading', 'check')": 62,
+      "('before', 'Further Reading', 'deeper')": 12
+    }
+  },
+  {
+    "path": "android/observability/logging.md",
+    "original_prose": 2321,
+    "added_prose": 240,
+    "hero_prose": 35,
+    "ratio": 0.103,
+    "stub": false,
+    "above_target": false,
+    "parts": {
+      "('opening', '')": 43,
+      "('after', 'Internal Mechanics', 'visual')": 7,
+      "('after', 'Failure Modes', 'animation')": 8,
+      "('after', 'Staff Engineer Thinking', 'staff')": 66,
+      "('before', 'Further Reading', 'check')": 69,
+      "('before', 'Further Reading', 'deeper')": 12
+    }
+  },
+  {
+    "path": "android/observability/crash-monitoring.md",
+    "original_prose": 2199,
+    "added_prose": 247,
+    "hero_prose": 35,
+    "ratio": 0.112,
+    "stub": false,
+    "above_target": false,
+    "parts": {
+      "('opening', '')": 55,
+      "('after', 'Architecture', 'visual')": 6,
+      "('after', 'Staff Engineer Thinking', 'animation')": 5,
+      "('after', 'Staff Engineer Thinking', 'staff')": 70,
+      "('before', 'Further Reading', 'check')": 64,
+      "('before', 'Further Reading', 'deeper')": 12
+    }
+  },
+  {
+    "path": "android/observability/mobile-apm-and-rum.md",
+    "original_prose": 2551,
+    "added_prose": 252,
+    "hero_prose": 33,
+    "ratio": 0.099,
+    "stub": false,
+    "above_target": false,
+    "parts": {
+      "('opening', '')": 50,
+      "('after', 'Why It Matters', 'visual')": 7,
+      "('after', 'Production Example', 'animation')": 8,
+      "('after', 'Tradeoffs', 'staff')": 68,
+      "('before', 'Further Reading', 'check')": 74,
+      "('before', 'Further Reading', 'deeper')": 12
+    }
+  },
+  {
+    "path": "android/build-tooling/gradle-and-build-systems.md",
+    "original_prose": 2611,
+    "added_prose": 358,
+    "hero_prose": 33,
+    "ratio": 0.137,
+    "stub": false,
+    "above_target": false,
+    "parts": {
+      "('opening', '')": 115,
+      "('after', 'First Principles', 'visual')": 5,
+      "('after', 'Mental Model', 'animation')": 6,
+      "('after', 'Internal Mechanics', 'visual')": 5,
+      "('after', 'Staff Engineer Thinking', 'staff')": 42,
+      "('after', 'Common Misconceptions', 'check')": 130,
+      "('before', 'Further Reading', 'deeper')": 22
+    }
+  },
+  {
+    "path": "android/build-tooling/multi-module.md",
+    "original_prose": 2336,
+    "added_prose": 339,
+    "hero_prose": 34,
+    "ratio": 0.145,
+    "stub": false,
+    "above_target": false,
+    "parts": {
+      "('opening', '')": 101,
+      "('diagram', '83a0b47bda85196d')": 4,
+      "('after', 'The Canonical Taxonomy', 'animation')": 7,
+      "('after', 'Module Type Quick Reference', 'staff')": 44,
+      "('after', 'Cross-Module Navigation — Type-Safe Routes', 'visual')": 6,
+      "('after', 'Common Pitfalls', 'check')": 123,
+      "('before', 'Further Reading', 'deeper')": 20
+    }
+  },
+  {
+    "path": "android/build-tooling/convention-plugins.md",
+    "original_prose": 2040,
+    "added_prose": 355,
+    "hero_prose": 28,
+    "ratio": 0.174,
+    "stub": false,
+    "above_target": false,
+    "parts": {
+      "('opening', '')": 116,
+      "('diagram', 'a7b8ff16e5282b79')": 4,
+      "('after', 'A Plugin from Scratch', 'animation')": 7,
+      "('after', 'Governance Rules', 'staff')": 42,
+      "('after', 'Composing Plugins — The Feature Plugin', 'visual')": 5,
+      "('after', 'Common Pitfalls', 'check')": 135,
+      "('before', 'Further Reading', 'deeper')": 18
+    }
+  },
+  {
+    "path": "android/build-tooling/ksp.md",
+    "original_prose": 2202,
+    "added_prose": 314,
+    "hero_prose": 34,
+    "ratio": 0.143,
+    "stub": false,
+    "above_target": false,
+    "parts": {
+      "('opening', '')": 110,
+      "('diagram', '983b8acc34b1133f')": 5,
+      "('after', 'How KSP Sees Your Code', 'animation')": 6,
+      "('after', 'Incremental Compilation', 'visual')": 6,
+      "('after', 'Common Pitfalls', 'check')": 134,
+      "('before', 'Further Reading', 'deeper')": 19
+    }
+  },
+  {
+    "path": "android/os-internals/intent-resolution-and-manifest.md",
+    "original_prose": 1258,
+    "added_prose": 316,
+    "hero_prose": 34,
+    "ratio": 0.251,
+    "stub": false,
+    "above_target": true,
+    "parts": {
+      "('opening', '')": 76,
+      "('diagram', 'b3a61092347dc92b')": 7,
+      "('after', 'Manifest as Security Boundary', 'visual')": 4,
+      "('after', 'Production Patterns', 'animation')": 6,
+      "('after', 'Staff Engineer Thinking', 'staff')": 35,
+      "('after', 'Failure Modes', 'check')": 134,
+      "('before', 'Further Reading', 'deeper')": 20
+    }
+  },
+  {
+    "path": "android/os-internals/broadcast-receivers.md",
+    "original_prose": 1069,
+    "added_prose": 306,
+    "hero_prose": 36,
+    "ratio": 0.286,
+    "stub": false,
+    "above_target": true,
+    "parts": {
+      "('opening', '')": 89,
+      "('diagram', '258254336f135e0e')": 3,
+      "('after', 'Time Limits and goAsync()', 'visual')": 5,
+      "('after', 'Production Patterns', 'animation')": 7,
+      "('after', 'Staff Engineer Thinking', 'staff')": 30,
+      "('after', 'Failure Modes', 'check')": 121,
+      "('before', 'Further Reading', 'deeper')": 15
+    }
+  },
+  {
+    "path": "android/os-internals/content-providers-and-contentresolver.md",
+    "original_prose": 949,
+    "added_prose": 278,
+    "hero_prose": 31,
+    "ratio": 0.293,
+    "stub": false,
+    "above_target": true,
+    "parts": {
+      "('opening', '')": 94,
+      "('after', 'First Principles', 'visual')": 4,
+      "('after', 'URI Permissions', 'animation')": 6,
+      "('after', 'Startup Order Trap', 'staff')": 12,
+      "('after', 'Failure Modes', 'check')": 112,
+      "('before', 'Further Reading', 'deeper')": 19
+    }
+  },
+  {
+    "path": "android/os-internals/permissions-and-app-ops.md",
+    "original_prose": 1187,
+    "added_prose": 314,
+    "hero_prose": 33,
+    "ratio": 0.265,
+    "stub": false,
+    "above_target": true,
+    "parts": {
+      "('opening', '')": 87,
+      "('after', 'AppOps Mental Model', 'visual')": 6,
+      "('after', 'Production Patterns', 'animation')": 7,
+      "('after', 'Staff Engineer Thinking', 'staff')": 22,
+      "('after', 'Failure Modes', 'check')": 143,
+      "('before', 'Further Reading', 'deeper')": 16
+    }
+  },
+  {
+    "path": "android/os-internals/activitymanager-process-lifecycle.md",
+    "original_prose": 1190,
+    "added_prose": 312,
+    "hero_prose": 32,
+    "ratio": 0.262,
+    "stub": false,
+    "above_target": true,
+    "parts": {
+      "('opening', '')": 91,
+      "('diagram', '9ec3c02757c2507a')": 6,
+      "('after', 'Process Death vs Configuration Change', 'visual')": 6,
+      "('after', 'Durable State Rule', 'animation')": 6,
+      "('after', 'Staff Engineer Thinking', 'staff')": 37,
+      "('after', 'Failure Modes', 'check')": 118,
+      "('before', 'Further Reading', 'deeper')": 16
+    }
+  },
+  {
+    "path": "android/os-internals/package-manager-installation-classloading.md",
+    "original_prose": 1261,
+    "added_prose": 333,
+    "hero_prose": 34,
+    "ratio": 0.264,
+    "stub": false,
+    "above_target": true,
+    "parts": {
+      "('opening', '')": 86,
+      "('diagram', '683dd7ca5031e374')": 3,
+      "('after', 'Class Loading', 'visual')": 5,
+      "('after', 'Multidex and Splits', 'animation')": 7,
+      "('after', 'Staff Engineer Thinking', 'staff')": 43,
+      "('after', 'Failure Modes', 'check')": 134,
+      "('before', 'Further Reading', 'deeper')": 21
+    }
+  },
+  {
+    "path": "android/os-internals/the-binder.md",
+    "original_prose": 2536,
+    "added_prose": 361,
+    "hero_prose": 29,
+    "ratio": 0.142,
+    "stub": false,
+    "above_target": false,
+    "parts": {
+      "('opening', '')": 125,
+      "('diagram', 'a26ae8538ace976e')": 5,
+      "('after', 'Internal Mechanics', 'animation')": 4,
+      "('after', 'Staff Engineer Thinking', 'staff')": 46,
+      "('after', 'Common Misconceptions', 'check')": 136,
+      "('before', 'Further Reading', 'deeper')": 16
+    }
+  },
+  {
+    "path": "android/os-internals/the-zygote.md",
+    "original_prose": 2304,
+    "added_prose": 352,
+    "hero_prose": 35,
+    "ratio": 0.153,
+    "stub": false,
+    "above_target": false,
+    "parts": {
+      "('opening', '')": 130,
+      "('diagram', '98d4760f61cc9074')": 5,
+      "('after', 'First Principles', 'animation')": 6,
+      "('after', 'Mental Model', 'visual')": 7,
+      "('after', 'Staff Engineer Thinking', 'staff')": 35,
+      "('after', 'Common Misconceptions', 'check')": 116,
+      "('before', 'Further Reading', 'deeper')": 18
+    }
+  },
+  {
+    "path": "android/os-internals/art-and-dalvik.md",
+    "original_prose": 2458,
+    "added_prose": 341,
+    "hero_prose": 29,
+    "ratio": 0.139,
+    "stub": false,
+    "above_target": false,
+    "parts": {
+      "('opening', '')": 111,
+      "('diagram', '60c0861cc5c7f00c')": 6,
+      "('after', 'Internal Mechanics', 'animation')": 4,
+      "('after', 'Production Example', 'staff')": 48,
+      "('after', 'Common Misconceptions', 'check')": 118,
+      "('before', 'Further Reading', 'deeper')": 18,
+      "('after', 'Mental Model', 'visual')": 7
+    }
+  },
+  {
+    "path": "android/kotlin-multiplatform/kmp-decision-matrix.md",
+    "original_prose": 687,
+    "added_prose": 276,
+    "hero_prose": 30,
+    "ratio": 0.402,
+    "stub": false,
+    "above_target": true,
+    "parts": {
+      "('opening', '')": 42,
+      "('after', 'Shareability Matrix', 'visual')": 136,
+      "('after', 'Rollout Strategy', 'visual')": 3,
+      "('after', 'Ownership Model', 'check')": 65
+    }
+  },
+  {
+    "path": "android/kotlin-multiplatform/foundations/overview-and-k1-vs-k2.md",
+    "original_prose": 1990,
+    "added_prose": 298,
+    "hero_prose": 32,
+    "ratio": 0.15,
+    "stub": false,
+    "above_target": false,
+    "parts": {
+      "('opening', '')": 49,
+      "('after', 'The expect / actual Mechanism', 'visual')": 147,
+      "('after', 'Hierarchical Project Structure', 'animation')": 5,
+      "('after', 'Common Pitfalls', 'check')": 65
+    }
+  },
+  {
+    "path": "android/kotlin-multiplatform/shared-domain-boundaries.md",
+    "original_prose": 1948,
+    "added_prose": 165,
+    "hero_prose": 31,
+    "ratio": 0.085,
+    "stub": false,
+    "above_target": false,
+    "parts": {
+      "('opening', '')": 52,
+      "('after', 'Dependency Direction', 'visual')": 6,
+      "('after', 'Production Example', 'animation')": 4,
+      "('after', 'Testing Boundary Contracts', 'check')": 66,
+      "('after', 'Error Boundaries', 'animation')": 6
+    }
+  },
+  {
+    "path": "android/kotlin-multiplatform/foundations/architecture-and-module-boundaries.md",
+    "original_prose": 1657,
+    "added_prose": 305,
+    "hero_prose": 31,
+    "ratio": 0.184,
+    "stub": false,
+    "above_target": false,
+    "parts": {
+      "('opening', '')": 58,
+      "('after', 'Paradigm B: Shared UI (Compose Multiplatform)', 'visual')": 146,
+      "('after', 'The Boundary Pattern: Inversion of Control', 'animation')": 7,
+      "('after', 'Common Pitfalls', 'check')": 63
+    }
+  },
+  {
+    "path": "android/kotlin-multiplatform/tooling/build-system-and-source-sets.md",
+    "original_prose": 1905,
+    "added_prose": 164,
+    "hero_prose": 33,
+    "ratio": 0.086,
+    "stub": false,
+    "above_target": false,
+    "parts": {
+      "('opening', '')": 51,
+      "('after', 'Why Device ARM64 and Simulator ARM64 Differ', 'visual')": 5,
+      "('after', 'How Variant-Aware Dependency Resolution Works', 'animation')": 5,
+      "('after', 'Convention Plugin Design', 'check')": 65,
+      "('diagram', 'f30234d48041765e')": 5
+    }
+  },
+  {
+    "path": "android/kotlin-multiplatform/ecosystem/libraries-ecosystem.md",
+    "original_prose": 2034,
+    "added_prose": 294,
+    "hero_prose": 33,
+    "ratio": 0.145,
+    "stub": false,
+    "above_target": false,
+    "parts": {
+      "('opening', '')": 49,
+      "('after', 'A Staff-Level Dependency Evaluation', 'visual')": 141,
+      "('after', 'Future-Target Failure Modes', 'animation')": 9,
+      "('after', 'Platform Escape Hatches', 'check')": 62
+    }
+  },
+  {
+    "path": "android/kotlin-multiplatform/ecosystem/networking-with-ktor.md",
+    "original_prose": 1011,
+    "added_prose": 199,
+    "hero_prose": 32,
+    "ratio": 0.197,
+    "stub": false,
+    "above_target": false,
+    "parts": {
+      "('opening', '')": 53,
+      "('after', 'Overview', 'visual')": 5,
+      "('after', '5. Choosing the Apple Engine with Evidence', 'animation')": 6,
+      "('after', '5. Choosing the Apple Engine with Evidence', 'check')": 96,
+      "('diagram', '15a5cf00e6920c6c')": 7
+    }
+  },
+  {
+    "path": "android/kotlin-multiplatform/ecosystem/persistence.md",
+    "original_prose": 1499,
+    "added_prose": 167,
+    "hero_prose": 30,
+    "ratio": 0.111,
+    "stub": false,
+    "above_target": false,
+    "parts": {
+      "('opening', '')": 51,
+      "('after', 'Overview', 'visual')": 5,
+      "('after', '3. Preferences DataStore KMP', 'animation')": 5,
+      "('after', '3. Preferences DataStore KMP', 'check')": 66,
+      "('after', '1. Room KMP or SQLDelight', 'animation')": 10
+    }
+  },
+  {
+    "path": "android/kotlin-multiplatform/ecosystem/dependency-injection.md",
+    "original_prose": 1420,
+    "added_prose": 289,
+    "hero_prose": 27,
+    "ratio": 0.204,
+    "stub": false,
+    "above_target": false,
+    "parts": {
+      "('opening', '')": 51,
+      "('after', '1. Put the Composition Boundary at the Platform Edge', 'visual')": 145,
+      "('after', '4. Manual DI Is a First-Class Option', 'animation')": 6,
+      "('after', '4. Manual DI Is a First-Class Option', 'check')": 60
+    }
+  },
+  {
+    "path": "android/kotlin-multiplatform/ui-sharing/compose-multiplatform.md",
+    "original_prose": 2165,
+    "added_prose": 313,
+    "hero_prose": 37,
+    "ratio": 0.145,
+    "stub": false,
+    "above_target": false,
+    "parts": {
+      "('opening', '')": 52,
+      "('after', '1. Choose the UI-Sharing Boundary Deliberately', 'visual')": 151,
+      "('after', '3. Navigation: One Stack Owner per Surface', 'animation')": 7,
+      "('after', 'Common Failure Modes', 'check')": 66
+    }
+  },
+  {
+    "path": "android/kotlin-multiplatform/ui-sharing/resource-sharing.md",
+    "original_prose": 2119,
+    "added_prose": 307,
+    "hero_prose": 28,
+    "ratio": 0.145,
+    "stub": false,
+    "above_target": false,
+    "parts": {
+      "('opening', '')": 55,
+      "('after', 'Current Baseline', 'visual')": 150,
+      "('after', '6. Packaging, Publication, and Raw Files', 'animation')": 6,
+      "('after', 'Common Failure Modes', 'check')": 68
+    }
+  },
+  {
+    "path": "android/kotlin-multiplatform/production/concurrency-and-memory.md",
+    "original_prose": 1643,
+    "added_prose": 180,
+    "hero_prose": 31,
+    "ratio": 0.11,
+    "stub": false,
+    "above_target": false,
+    "parts": {
+      "('opening', '')": 50,
+      "('after', '3. The Dual-GC Architecture (The Real Danger)', 'animation')": 7,
+      "('after', 'Common Pitfalls', 'check')": 92
+    }
+  },
+  {
+    "path": "android/kotlin-multiplatform/tooling/swift-interop.md",
+    "original_prose": 2772,
+    "added_prose": 181,
+    "hero_prose": 28,
+    "ratio": 0.065,
+    "stub": false,
+    "above_target": false,
+    "parts": {
+      "('opening', '')": 49,
+      "('after', 'Start With the Export Path', 'visual')": 5,
+      "('after', 'Designing a Swift-First Boundary', 'animation')": 5,
+      "('after', 'Failure Modes to Catch in Review', 'check')": 94
+    }
+  },
+  {
+    "path": "android/kotlin-multiplatform/tooling/ios-distribution.md",
+    "original_prose": 2563,
+    "added_prose": 189,
+    "hero_prose": 32,
+    "ratio": 0.074,
+    "stub": false,
+    "above_target": false,
+    "parts": {
+      "('opening', '')": 49,
+      "('after', 'Choose Integration by Ownership', 'visual')": 4,
+      "('after', 'Remote SwiftPM Binary Distribution', 'animation')": 5,
+      "('after', 'Failure Modes to Catch Early', 'check')": 99
+    }
+  },
+  {
+    "path": "android/kotlin-multiplatform/binary-compatibility-api-evolution.md",
+    "original_prose": 2350,
+    "added_prose": 170,
+    "hero_prose": 28,
+    "ratio": 0.072,
+    "stub": false,
+    "above_target": false,
+    "parts": {
+      "('opening', '')": 38,
+      "('after', 'Compatibility Is Multidimensional', 'visual')": 4,
+      "('after', 'High-Risk Kotlin Changes', 'animation')": 7,
+      "('after', 'Release Policy and Evidence', 'check')": 93
+    }
+  },
+  {
+    "path": "android/kotlin-multiplatform/production/testing-and-mocking.md",
+    "original_prose": 2092,
+    "added_prose": 173,
+    "hero_prose": 33,
+    "ratio": 0.083,
+    "stub": false,
+    "above_target": false,
+    "parts": {
+      "('opening', '')": 43,
+      "('after', '1. Understand What commonTest Means', 'visual')": 7,
+      "('after', '4. Test HTTP Contracts With Ktor MockEngine', 'animation')": 7,
+      "('after', 'Common Failure Modes', 'check')": 83
+    }
+  },
+  {
+    "path": "android/kotlin-multiplatform/kmp-observability-crash-symbolication.md",
+    "original_prose": 1771,
+    "added_prose": 170,
+    "hero_prose": 30,
+    "ratio": 0.096,
+    "stub": false,
+    "above_target": false,
+    "parts": {
+      "('opening', '')": 46,
+      "('after', '7. Synthetic-Crash Verification', 'animation')": 6,
+      "('after', '7. Synthetic-Crash Verification', 'check')": 88
+    }
+  },
+  {
+    "path": "android/kotlin-multiplatform/production/ci-cd-for-kmp.md",
+    "original_prose": 1331,
+    "added_prose": 154,
+    "hero_prose": 32,
+    "ratio": 0.116,
+    "stub": false,
+    "above_target": false,
+    "parts": {
+      "('opening', '')": 42,
+      "('after', '6. Advanced: Conditional iOS CI', 'animation')": 7,
+      "('after', 'Common Pitfalls', 'check')": 73
+    }
+  },
+  {
+    "path": "android/kotlin-multiplatform/production/adoption-and-migration.md",
+    "original_prose": 2196,
+    "added_prose": 179,
+    "hero_prose": 33,
+    "ratio": 0.082,
+    "stub": false,
+    "above_target": false,
+    "parts": {
+      "('opening', '')": 46,
+      "('after', '1. When NOT to Use KMP', 'visual')": 5,
+      "('after', '2. The Incremental Migration Path (Strangler Fig)', 'animation')": 6,
+      "('after', '5. Organizational Buy-In Strategies', 'check')": 89
+    }
+  },
+  {
+    "path": "mobile-system-design/design-framework.md",
+    "original_prose": 1306,
+    "added_prose": 140,
+    "hero_prose": 39,
+    "ratio": 0.107,
+    "stub": false,
+    "above_target": false,
+    "parts": {
+      "('after', '9. Further Reading', 'recap')": 101
+    }
+  },
+  {
+    "path": "mobile-system-design/non-functional-requirements.md",
+    "original_prose": 1512,
+    "added_prose": 121,
+    "hero_prose": 36,
+    "ratio": 0.08,
+    "stub": false,
+    "above_target": false,
+    "parts": {
+      "('after', '11. Where to Read More', 'recap')": 85
+    }
+  },
+  {
+    "path": "mobile-system-design/performance.md",
+    "original_prose": 1849,
+    "added_prose": 307,
+    "hero_prose": 37,
+    "ratio": 0.166,
+    "stub": false,
+    "above_target": false,
+    "parts": {
+      "('after', '7. Deep Dive: Frame Rate / Jank (15 min)', 'animation')": 8,
+      "('after', '12. Further Reading', 'recap')": 125,
+      "shared-prompt:requirements": 76,
+      "shared-prompt:clarifying": 61
+    }
+  },
+  {
+    "path": "mobile-system-design/accessibility.md",
+    "original_prose": 791,
+    "added_prose": 119,
+    "hero_prose": 33,
+    "ratio": 0.15,
+    "stub": false,
+    "above_target": false,
+    "parts": {
+      "('after', '14. Further Reading', 'recap')": 86
+    }
+  },
+  {
+    "path": "mobile-system-design/localization-and-internationalization.md",
+    "original_prose": 926,
+    "added_prose": 123,
+    "hero_prose": 32,
+    "ratio": 0.133,
+    "stub": false,
+    "above_target": false,
+    "parts": {
+      "('after', '14. Further Reading', 'recap')": 91
+    }
+  },
+  {
+    "path": "mobile-system-design/security-and-privacy.md",
+    "original_prose": 1404,
+    "added_prose": 151,
+    "hero_prose": 34,
+    "ratio": 0.108,
+    "stub": false,
+    "above_target": false,
+    "parts": {
+      "('after', '13. Further Reading', 'recap')": 117
+    }
+  },
+  {
+    "path": "mobile-system-design/versioning-and-backward-compatibility.md",
+    "original_prose": 1609,
+    "added_prose": 366,
+    "hero_prose": 37,
+    "ratio": 0.227,
+    "stub": false,
+    "above_target": false,
+    "parts": {
+      "('after', '6. Deep Dive: Force-Update + Soft-Deprecation Flow (15 min)', 'animation')": 5,
+      "('after', '12. Further Reading', 'recap')": 122,
+      "shared-prompt:requirements": 76,
+      "shared-prompt:clarifying": 61,
+      "shared-prompt:api": 65
+    }
+  },
+  {
+    "path": "mobile-system-design/app-startup.md",
+    "original_prose": 1583,
+    "added_prose": 321,
+    "hero_prose": 46,
+    "ratio": 0.203,
+    "stub": false,
+    "above_target": false,
+    "parts": {
+      "('after', '7. Deep Dive: Deferred Initialization + Baseline Profile (15 min)', 'animation')": 9,
+      "('after', '12. Further Reading', 'recap')": 129,
+      "shared-prompt:requirements": 76,
+      "shared-prompt:clarifying": 61
+    }
+  },
+  {
+    "path": "mobile-system-design/authentication.md",
+    "original_prose": 2746,
+    "added_prose": 511,
+    "hero_prose": 21,
+    "ratio": 0.186,
+    "stub": false,
+    "above_target": false,
+    "parts": {
+      "('opening', '')": 36,
+      "('after', '7. Deep Dive: Token Lifecycle (15 min)', 'animation')": 7,
+      "('before', '9. Major Concerns', 'guide')": 75,
+      "('after', '12. Further Reading', 'recap')": 170,
+      "shared-prompt:requirements": 76,
+      "shared-prompt:clarifying": 61,
+      "shared-prompt:api": 65
+    }
+  },
+  {
+    "path": "mobile-system-design/deep-links-and-universal-links.md",
+    "original_prose": 1738,
+    "added_prose": 380,
+    "hero_prose": 44,
+    "ratio": 0.219,
+    "stub": false,
+    "above_target": false,
+    "parts": {
+      "('after', '7. Deep Dive: Routing + Verification (15 min)', 'animation')": 6,
+      "('after', '12. Further Reading', 'recap')": 128,
+      "shared-prompt:requirements": 76,
+      "shared-prompt:clarifying": 61,
+      "shared-prompt:api": 65
+    }
+  },
+  {
+    "path": "mobile-system-design/push-notifications.md",
+    "original_prose": 1415,
+    "added_prose": 365,
+    "hero_prose": 42,
+    "ratio": 0.258,
+    "stub": false,
+    "above_target": true,
+    "parts": {
+      "('after', '7. Deep Dive: Receive Pipeline (15 min)', 'animation')": 9,
+      "('after', '12. Further Reading', 'recap')": 112,
+      "shared-prompt:requirements": 76,
+      "shared-prompt:clarifying": 61,
+      "shared-prompt:api": 65
+    }
+  },
+  {
+    "path": "mobile-system-design/feature-flags-and-remote-config.md",
+    "original_prose": 1458,
+    "added_prose": 360,
+    "hero_prose": 44,
+    "ratio": 0.247,
+    "stub": false,
+    "above_target": false,
+    "parts": {
+      "('after', '7. Deep Dive: Evaluation + Fetch Cycle (15 min)', 'animation')": 8,
+      "('after', '12. Further Reading', 'recap')": 106,
+      "shared-prompt:requirements": 76,
+      "shared-prompt:clarifying": 61,
+      "shared-prompt:api": 65
+    }
+  },
+  {
+    "path": "mobile-system-design/telemetry-sdk.md",
+    "original_prose": 1308,
+    "added_prose": 371,
+    "hero_prose": 42,
+    "ratio": 0.284,
+    "stub": false,
+    "above_target": true,
+    "parts": {
+      "('after', '7. Deep Dive: Crash Capture + Delivery (15 min)', 'animation')": 6,
+      "('after', '12. Further Reading', 'recap')": 121,
+      "shared-prompt:requirements": 76,
+      "shared-prompt:clarifying": 61,
+      "shared-prompt:api": 65
+    }
+  },
+  {
+    "path": "mobile-system-design/analytics-sdk.md",
+    "original_prose": 1361,
+    "added_prose": 401,
+    "hero_prose": 53,
+    "ratio": 0.295,
+    "stub": false,
+    "above_target": true,
+    "parts": {
+      "('after', '7. Deep Dive: Write → Buffer → Flush (15 min)', 'animation')": 6,
+      "('after', '12. Further Reading', 'recap')": 140,
+      "shared-prompt:requirements": 76,
+      "shared-prompt:clarifying": 61,
+      "shared-prompt:api": 65
+    }
+  },
+  {
+    "path": "mobile-system-design/image-loading.md",
+    "original_prose": 1197,
+    "added_prose": 464,
+    "hero_prose": 60,
+    "ratio": 0.388,
+    "stub": false,
+    "above_target": true,
+    "parts": {
+      "('after', '7. Deep Dive: Request Pipeline (15 min)', 'animation')": 6,
+      "('after', '12. Further Reading', 'recap')": 196,
+      "shared-prompt:requirements": 76,
+      "shared-prompt:clarifying": 61,
+      "shared-prompt:api": 65
+    }
+  },
+  {
+    "path": "mobile-system-design/file-downloader.md",
+    "original_prose": 1478,
+    "added_prose": 537,
+    "hero_prose": 59,
+    "ratio": 0.363,
+    "stub": false,
+    "above_target": true,
+    "parts": {
+      "('after', '7. Deep Dive: Chunked Resumable Download (15 min)', 'animation')": 7,
+      "('after', '12. Further Reading', 'recap')": 269,
+      "shared-prompt:requirements": 76,
+      "shared-prompt:clarifying": 61,
+      "shared-prompt:api": 65
+    }
+  },
+  {
+    "path": "mobile-system-design/caching-library.md",
+    "original_prose": 1771,
+    "added_prose": 534,
+    "hero_prose": 48,
+    "ratio": 0.302,
+    "stub": false,
+    "above_target": true,
+    "parts": {
+      "('after', '7. Deep Dive: Read/Write Path with Two Tiers (15 min)', 'animation')": 6,
+      "('after', '12. Further Reading', 'recap')": 278,
+      "shared-prompt:requirements": 76,
+      "shared-prompt:clarifying": 61,
+      "shared-prompt:api": 65
+    }
+  },
+  {
+    "path": "mobile-system-design/pagination.md",
+    "original_prose": 1260,
+    "added_prose": 470,
+    "hero_prose": 60,
+    "ratio": 0.373,
+    "stub": false,
+    "above_target": true,
+    "parts": {
+      "('after', '7. Deep Dive: Load Orchestration with RemoteMediator (15 min)', 'animation')": 9,
+      "('after', '12. Further Reading', 'recap')": 199,
+      "shared-prompt:requirements": 76,
+      "shared-prompt:clarifying": 61,
+      "shared-prompt:api": 65
+    }
+  },
+  {
+    "path": "mobile-system-design/typeahead-autocomplete-search.md",
+    "original_prose": 1227,
+    "added_prose": 414,
+    "hero_prose": 45,
+    "ratio": 0.337,
+    "stub": false,
+    "above_target": true,
+    "parts": {
+      "('after', '7. Deep Dive: Suggestion Pipeline (15 min)', 'animation')": 6,
+      "('after', '12. Further Reading', 'recap')": 161,
+      "shared-prompt:requirements": 76,
+      "shared-prompt:clarifying": 61,
+      "shared-prompt:api": 65
+    }
+  },
+  {
+    "path": "mobile-system-design/search.md",
+    "original_prose": 1350,
+    "added_prose": 446,
+    "hero_prose": 51,
+    "ratio": 0.33,
+    "stub": false,
+    "above_target": true,
+    "parts": {
+      "('after', '7. Deep Dive: Query → Results Lifecycle (15 min)', 'animation')": 11,
+      "('after', '12. Further Reading', 'recap')": 182,
+      "shared-prompt:requirements": 76,
+      "shared-prompt:clarifying": 61,
+      "shared-prompt:api": 65
+    }
+  },
+  {
+    "path": "mobile-system-design/notification-system.md",
+    "original_prose": 1532,
+    "added_prose": 438,
+    "hero_prose": 48,
+    "ratio": 0.286,
+    "stub": false,
+    "above_target": true,
+    "parts": {
+      "('after', '7. Deep Dive: Routing + Preferences (15 min)', 'animation')": 4,
+      "('after', '12. Further Reading', 'recap')": 184,
+      "shared-prompt:requirements": 76,
+      "shared-prompt:clarifying": 61,
+      "shared-prompt:api": 65
+    }
+  },
+  {
+    "path": "mobile-system-design/offline-sync.md",
+    "original_prose": 2550,
+    "added_prose": 368,
+    "hero_prose": 30,
+    "ratio": 0.144,
+    "stub": false,
+    "above_target": false,
+    "parts": {
+      "('after', '7. Deep Dive: Outbox + Conflict Resolution (15 min)', 'animation')": 7,
+      "('after', '12. Further Reading', 'recap')": 129,
+      "shared-prompt:requirements": 76,
+      "shared-prompt:clarifying": 61,
+      "shared-prompt:api": 65
+    }
+  },
+  {
+    "path": "mobile-system-design/news-feed.md",
+    "original_prose": 1923,
+    "added_prose": 499,
+    "hero_prose": 55,
+    "ratio": 0.259,
+    "stub": false,
+    "above_target": true,
+    "parts": {
+      "('after', '7. Deep Dive: Feed Scroll & Pagination (15 min)', 'animation')": 11,
+      "('after', '12. Further Reading', 'recap')": 231,
+      "shared-prompt:requirements": 76,
+      "shared-prompt:clarifying": 61,
+      "shared-prompt:api": 65
+    }
+  },
+  {
+    "path": "mobile-system-design/chat-messaging.md",
+    "original_prose": 2503,
+    "added_prose": 485,
+    "hero_prose": 56,
+    "ratio": 0.194,
+    "stub": false,
+    "above_target": false,
+    "parts": {
+      "('after', '7. Deep Dive: Send Flow (15 min)', 'animation')": 7,
+      "('after', '12. Further Reading', 'recap')": 220,
+      "shared-prompt:requirements": 76,
+      "shared-prompt:clarifying": 61,
+      "shared-prompt:api": 65
+    }
+  },
+  {
+    "path": "mobile-system-design/collaborative-editing.md",
+    "original_prose": 2131,
+    "added_prose": 506,
+    "hero_prose": 58,
+    "ratio": 0.237,
+    "stub": false,
+    "above_target": false,
+    "parts": {
+      "('after', '7. Deep Dive: Local Apply + Sync (15 min)', 'animation')": 10,
+      "('after', '12. Further Reading', 'recap')": 236,
+      "shared-prompt:requirements": 76,
+      "shared-prompt:clarifying": 61,
+      "shared-prompt:api": 65
+    }
+  },
+  {
+    "path": "mobile-system-design/google-maps-location-system.md",
+    "original_prose": 1939,
+    "added_prose": 316,
+    "hero_prose": 25,
+    "ratio": 0.163,
+    "stub": false,
+    "above_target": false,
+    "parts": {
+      "('after', '12. Further Reading', 'recap')": 89,
+      "shared-prompt:requirements": 76,
+      "shared-prompt:clarifying": 61,
+      "shared-prompt:api": 65
+    }
+  },
+  {
+    "path": "mobile-system-design/ride-hailing.md",
+    "original_prose": 2449,
+    "added_prose": 313,
+    "hero_prose": 29,
+    "ratio": 0.128,
+    "stub": false,
+    "above_target": false,
+    "parts": {
+      "('after', '12. Further Reading', 'recap')": 82,
+      "shared-prompt:requirements": 76,
+      "shared-prompt:clarifying": 61,
+      "shared-prompt:api": 65
+    }
+  },
+  {
+    "path": "mobile-system-design/payment-flow.md",
+    "original_prose": 2492,
+    "added_prose": 313,
+    "hero_prose": 27,
+    "ratio": 0.126,
+    "stub": false,
+    "above_target": false,
+    "parts": {
+      "('after', '12. Further Reading', 'recap')": 84,
+      "shared-prompt:requirements": 76,
+      "shared-prompt:clarifying": 61,
+      "shared-prompt:api": 65
+    }
+  },
+  {
+    "path": "mobile-system-design/play-billing-and-subscriptions.md",
+    "original_prose": 1891,
+    "added_prose": 101,
+    "hero_prose": 28,
+    "ratio": 0.053,
+    "stub": false,
+    "above_target": false,
+    "parts": {
+      "('after', '11. Further Reading', 'recap')": 73
+    }
+  },
+  {
+    "path": "mobile-system-design/stock-trading-app.md",
+    "original_prose": 2162,
+    "added_prose": 310,
+    "hero_prose": 30,
+    "ratio": 0.143,
+    "stub": false,
+    "above_target": false,
+    "parts": {
+      "('after', '12. Further Reading', 'recap')": 78,
+      "shared-prompt:requirements": 76,
+      "shared-prompt:clarifying": 61,
+      "shared-prompt:api": 65
+    }
+  },
+  {
+    "path": "mobile-system-design/youtube-video-streaming.md",
+    "original_prose": 2501,
+    "added_prose": 301,
+    "hero_prose": 22,
+    "ratio": 0.12,
+    "stub": false,
+    "above_target": false,
+    "parts": {
+      "('after', '12. Further Reading', 'recap')": 77,
+      "shared-prompt:requirements": 76,
+      "shared-prompt:clarifying": 61,
+      "shared-prompt:api": 65
+    }
+  },
+  {
+    "path": "mobile-system-design/a-b-testing-infrastructure.md",
+    "original_prose": 2187,
+    "added_prose": 318,
+    "hero_prose": 26,
+    "ratio": 0.145,
+    "stub": false,
+    "above_target": false,
+    "parts": {
+      "('after', '12. Further Reading', 'recap')": 90,
+      "shared-prompt:requirements": 76,
+      "shared-prompt:clarifying": 61,
+      "shared-prompt:api": 65
+    }
+  },
+  {
+    "path": "mobile-system-design/experimentation-platform.md",
+    "original_prose": 2488,
+    "added_prose": 317,
+    "hero_prose": 29,
+    "ratio": 0.127,
+    "stub": false,
+    "above_target": false,
+    "parts": {
+      "('after', '12. Further Reading', 'recap')": 86,
+      "shared-prompt:requirements": 76,
+      "shared-prompt:clarifying": 61,
+      "shared-prompt:api": 65
+    }
+  },
+  {
+    "path": "mobile-system-design/server-driven-ui.md",
+    "original_prose": 2088,
+    "added_prose": 313,
+    "hero_prose": 27,
+    "ratio": 0.15,
+    "stub": false,
+    "above_target": false,
+    "parts": {
+      "('after', '12. Further Reading', 'recap')": 84,
+      "shared-prompt:requirements": 76,
+      "shared-prompt:clarifying": 61,
+      "shared-prompt:api": 65
+    }
+  },
+  {
+    "path": "mobile-system-design/on-device-ai.md",
+    "original_prose": 1644,
+    "added_prose": 115,
+    "hero_prose": 31,
+    "ratio": 0.07,
+    "stub": false,
+    "above_target": false,
+    "parts": {
+      "('after', '10. Further Reading', 'recap')": 84
+    }
+  },
+  {
+    "path": "observability/telemetry-taxonomy.md",
+    "original_prose": 1458,
+    "added_prose": 25,
+    "hero_prose": 25,
+    "ratio": 0.017,
+    "stub": false,
+    "above_target": false,
+    "parts": {}
+  },
+  {
+    "path": "observability/logging.md",
+    "original_prose": 1960,
+    "added_prose": 22,
+    "hero_prose": 22,
+    "ratio": 0.011,
+    "stub": false,
+    "above_target": false,
+    "parts": {}
+  },
+  {
+    "path": "observability/structured-logging.md",
+    "original_prose": 1920,
+    "added_prose": 22,
+    "hero_prose": 22,
+    "ratio": 0.011,
+    "stub": false,
+    "above_target": false,
+    "parts": {}
+  },
+  {
+    "path": "observability/metrics.md",
+    "original_prose": 2131,
+    "added_prose": 24,
+    "hero_prose": 24,
+    "ratio": 0.011,
+    "stub": false,
+    "above_target": false,
+    "parts": {}
+  },
+  {
+    "path": "observability/tracing.md",
+    "original_prose": 1980,
+    "added_prose": 25,
+    "hero_prose": 25,
+    "ratio": 0.013,
+    "stub": false,
+    "above_target": false,
+    "parts": {}
+  },
+  {
+    "path": "observability/distributed-tracing.md",
+    "original_prose": 2055,
+    "added_prose": 24,
+    "hero_prose": 24,
+    "ratio": 0.012,
+    "stub": false,
+    "above_target": false,
+    "parts": {}
+  },
+  {
+    "path": "observability/slis.md",
+    "original_prose": 2277,
+    "added_prose": 23,
+    "hero_prose": 23,
+    "ratio": 0.01,
+    "stub": false,
+    "above_target": false,
+    "parts": {}
+  },
+  {
+    "path": "observability/slos.md",
+    "original_prose": 2466,
+    "added_prose": 24,
+    "hero_prose": 24,
+    "ratio": 0.01,
+    "stub": false,
+    "above_target": false,
+    "parts": {}
+  },
+  {
+    "path": "observability/error-budgets.md",
+    "original_prose": 2230,
+    "added_prose": 21,
+    "hero_prose": 21,
+    "ratio": 0.009,
+    "stub": false,
+    "above_target": false,
+    "parts": {}
+  },
+  {
+    "path": "observability/alerting.md",
+    "original_prose": 2490,
+    "added_prose": 25,
+    "hero_prose": 25,
+    "ratio": 0.01,
+    "stub": false,
+    "above_target": false,
+    "parts": {}
+  },
+  {
+    "path": "observability/dashboards.md",
+    "original_prose": 1981,
+    "added_prose": 25,
+    "hero_prose": 25,
+    "ratio": 0.013,
+    "stub": false,
+    "above_target": false,
+    "parts": {}
+  },
+  {
+    "path": "distributed-systems/cap-theorem.md",
+    "original_prose": 3161,
+    "added_prose": 216,
+    "hero_prose": 29,
+    "ratio": 0.068,
+    "stub": false,
+    "above_target": false,
+    "parts": {
+      "('opening', '')": 29,
+      "('before', 'First Principles', 'guide')": 76,
+      "('before', 'Architecture', 'guide')": 48,
+      "('before', 'Staff Engineer Thinking', 'staff')": 34
+    }
+  },
+  {
+    "path": "distributed-systems/consistency-models.md",
+    "original_prose": 3380,
+    "added_prose": 195,
+    "hero_prose": 31,
+    "ratio": 0.058,
+    "stub": false,
+    "above_target": false,
+    "parts": {
+      "('opening', '')": 31,
+      "('before', 'First Principles', 'guide')": 49,
+      "('before', 'Internal Mechanics', 'guide')": 52,
+      "('before', 'Staff Engineer Thinking', 'staff')": 32
+    }
+  },
+  {
+    "path": "distributed-systems/idempotency.md",
+    "original_prose": 4215,
+    "added_prose": 166,
+    "hero_prose": 36,
+    "ratio": 0.039,
+    "stub": false,
+    "above_target": false,
+    "parts": {
+      "('opening', '')": 36,
+      "('before', 'First Principles', 'guide')": 57,
+      "('before', 'Internal Mechanics', 'animation')": 7,
+      "('before', 'Staff Engineer Thinking', 'staff')": 30
+    }
+  },
+  {
+    "path": "distributed-systems/delivery-semantics.md",
+    "original_prose": 3358,
+    "added_prose": 491,
+    "hero_prose": 18,
+    "ratio": 0.146,
+    "stub": false,
+    "above_target": false,
+    "parts": {
+      "('opening', '')": 60,
+      "('before', 'Historical Context', 'guide')": 54,
+      "('before', 'First Principles', 'animation')": 30,
+      "('before', 'Internal Mechanics', 'guide')": 108,
+      "('before', 'Tradeoffs', 'guide')": 62,
+      "('after', 'Failure Modes', 'staff')": 52,
+      "('after', 'Answer Key', 'guide')": 107
+    }
+  },
+  {
+    "path": "distributed-systems/mobile-client-consistency-contracts.md",
+    "original_prose": 2094,
+    "added_prose": 153,
+    "hero_prose": 29,
+    "ratio": 0.073,
+    "stub": false,
+    "above_target": false,
+    "parts": {
+      "('opening', '')": 29,
+      "('before', 'Monotonic Reads', 'animation')": 8,
+      "('before', 'Conflict UX', 'guide')": 49,
+      "('before', 'Offline and Reset Contracts', 'staff')": 38
+    }
+  },
+  {
+    "path": "distributed-systems/vector-clocks.md",
+    "original_prose": 3172,
+    "added_prose": 166,
+    "hero_prose": 33,
+    "ratio": 0.052,
+    "stub": false,
+    "above_target": false,
+    "parts": {
+      "('opening', '')": 33,
+      "('before', 'Architecture', 'animation')": 5,
+      "('before', 'Internal Mechanics', 'guide')": 56,
+      "('before', 'Staff Engineer Thinking', 'staff')": 39
+    }
+  },
+  {
+    "path": "distributed-systems/crdts.md",
+    "original_prose": 3251,
+    "added_prose": 221,
+    "hero_prose": 29,
+    "ratio": 0.068,
+    "stub": false,
+    "above_target": false,
+    "parts": {
+      "('opening', '')": 29,
+      "('before', 'Internal Mechanics', 'animation')": 6,
+      "('before', 'First Principles', 'guide')": 58,
+      "('before', 'Staff Engineer Thinking', 'staff')": 43,
+      "('before', 'Answer Key', 'guide')": 56
+    }
+  },
+  {
+    "path": "distributed-systems/lww-vs-crdt.md",
+    "original_prose": 1058,
+    "added_prose": 210,
+    "hero_prose": 30,
+    "ratio": 0.198,
+    "stub": false,
+    "above_target": false,
+    "parts": {
+      "('opening', '')": 30,
+      "('before', 'Comparison Matrix', 'guide')": 47,
+      "('before', 'Migration and Reversibility', 'staff')": 50,
+      "('before', 'Comparison Matrix', 'visual')": 53
+    }
+  },
+  {
+    "path": "distributed-systems/consensus-basics.md",
+    "original_prose": 3787,
+    "added_prose": 199,
+    "hero_prose": 32,
+    "ratio": 0.053,
+    "stub": false,
+    "above_target": false,
+    "parts": {
+      "('opening', '')": 32,
+      "('before', 'Internal Mechanics', 'animation')": 6,
+      "('before', 'Staff Engineer Thinking', 'staff')": 59,
+      "('before', 'Answer Key', 'guide')": 70
+    }
+  },
+  {
+    "path": "distributed-systems/replication-and-leader-election.md",
+    "original_prose": 1925,
+    "added_prose": 157,
+    "hero_prose": 31,
+    "ratio": 0.082,
+    "stub": false,
+    "above_target": false,
+    "parts": {
+      "('opening', '')": 31,
+      "('before', 'Leader Election', 'animation')": 6,
+      "('before', 'Replication Lag', 'guide')": 50,
+      "('before', 'Staff Engineer Review Checklist', 'staff')": 39
+    }
+  },
+  {
+    "path": "distributed-systems/streaming-logs-partitioning.md",
+    "original_prose": 1864,
+    "added_prose": 249,
+    "hero_prose": 29,
+    "ratio": 0.134,
+    "stub": false,
+    "above_target": false,
+    "parts": {
+      "('opening', '')": 29,
+      "('before', 'Partitioning', 'guide')": 48,
+      "('before', 'Offset vs Cursor vs Version', 'guide')": 60,
+      "('before', 'At-Least-Once Streams', 'staff')": 45,
+      "('before', 'Partitioning', 'visual')": 38
+    }
+  },
+  {
+    "path": "distributed-systems/distributed-tracing.md",
+    "original_prose": 22,
+    "added_prose": 29,
+    "hero_prose": 7,
+    "ratio": 1.318,
+    "stub": true,
+    "above_target": false,
+    "parts": {
+      "('opening', '')": 22
+    }
+  },
+  {
+    "path": "backend-for-mobile/bff-pattern.md",
+    "original_prose": 1852,
+    "added_prose": 189,
+    "hero_prose": 32,
+    "ratio": 0.102,
+    "stub": false,
+    "above_target": false,
+    "parts": {
+      "('opening', '')": 32,
+      "('before', '2. The BFF Implementation', 'animation')": 4,
+      "('before', '2. The BFF Implementation', 'guide')": 53,
+      "('before', '4. Failure Modes & Tradeoffs', 'staff')": 38,
+      "('before', '1. The Mobile Orchestration Problem', 'visual')": 30
+    }
+  },
+  {
+    "path": "backend-for-mobile/api-design-for-mobile.md",
+    "original_prose": 3333,
+    "added_prose": 222,
+    "hero_prose": 32,
+    "ratio": 0.067,
+    "stub": false,
+    "above_target": false,
+    "parts": {
+      "('opening', '')": 32,
+      "('before', '4. Versioning Strategy for Mobile', 'guide')": 48,
+      "('before', 'API Governance for Mobile', 'staff')": 42,
+      "('before', 'Answer Key', 'guide')": 38,
+      "('before', '4. Versioning Strategy for Mobile', 'visual')": 30
+    }
+  },
+  {
+    "path": "backend-for-mobile/data-formats.md",
+    "original_prose": 1806,
+    "added_prose": 157,
+    "hero_prose": 30,
+    "ratio": 0.087,
+    "stub": false,
+    "above_target": false,
+    "parts": {
+      "('opening', '')": 30,
+      "('before', 'Defaults, Nulls and Unknown Values', 'guide')": 53,
+      "('before', 'Staff Engineer Thinking', 'staff')": 44
+    }
+  },
+  {
+    "path": "backend-for-mobile/transport-protocols.md",
+    "original_prose": 2898,
+    "added_prose": 195,
+    "hero_prose": 31,
+    "ratio": 0.067,
+    "stub": false,
+    "above_target": false,
+    "parts": {
+      "('opening', '')": 31,
+      "('before', 'First Principles', 'guide')": 45,
+      "('before', 'Internal Mechanics', 'guide')": 50,
+      "('before', 'Staff Engineer Thinking', 'staff')": 38
+    }
+  },
+  {
+    "path": "backend-for-mobile/graphql-vs-rest.md",
+    "original_prose": 3944,
+    "added_prose": 225,
+    "hero_prose": 32,
+    "ratio": 0.057,
+    "stub": false,
+    "above_target": false,
+    "parts": {
+      "('opening', '')": 32,
+      "('before', \"Three Axes (Don't Conflate Them)\", 'guide')": 47,
+      "('before', 'Error Handling Differences', 'guide')": 44,
+      "('before', 'The Caching Tradeoff', 'staff')": 41,
+      "('before', 'The Caching Tradeoff', 'visual')": 29
+    }
+  },
+  {
+    "path": "backend-for-mobile/push-vs-poll-vs-sse-vs-websockets.md",
+    "original_prose": 2829,
+    "added_prose": 166,
+    "hero_prose": 33,
+    "ratio": 0.059,
+    "stub": false,
+    "above_target": false,
+    "parts": {
+      "('opening', '')": 33,
+      "('before', 'The Options (First Principles)', 'guide')": 48,
+      "('before', 'Internal Mechanics and Tradeoffs', 'staff')": 52
+    }
+  },
+  {
+    "path": "backend-for-mobile/sse-vs-websockets.md",
+    "original_prose": 2631,
+    "added_prose": 183,
+    "hero_prose": 25,
+    "ratio": 0.07,
+    "stub": false,
+    "above_target": false,
+    "parts": {
+      "('opening', '')": 25,
+      "('before', 'Reconnection: The Hard Part', 'animation')": 9,
+      "('before', 'Reconnection: The Hard Part', 'guide')": 45,
+      "('before', 'Answer Key', 'staff')": 45,
+      "('before', 'Reconnection: The Hard Part', 'visual')": 34
+    }
+  },
+  {
+    "path": "backend-for-mobile/rate-limiting.md",
+    "original_prose": 1687,
+    "added_prose": 195,
+    "hero_prose": 36,
+    "ratio": 0.116,
+    "stub": false,
+    "above_target": false,
+    "parts": {
+      "('opening', '')": 36,
+      "('before', '1. Client-Side Throttling (Coroutines & Flow)', 'animation')": 7,
+      "('before', '2. Handling Server-Side Rate Limits (HTTP 429)', 'guide')": 49,
+      "('before', '3. UI Rate Limiting (Disabling Interactions)', 'staff')": 38,
+      "('before', '1. Client-Side Throttling (Coroutines & Flow)', 'visual')": 29
+    }
+  },
+  {
+    "path": "security/privacy-gdpr-data-residency.md",
+    "original_prose": 1002,
+    "added_prose": 169,
+    "hero_prose": 33,
+    "ratio": 0.169,
+    "stub": false,
+    "above_target": false,
+    "parts": {
+      "('opening', '')": 33,
+      "('before', 'Consent and Collection Pipeline', 'guide')": 48,
+      "('before', 'Deletion and Offline Devices', 'staff')": 55
+    }
+  },
+  {
+    "path": "security/privacy-sandbox.md",
+    "original_prose": 900,
+    "added_prose": 195,
+    "hero_prose": 30,
+    "ratio": 0.217,
+    "stub": false,
+    "above_target": false,
+    "parts": {
+      "('opening', '')": 30,
+      "('before', '2. Status and Planning Implications', 'guide')": 55,
+      "('before', '4. The Staff-Level Lesson: Platform Bets', 'staff')": 46,
+      "('before', '2. Status and Planning Implications', 'visual')": 34
+    }
+  },
+  {
+    "path": "security/auth-on-mobile.md",
+    "original_prose": 1986,
+    "added_prose": 185,
+    "hero_prose": 30,
+    "ratio": 0.093,
+    "stub": false,
+    "above_target": false,
+    "parts": {
+      "('opening', '')": 30,
+      "('before', '4. OkHttp Authenticator (Silent Refresh)', 'animation')": 8,
+      "('before', '2. OAuth 2.0 Authorization Code + PKCE (the Login)', 'guide')": 71,
+      "('before', '5. Logout', 'staff')": 46
+    }
+  },
+  {
+    "path": "security/secure-storage-on-android.md",
+    "original_prose": 1293,
+    "added_prose": 174,
+    "hero_prose": 29,
+    "ratio": 0.135,
+    "stub": false,
+    "above_target": false,
+    "parts": {
+      "('opening', '')": 29,
+      "('before', 'Backup and Device Transfer', 'guide')": 67,
+      "('before', 'Current Platform Position', 'staff')": 49
+    }
+  },
+  {
+    "path": "security/key-management.md",
+    "original_prose": 1320,
+    "added_prose": 175,
+    "hero_prose": 32,
+    "ratio": 0.133,
+    "stub": false,
+    "above_target": false,
+    "parts": {
+      "('opening', '')": 32,
+      "('before', '2. Build-Time Constants vs Runtime Secrets', 'guide')": 57,
+      "('before', '6. The Backend Proxy Pattern (For Third-Party API Keys)', 'staff')": 54
+    }
+  },
+  {
+    "path": "security/certificate-pinning.md",
+    "original_prose": 1630,
+    "added_prose": 166,
+    "hero_prose": 28,
+    "ratio": 0.102,
+    "stub": false,
+    "above_target": false,
+    "parts": {
+      "('opening', '')": 28,
+      "('before', '5. Pin Rotation: The Two-Pin Rule', 'animation')": 8,
+      "('before', '1. The Threat Model', 'guide')": 53,
+      "('before', '6. The Kill Switch (Pragmatic, Controversial)', 'staff')": 49
+    }
+  },
+  {
+    "path": "security/attestation.md",
+    "original_prose": 1333,
+    "added_prose": 185,
+    "hero_prose": 32,
+    "ratio": 0.139,
+    "stub": false,
+    "above_target": false,
+    "parts": {
+      "('opening', '')": 32,
+      "('before', 'Server Verification Contract', 'animation')": 8,
+      "('before', 'Which Evidence Fits the Action?', 'guide')": 57,
+      "('before', 'Keystore Key Attestation', 'staff')": 56
+    }
+  },
+  {
+    "path": "release-engineering/code-signing.md",
+    "original_prose": 1791,
+    "added_prose": 157,
+    "hero_prose": 27,
+    "ratio": 0.088,
+    "stub": false,
+    "above_target": false,
+    "parts": {
+      "('opening', '')": 27,
+      "('before', '3. Play App Signing (The Standard Today)', 'guide')": 51,
+      "('before', '9. The Compromise Playbook', 'staff')": 52
+    }
+  },
+  {
+    "path": "release-engineering/ci-cd-for-mobile.md",
+    "original_prose": 1354,
+    "added_prose": 164,
+    "hero_prose": 33,
+    "ratio": 0.121,
+    "stub": false,
+    "above_target": false,
+    "parts": {
+      "('opening', '')": 33,
+      "('before', '5. Release Workflow (Tag → Production)', 'guide')": 50,
+      "('before', '4. Remote Build Cache (Gradle Enterprise / Develocity)', 'staff')": 48
+    }
+  },
+  {
+    "path": "release-engineering/app-bundles.md",
+    "original_prose": 1044,
+    "added_prose": 144,
+    "hero_prose": 28,
+    "ratio": 0.138,
+    "stub": false,
+    "above_target": false,
+    "parts": {
+      "('opening', '')": 28,
+      "('before', '7. Testing AAB Builds Locally (bundletool)', 'guide')": 42,
+      "('before', '8. AAB Size Gates In CI', 'staff')": 46
+    }
+  },
+  {
+    "path": "release-engineering/play-store-internals.md",
+    "original_prose": 1109,
+    "added_prose": 174,
+    "hero_prose": 27,
+    "ratio": 0.157,
+    "stub": false,
+    "above_target": false,
+    "parts": {
+      "('opening', '')": 27,
+      "('before', 'Vitals and Application Telemetry', 'guide')": 44,
+      "('before', 'Staged Rollout and Adoption', 'staff')": 48,
+      "('before', 'Fleet and Cohort Analysis', 'visual')": 28
+    }
+  },
+  {
+    "path": "release-engineering/android-developer-verification.md",
+    "original_prose": 624,
+    "added_prose": 173,
+    "hero_prose": 27,
+    "ratio": 0.277,
+    "stub": false,
+    "above_target": true,
+    "parts": {
+      "('opening', '')": 27,
+      "('before', 'Distribution Inventory', 'guide')": 52,
+      "('before', 'Signing-Key Proof and Operations', 'staff')": 40,
+      "('before', 'Signing-Key Proof and Operations', 'visual')": 27
+    }
+  },
+  {
+    "path": "release-engineering/android-platform-compatibility.md",
+    "original_prose": 598,
+    "added_prose": 170,
+    "hero_prose": 27,
+    "ratio": 0.284,
+    "stub": false,
+    "above_target": true,
+    "parts": {
+      "('opening', '')": 27,
+      "('before', 'Annual Workflow', 'guide')": 51,
+      "('before', 'Ownership', 'staff')": 38,
+      "('before', 'Ownership', 'visual')": 27
+    }
+  },
+  {
+    "path": "release-engineering/16kb-page-sizes.md",
+    "original_prose": 1041,
+    "added_prose": 194,
+    "hero_prose": 32,
+    "ratio": 0.186,
+    "stub": false,
+    "above_target": false,
+    "parts": {
+      "('opening', '')": 32,
+      "('before', '3. The two alignment requirements', 'guide')": 60,
+      "('before', '8. The staff-level rollout playbook', 'staff')": 41,
+      "('before', '5. Detection and CI', 'visual')": 29
+    }
+  },
+  {
+    "path": "release-engineering/staged-rollouts.md",
+    "original_prose": 1045,
+    "added_prose": 140,
+    "hero_prose": 25,
+    "ratio": 0.134,
+    "stub": false,
+    "above_target": false,
+    "parts": {
+      "('opening', '')": 25,
+      "('before', '4. Halting A Bad Release', 'animation')": 8,
+      "('before', '1. The Stage Model', 'guide')": 42,
+      "('before', '5. Automated Stage Promotion With Crash-Rate Gates', 'staff')": 40
+    }
+  },
+  {
+    "path": "release-engineering/crash-rate-gating.md",
+    "original_prose": 1600,
+    "added_prose": 147,
+    "hero_prose": 25,
+    "ratio": 0.092,
+    "stub": false,
+    "above_target": false,
+    "parts": {
+      "('opening', '')": 25,
+      "('before', '5. Multi-Signal Release Gate', 'animation')": 5,
+      "('before', '1. The Metrics That Matter', 'guide')": 50,
+      "('before', '8. Time Windows And Sample Size', 'staff')": 42
+    }
+  },
+  {
+    "path": "release-engineering/kill-switches.md",
+    "original_prose": 1527,
+    "added_prose": 163,
+    "hero_prose": 30,
+    "ratio": 0.107,
+    "stub": false,
+    "above_target": false,
+    "parts": {
+      "('opening', '')": 30,
+      "('before', '3. Live Apply Policy', 'animation')": 5,
+      "('before', '4. Propagation Latency', 'guide')": 53,
+      "('before', '8. Kill Switches During A Bad Release', 'staff')": 45
+    }
+  },
+  {
+    "path": "release-engineering/release-strategy.md",
+    "original_prose": 1283,
+    "added_prose": 172,
+    "hero_prose": 36,
+    "ratio": 0.134,
+    "stub": false,
+    "above_target": false,
+    "parts": {
+      "('opening', '')": 36,
+      "('before', '9. Production Release Decision Tree', 'guide')": 52,
+      "('before', '7. Release Roles', 'staff')": 48
+    }
+  }
+]

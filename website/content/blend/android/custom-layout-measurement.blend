@@ -5,7 +5,7 @@
 <!-- @opening -->
 <p class="story-lead">A row of overlapping avatars looks perfect in the design review. In Arabic, the overlap goes the wrong way; on a narrow phone, the last avatar is cut in half; and at the largest font size, the "+3" badge collides with the text beside it. All three bugs live in about twenty lines of measurement code.</p>
 
-A custom layout is a contract with the layout system: **receive constraints, measure each child once, choose your own size within the constraints, then place children**. Those clauses help locate constraint and placement bugs; large text also requires testing content fit and overflow. This chapter shows when to write your own layout, and how to keep each clause, including direction, accessibility and performance.
+A custom layout is a contract with the layout system: **receive constraints, measure each child once, choose your own size within the constraints, then place children**. Those clauses help locate constraint and placement bugs; large text also requires testing content fit and overflow.
 
 <!-- @after Layout Pipeline :: visual -->
 ### Pick the smallest tool that fits

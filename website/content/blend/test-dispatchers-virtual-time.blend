@@ -3,7 +3,7 @@
 <!-- @opening -->
 <p class="story-lead">The unit-test job takes four minutes, mostly spent sleeping through retry delays. One debounce test fails about one run in fifty on CI and never locally. Nobody trusts a red build any more, so real failures get re-run until they turn green.</p>
 
-Coroutine code is full of time — retries, debounce windows, timeouts — and full of ordering. `kotlinx-coroutines-test` replaces both with something you control: a **virtual clock** that jumps instantly, and dispatchers that run queued work exactly when the test says so. This chapter shows how that clock moves, which dispatcher to pick, how to share one scheduler, and how to test the behaviours that matter most: debounce and cancellation.
+Coroutine code is full of time — retries, debounce windows, timeouts — and full of ordering. `kotlinx-coroutines-test` replaces both with something you control: a **virtual clock** that jumps instantly, and dispatchers that run queued work exactly when the test says so.
 
 <!-- @after The Test Scheduler :: animation -->
 ### Moving the virtual clock by hand

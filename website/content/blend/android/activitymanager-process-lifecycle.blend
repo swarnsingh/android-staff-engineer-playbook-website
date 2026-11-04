@@ -6,7 +6,7 @@
 <!-- @opening -->
 <p class="story-lead">A user writes half a message, switches to the camera to take a photo, and comes back through Recents a few minutes later. The app is still in Recents and the screen comes back. The half-written message, though, is gone. The task survived. The process holding the text did not.</p>
 
-Android keeps three things apart: the task the user sees in Recents, the components the system can recreate, and the Linux process that held your memory. `ActivityManagerService` decides when that process can be killed, and it does not ask you first. This chapter explains process creation, importance and the background-work rules. The additions here follow one draft through a process kill and show which owner brings each piece back.
+Android keeps three things apart: the task the user sees in Recents, the components the system can recreate, and the Linux process that held your memory. `ActivityManagerService` decides when that process can be killed, and it does not ask you first.
 
 <!-- @diagram 9ec3c02757c2507a -->
 ### Starting a process from a tap

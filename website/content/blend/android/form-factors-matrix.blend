@@ -5,7 +5,7 @@
 <!-- @opening -->
 <p class="story-lead">A roadmap slide says "Q3: Wear, TV, Auto". Engineering estimates it as three ports of the phone app. Six weeks in, the watch team has rebuilt every screen with different components, the car team learns their category does not allow custom UI while driving, and nobody owns the TV app's focus bugs.</p>
 
-Each Android surface beyond phones and tablets has its **own UI toolkit, interaction model and review rules**, and only the layers below the UI carry over. Whether to build for it is therefore a cost model: which session belongs there, how many of your users can reach it, and who maintains it. This chapter is that model, with a decision sequence you can apply to any "let's be everywhere" proposal.
+Each Android surface beyond phones and tablets has its **own UI toolkit, interaction model and review rules**, and only the layers below the UI carry over. Whether to build for it is therefore a cost model: which session belongs there, how many of your users can reach it, and who maintains it.
 
 <!-- @after 1. The Matrix :: visual -->
 ### What carries over, and what is new

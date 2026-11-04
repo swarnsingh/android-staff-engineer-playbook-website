@@ -5,7 +5,7 @@
 <!-- @opening -->
 <p class="story-lead">The team ships its first Compose screen inside a Fragment. A week later: switch tabs and back, and the half-written review on that screen is gone. In the next release, a list that embeds a legacy map view stutters on every scroll. Both are reasons to inspect lifecycle ownership and View reuse at the seams; either symptom can also have other causes.</p>
 
-Most apps migrate to Compose over years, so the two toolkits live side by side, with Compose inside Views and Views inside Compose. Each direction has a small API and one lifecycle rule that is easy to get wrong. This chapter covers both directions, what every seam costs, and a migration order that keeps shipping features while the codebase moves.
+Most apps migrate to Compose over years, so the two toolkits live side by side, with Compose inside Views and Views inside Compose. Each direction has a small API and one lifecycle rule that is easy to get wrong.
 
 <!-- @after 2. Views in Compose: AndroidView :: animation -->
 ### The life of one <code>AndroidView</code> in a list

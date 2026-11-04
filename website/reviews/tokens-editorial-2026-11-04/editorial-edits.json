@@ -1,0 +1,172 @@
+[
+  {
+    "path": "android/kotlin-multiplatform/kmp-decision-matrix.md",
+    "file": "website/content/blend/android/kotlin-multiplatform/kmp-decision-matrix.blend",
+    "removed": [
+      "Use this chapter to choose a bounded sharing hypothesis, then decide what evidence would justify expanding it."
+    ],
+    "reason": "Remove an outline-style preview already supplied by navigation, or a definition already present in the original Overview/First Principles. Preserve the concrete opening and decision examples."
+  },
+  {
+    "path": "android/compose/custom-layout-measurement.md",
+    "file": "website/content/blend/android/custom-layout-measurement.blend",
+    "removed": [
+      "This chapter shows when to write your own layout, and how to keep each clause, including direction, accessibility and performance."
+    ],
+    "reason": "Remove an outline-style preview already supplied by navigation, or a definition already present in the original Overview/First Principles. Preserve the concrete opening and decision examples."
+  },
+  {
+    "path": "android/compose/compose-accessibility.md",
+    "file": "website/content/blend/android/compose-accessibility.blend",
+    "removed": [
+      "This chapter covers labels, merging, state and errors, traversal, large text, touch targets, and how to test all of them."
+    ],
+    "reason": "Remove an outline-style preview already supplied by navigation, or a definition already present in the original Overview/First Principles. Preserve the concrete opening and decision examples."
+  },
+  {
+    "path": "kotlin/coroutines-and-flow/test-dispatchers-virtual-time.md",
+    "file": "website/content/blend/test-dispatchers-virtual-time.blend",
+    "removed": [
+      "This chapter shows how that clock moves, which dispatcher to pick, how to share one scheduler, and how to test the behaviours that matter most: debounce and cancellation."
+    ],
+    "reason": "Remove an outline-style preview already supplied by navigation, or a definition already present in the original Overview/First Principles. Preserve the concrete opening and decision examples."
+  },
+  {
+    "path": "kotlin/coroutines-and-flow/callbackflow-and-bridging-callbacks.md",
+    "file": "website/content/blend/callbackflow-and-bridging-callbacks.blend",
+    "removed": [
+      "This chapter shows that lifecycle step by step, then the details that decide whether the bridge is safe — how values are sent from a callback, buffering, sharing one registration, completion and errors, and collecting with the screen's lifecycle."
+    ],
+    "reason": "Remove an outline-style preview already supplied by navigation, or a definition already present in the original Overview/First Principles. Preserve the concrete opening and decision examples."
+  },
+  {
+    "path": "android/os-internals/content-providers-and-contentresolver.md",
+    "file": "website/content/blend/android/content-providers-and-contentresolver.blend",
+    "removed": [
+      "This chapter covers the contract, the startup trap and cursor discipline. The additions here follow one shared file from your storage to another app and back out again.",
+      "Each SDK provider is code that runs before your `Application.onCreate()`, and removing or deferring them is often the cheapest cold-start win available."
+    ],
+    "reason": "Remove an outline-style preview already supplied by navigation, or a definition already present in the original Overview/First Principles. Preserve the concrete opening and decision examples."
+  },
+  {
+    "path": "android/compose/view-interop-and-migration.md",
+    "file": "website/content/blend/android/view-interop-and-migration.blend",
+    "removed": [
+      "This chapter covers both directions, what every seam costs, and a migration order that keeps shipping features while the codebase moves."
+    ],
+    "reason": "Remove an outline-style preview already supplied by navigation, or a definition already present in the original Overview/First Principles. Preserve the concrete opening and decision examples."
+  },
+  {
+    "path": "android/os-internals/broadcast-receivers.md",
+    "file": "website/content/blend/android/broadcast-receivers.blend",
+    "removed": [
+      "This chapter covers receiver types, delivery, time limits and security. The additions here follow one notification action from the doorway to an owner that outlives it."
+    ],
+    "reason": "Remove an outline-style preview already supplied by navigation, or a definition already present in the original Overview/First Principles. Preserve the concrete opening and decision examples."
+  },
+  {
+    "path": "android/os-internals/permissions-and-app-ops.md",
+    "file": "website/content/blend/android/permissions-and-app-ops.blend",
+    "removed": [
+      "This chapter covers permission categories, the runtime flow and the layered cases such as location. The additions here turn one user action into a capability that reports what actually happened, so the screen can respond sensibly to every outcome.",
+      "A falling grant rate after a release is a product regression with a clear owner."
+    ],
+    "reason": "Remove an outline-style preview already supplied by navigation, or a definition already present in the original Overview/First Principles. Preserve the concrete opening and decision examples."
+  },
+  {
+    "path": "android/compose/adaptive-compose-large-screens.md",
+    "file": "website/content/blend/android/adaptive-compose-large-screens.blend",
+    "removed": [
+      "This chapter separates state from layout, then covers window size classes, canonical layouts, folds, input modes and how to test them."
+    ],
+    "reason": "Remove an outline-style preview already supplied by navigation, or a definition already present in the original Overview/First Principles. Preserve the concrete opening and decision examples."
+  },
+  {
+    "path": "android/compose/form-factors-matrix.md",
+    "file": "website/content/blend/android/form-factors-matrix.blend",
+    "removed": [
+      "This chapter is that model, with a decision sequence you can apply to any \"let's be everywhere\" proposal."
+    ],
+    "reason": "Remove an outline-style preview already supplied by navigation, or a definition already present in the original Overview/First Principles. Preserve the concrete opening and decision examples."
+  },
+  {
+    "path": "android/os-internals/package-manager-installation-classloading.md",
+    "file": "website/content/blend/android/package-manager-installation-classloading.blend",
+    "removed": [
+      "This chapter covers the install pipeline, signing identity, the sandbox and the class loaders. The additions here follow one optional feature from install to its first use, so you can see where an absent class shows up."
+    ],
+    "reason": "Remove an outline-style preview already supplied by navigation, or a definition already present in the original Overview/First Principles. Preserve the concrete opening and decision examples."
+  },
+  {
+    "path": "android/os-internals/activitymanager-process-lifecycle.md",
+    "file": "website/content/blend/android/activitymanager-process-lifecycle.blend",
+    "removed": [
+      "This chapter explains process creation, importance and the background-work rules. The additions here follow one draft through a process kill and show which owner brings each piece back."
+    ],
+    "reason": "Remove an outline-style preview already supplied by navigation, or a definition already present in the original Overview/First Principles. Preserve the concrete opening and decision examples."
+  },
+  {
+    "path": "android/compose/compose-performance-tooling.md",
+    "file": "website/content/blend/android/compose-performance-tooling.blend",
+    "removed": [
+      "This chapter walks through that loop and the Compose-specific tools inside it."
+    ],
+    "reason": "Remove an outline-style preview already supplied by navigation, or a definition already present in the original Overview/First Principles. Preserve the concrete opening and decision examples."
+  },
+  {
+    "path": "android/os-internals/intent-resolution-and-manifest.md",
+    "file": "website/content/blend/android/intent-resolution-and-manifest.blend",
+    "removed": [
+      "This chapter explains how Android matches an intent to a component and which manifest settings form your security boundary. The additions here separate what the system decides from what your code must still check."
+    ],
+    "reason": "Remove an outline-style preview already supplied by navigation, or a definition already present in the original Overview/First Principles. Preserve the concrete opening and decision examples."
+  },
+  {
+    "path": "kotlin/coroutines-and-flow/flow-operators-and-backpressure.md",
+    "file": "website/content/blend/flow-operators-and-backpressure.blend",
+    "removed": [
+      "This chapter makes every such choice visible."
+    ],
+    "reason": "Remove an outline-style preview already supplied by navigation, or a definition already present in the original Overview/First Principles. Preserve the concrete opening and decision examples."
+  },
+  {
+    "path": "computer-science/recursion-backtracking.md",
+    "file": "website/content/blend/computer-science/recursion-backtracking.blend",
+    "removed": [
+      "Recursion solves a problem by solving a smaller copy of it. Backtracking is recursion over choices: make a choice, explore what follows, then undo the choice and try the next one. Pruning stops exploring a branch as soon as it cannot succeed."
+    ],
+    "reason": "Remove an outline-style preview already supplied by navigation, or a definition already present in the original Overview/First Principles. Preserve the concrete opening and decision examples."
+  },
+  {
+    "path": "computer-science/dynamic-programming.md",
+    "file": "website/content/blend/computer-science/dynamic-programming.blend",
+    "removed": [
+      "Dynamic programming fits when a problem has overlapping subproblems (the same smaller question appears many times) and optimal substructure (the best answer is built from best answers to smaller questions). "
+    ],
+    "reason": "Remove an outline-style preview already supplied by navigation, or a definition already present in the original Overview/First Principles. Preserve the concrete opening and decision examples."
+  },
+  {
+    "path": "computer-science/heaps-and-priority-queues.md",
+    "file": "website/content/blend/computer-science/heaps-and-priority-queues.blend",
+    "removed": [
+      "A binary heap is a complete tree stored in an array, where each parent is no larger than its children (a min-heap). It does not sort everything. It guarantees only that the smallest item is at the top, which is exactly what a scheduler needs."
+    ],
+    "reason": "Remove an outline-style preview already supplied by navigation, or a definition already present in the original Overview/First Principles. Preserve the concrete opening and decision examples."
+  },
+  {
+    "path": "computer-science/greedy-and-intervals.md",
+    "file": "website/content/blend/computer-science/greedy-and-intervals.blend",
+    "removed": [
+      "A greedy algorithm makes the locally best choice and never revisits it. It is fast and simple, but it is correct only when you can show an earlier choice never needs undoing. Interval problems are where greedy choices are easiest to prove."
+    ],
+    "reason": "Remove an outline-style preview already supplied by navigation, or a definition already present in the original Overview/First Principles. Preserve the concrete opening and decision examples."
+  },
+  {
+    "path": "computer-science/linked-lists-stacks-queues.md",
+    "file": "website/content/blend/computer-science/linked-lists-stacks-queues.blend",
+    "removed": [
+      "A stack removes the newest item (last in, first out); a queue removes the oldest (first in, first out). Linked lists make insertion and removal at a known node cheap, at the cost of slow access by position."
+    ],
+    "reason": "Remove an outline-style preview already supplied by navigation, or a definition already present in the original Overview/First Principles. Preserve the concrete opening and decision examples."
+  }
+]

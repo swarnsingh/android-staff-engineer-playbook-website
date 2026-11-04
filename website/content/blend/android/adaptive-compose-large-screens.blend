@@ -5,7 +5,7 @@
 <!-- @opening -->
 <p class="story-lead">A user reads an email on a folded phone, then opens the phone to see it larger. The app switches to its tablet layout: the list appears, the message disappears, and the scroll position is gone. Folding it again opens the inbox, not the email. The code had a phone screen and a tablet screen, and no shared idea of what the user was doing.</p>
 
-Large screens rarely need different features. They need the **same product state** shown in a different arrangement, and the arrangement can change at any moment as windows resize, devices fold and apps share the screen. This chapter separates state from layout, then covers window size classes, canonical layouts, folds, input modes and how to test them.
+Large screens rarely need different features. They need the **same product state** shown in a different arrangement, and the arrangement can change at any moment as windows resize, devices fold and apps share the screen.
 
 <!-- @after Window Size Classes :: visual -->
 ### Two decisions, two inputs

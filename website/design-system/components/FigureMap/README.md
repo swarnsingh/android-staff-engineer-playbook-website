@@ -62,3 +62,9 @@ Each SVG has a title and a description taken from the figure's caption. The "Rea
 
 
 Compact maps retain the same actors, labels, edge directions and logical owners. The shared renderer removes desktop coordinates, reflows the semantic graph and applies the usual collision checks. It emits an alternative only when it fits the `figure-phone-width` and `figure-phone-max-height` budgets and is narrower than the normal drawing. Unrouteable or larger graphs retain the normal labelled scroll area. The two drawings have unique SVG and marker IDs, and WideDiagram selects one from the actual region width using `figure-phone-breakpoint`; label sizes are never reduced. Sequence diagrams retain their lanes. Automatic card bounds, label insets and wrap budgets also come from the figure tokens. Remaining routing and sequence constants are separate tokenization work.
+
+## Geometry tokens
+
+The `figure` token family owns shared card widths, typography, frame limits and compact profiles. `figureGeometry` owns the remaining drawing defaults: arrow markers, terminal symbols, card padding, label pills, route clearances, group and row gaps, fit attempts and sequence lane spacing. `scripts/design_tokens.py` validates the registry; `figure_maps.py` consumes its numeric values without changing their integer or floating-point representation. FigureMap CSS values belong to `componentCss` and expand with the reader stylesheets.
+
+Change these defaults in `tokens.json`, then run `dev.py figures`, the frame checks and the full audit. Author-defined model overrides remain part of the existing model contract. Algorithmic constants such as midpoint fractions, Bézier coefficients, collision sampling, route cost weights and sentinel bounds stay in the renderer; they express the solver rather than a visual dimension. The November extraction preserves all emitted SVGs, including alternate compact drawings.

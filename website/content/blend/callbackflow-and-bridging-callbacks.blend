@@ -3,7 +3,7 @@
 <!-- @opening -->
 <p class="story-lead">Battery complaints arrive after a release. The trace shows GPS updates still being delivered long after users left the map screen — and, after every rotation, one more listener than before. The listener was registered in an initializer and removed "when the screen is destroyed", which happened later than anyone expected, or not at all.</p>
 
-Android is full of push-style APIs: location, sensors, connectivity, text watchers, database listeners. `callbackFlow` turns each into a `Flow` with one simple rule: **collecting starts the listener, and cancelling the collection stops it.** This chapter shows that lifecycle step by step, then the details that decide whether the bridge is safe — how values are sent from a callback, buffering, sharing one registration, completion and errors, and collecting with the screen's lifecycle.
+Android is full of push-style APIs: location, sensors, connectivity, text watchers, database listeners. `callbackFlow` turns each into a `Flow` with one simple rule: **collecting starts the listener, and cancelling the collection stops it.**
 
 <!-- @after Overview :: animation -->
 ### The life of one registration

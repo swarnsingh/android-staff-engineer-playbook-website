@@ -2,7 +2,7 @@
 <!-- @opening -->
 <p class="story-lead">A recursive Fibonacci for n = 50 makes billions of calls, almost all of them repeats of the same small questions. Saving each answer the first time turns that into 50 calls. Dynamic programming is that idea applied deliberately.</p>
 
-Dynamic programming fits when a problem has overlapping subproblems (the same smaller question appears many times) and optimal substructure (the best answer is built from best answers to smaller questions). The hard part is choosing the state, not writing the table.
+The hard part is choosing the state, not writing the table.
 
 <!-- @before State Design :: guide -->
 ### Designing the state in four steps

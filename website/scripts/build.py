@@ -15,6 +15,7 @@ SOURCE_ROOT = 'https://github.com/swarnsingh/android-staff-engineer-playbook-web
 MD = MarkdownIt('commonmark', {'html': True}).enable(['table', 'strikethrough'])
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 import figure_maps
+import design_tokens
 import walkthrough
 # Designed figures that replace rendered Mermaid pictures, keyed by original diagram hash.
 FIGURES = figure_maps.load()
@@ -833,7 +834,12 @@ def check_design_boundary():
         if re.search(r'<[a-zA-Z][^<>]*\sstyle\s*=',text) or re.search(r'<style\b',text):
             problems.append(f'{f.relative_to(WEB)}: inline style in lesson content (use a declared component parameter)')
     for name in SHARED_CSS:
-        css=re.sub(r'/\*.*?\*/','',(WEB/name).read_text(),flags=re.S)
+        source=(WEB/name).read_text()
+        if '/ReaderShell/' in name:
+            design_tokens.check_source(source)
+        elif name.endswith('bundle.css'):
+            design_tokens.check_source(source.split('/* FigureMap:',1)[1].split('/* ViewModel ownership',1)[0])
+        css=re.sub(r'/\*.*?\*/','',design_tokens.compile_css(source),flags=re.S)
         for decl in re.findall(r'[{;]\s*([a-z-]+\s*:[^;{}]*)',css):
             if re.search(r'#[0-9a-fA-F]{3,8}\b',decl):
                 problems.append(f'{name}: hard-coded colour in "{decl.strip()[:60]}" (add a colour token)')
@@ -881,7 +887,7 @@ def build(skip_diagrams=False):
     # not reuse a cached catalog that still sends its chapters to GitHub.
     tokens_css=design_tokens_css().encode()
     asset_inputs=[str(p.relative_to(WEB)) for p in READER_STYLES.values()]+['app.js','blend.js','coroutines.js','lesson-model.js','design-system/components/bundle.css','design-system/components/bundle.js']
-    asset_version=hashlib.sha256(tokens_css+b''.join((WEB/n).read_bytes() for n in asset_inputs)+(OUT/'nav-data.js').read_bytes()).hexdigest()[:10]
+    asset_version=hashlib.sha256(tokens_css+b''.join(design_tokens.stylesheet_bytes(WEB/n) if n.endswith('.css') else (WEB/n).read_bytes() for n in asset_inputs)+(OUT/'nav-data.js').read_bytes()).hexdigest()[:10]
     font_options,font_head=reader_font_markup()
     template=(WEB/'templates/reader.html').read_text().replace('{{font_head}}',font_head).replace('{{font_options}}',font_options).replace('{{base}}',BASE).replace('{{asset_version}}',asset_version)
     reports=[]
@@ -941,12 +947,12 @@ def build(skip_diagrams=False):
     (OUT/'index.html').write_text(home)
     (OUT/'.nojekyll').touch()
     for name,source in READER_STYLES.items():
-        shutil.copy2(source,OUT/name)
+        (OUT/name).write_bytes(design_tokens.stylesheet_bytes(source))
     for name in ['app.js','blend.js','coroutines.js','lesson-model.js']:
         shutil.copy2(WEB/name,OUT/name)
     # The design system is the source for tokens, the diagram runtime and the self-hosted fonts.
     (OUT/'tokens.css').write_bytes(tokens_css)
-    shutil.copy2(DESIGN/'components/bundle.css',OUT/'flow.css')
+    (OUT/'flow.css').write_bytes(design_tokens.stylesheet_bytes(DESIGN/'components/bundle.css'))
     shutil.copy2(DESIGN/'components/bundle.js',OUT/'flow.js')
     shutil.copytree(WEB/'fonts',OUT/'fonts')
     for font in (DESIGN/'fonts').glob('*.woff2'): shutil.copy2(font,OUT/'fonts'/font.name)

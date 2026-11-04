@@ -1,0 +1,7 @@
+browser.json: done ok=false in 335s
+binder.json: done ok=true in 59s
+motion.json: done ok=true in 6s
+refinement.json: done ok=true in 4s
+ux.json: done ok=true in 12s
+qa-tampering.json: done ok=true in 8s
+browser.json: /engineering-fundamentals/: Error: Page resources failed: http://127.0.0.1:64133/navigation.css?v=0e019e2192, http://127.0.0.1:64133/fonts/Inter-Variable-latin.woff2, http://127.0.0.1:64133/tokens.css?v=0e019e2192, http://127.0.0.1:64133/sequence.css?v=0e019e2192, http://127.0.0.1:64133/nav-data.js?v=0e019e2192, http://127.0.0.1:64133/app.js?v=0e019e2192, http://127.0.0.1:64133/flow.js?v=0e019e2192, http://127.0.0.1:64133/blend.js?v=0e019e2192
