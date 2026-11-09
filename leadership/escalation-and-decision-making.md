@@ -4,6 +4,8 @@
 
 ---
 
+The routing tables and time/capacity thresholds are an illustrative team policy. Confirm your organization’s delegated authority, security/incident channels and decision owner; title, team vote or meeting attendance alone does not confer approval authority.
+
 ## The Decision Routing Question
 
 Every important technical decision has a *right level* to be decided at. Get this wrong and one of two failure modes:
@@ -35,7 +37,7 @@ For each non-trivial decision, name four roles:
 | Role | What they do |
 |---|---|
 | **D — Driver** | Owns the decision process. Schedules, writes the RFC, ensures the decision *happens*. |
-| **A — Approver** | Says yes or no. Usually 1 person (max 2). |
+| **A — Approver** | Says yes or no. One accountable final decision-maker in DACI. Distinct mandatory control approvals can be recorded separately. |
 | **C — Contributors** | Provide input. Have weight in shaping the decision. Multiple. |
 | **I — Informed** | Need to know the outcome but don't have to weigh in. |
 
@@ -65,7 +67,7 @@ Naming the right roles up-front saves weeks of friction.
 
 ### Don't escalate when:
 
-- **You haven't tried to resolve it directly.** Going around your peers to their manager destroys peer relationships.
+- **It is a routine disagreement you can safely address directly.** Try peer discussion first when appropriate. Active incidents, urgent security concerns, harassment or conflicts of interest may require immediate designated escalation without that prerequisite.
 - **You're losing an argument and want a parent to overrule.** The Director will see this; you'll lose credibility.
 - **The decision is genuinely yours to make.** Escalating decisions you own makes you look indecisive.
 - **You're escalating a person, not a problem.** "Bob is hard to work with" without specifics is character assassination, not escalation.
@@ -75,7 +77,7 @@ Naming the right roles up-front saves weeks of friction.
 
 ## The Escalation Template
 
-When you do escalate, do it in writing first. Verbal escalations get misremembered.
+For routine decisions, prepare a written note. For an urgent incident, page or call the designated responder immediately and record the timeline as soon as practical.
 
 ```
 Subject: Escalation: <one-sentence summary>
@@ -105,7 +107,7 @@ Stakeholders:
 - I: <Informed>
 ```
 
-The recipient reads this in 90 seconds, makes a decision in their next 1:1 with you, and the path forward is clear. Escalation done well is *fast*.
+A concise note helps the recipient assess the ask. Agree on the response deadline and fallback routing; it does not guarantee a decision at the next 1:1.
 
 ---
 
@@ -170,7 +172,7 @@ Eventually you'll disagree with your EM or Director on something that matters. T
 
 1. **Disagree privately, commit publicly.** Most common path. State your disagreement in your 1:1; commit fully in public; revisit if you have new data.
 2. **Disagree publicly, professionally.** "I want to flag for the team that I've raised concerns about X; the EM and I have discussed; we've decided to proceed with X for these reasons. I want everyone to understand the trade-offs." This is *appropriate* when the disagreement is substantive and the team needs to know what's at stake.
-3. **Escalate above your manager.** Last resort. Only for serious issues (safety, ethics, irrecoverable strategic mistake). Use the formal escalation template. Burns trust with your EM; sometimes worth it.
+3. **Escalate above your manager.** Last resort. Use the organization’s designated route when the manager cannot resolve the issue, lacks authority or is implicated. Urgent safety/security concerns and protected reporting channels do not require a routine peer-resolution sequence. Record factual context and the decision needed.
 
 Never: silent resistance, smug "I told you so" after the fact, recruiting allies to undermine the decision.
 
@@ -234,9 +236,9 @@ Never: silent resistance, smug "I told you so" after the fact, recruiting allies
 4. **How do you tell whether a decision is Type 1 (one-way door) or Type 2 (two-way door)?**
    Type 1 decisions are virtually impossible to reverse without massive cost. Type 2 decisions are easily reversible. Match the process rigor to the type.
 5. **The team votes 4-2 against your proposal. You think they're wrong. What do you do?**
-   Use the "disagree and commit" principle. State your disagreement for the record, but then commit fully to the team's chosen path and write the code to make it successful.
+   Confirm that the accountable decision-maker has decided through the agreed process; a 4–2 vote alone is not approval. Record material dissent and support a legitimate decision, while escalating unresolved safety/security or mandatory-control concerns through their designated route.
 6. **Your EM is making a strategic call you think is wrong. Walk through how you'd handle it.**
-   Disagree privately in a 1:1 with clear data. If the EM proceeds anyway, commit publicly and professionally. Only escalate above the EM if it's a severe safety, ethical, or catastrophic strategic risk.
+   Disagree privately in a 1:1 with clear data. If the EM proceeds anyway, commit publicly and professionally. Escalate through the agreed route when authority, unresolved material risk or a conflict of interest requires it; preserve urgent reporting exceptions.
 7. **You've committed to a decision; new data suggests it was wrong. How do you re-open it without losing credibility?**
    Bring the new data to the group transparently, referencing your previous commitment. State: "I committed to X, but we've observed new data. I propose we re-open this decision."
 8. **What's the failure mode of a Staff engineer who escalates too readily? Too rarely?**
@@ -251,3 +253,6 @@ Never: silent resistance, smug "I told you so" after the fact, recruiting allies
 - [Atlassian — DACI Decision Framework](https://www.atlassian.com/team-playbook/plays/daci) — practical template.
 - [Lara Hogan — "Disagree and Commit"](https://larahogan.me/blog/) — how to do it well.
 - [Amazon's 2015 shareholder letter](https://ir.aboutamazon.com/files/doc_financials/annual/2015-Letter-to-Shareholders.PDF) — the primary source for the Type 1 / Type 2 framing.
+- [Amazon 2015 letter: reversible decisions](https://s2.q4cdn.com/299287126/files/doc_financials/annual/2015-Letter-to-Shareholders.PDF)
+- [Amazon 2016 letter: disagreement and escalation](https://www.aboutamazon.com/news/company-news/2016-letter-to-shareholders)
+- [Google incident coordination](https://sre.google/sre-book/managing-incidents/)

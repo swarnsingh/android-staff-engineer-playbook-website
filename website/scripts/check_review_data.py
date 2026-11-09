@@ -61,7 +61,7 @@ def check():
             raise ValueError('Markdown/JSON wording differs: '+fix['id'])
     snapshot = json.loads((ROOT/'source-snapshot.json').read_text())
     verified = 0
-    for tree in ('kotlin', 'android', 'engineering-fundamentals', 'computer-science', 'principles', 'patterns', 'reference-architectures','career', 'platform-engineering', 'mobile-system-design', 'observability', 'distributed-systems', 'backend-for-mobile', 'security', 'release-engineering'):
+    for tree in ('kotlin', 'android', 'engineering-fundamentals', 'computer-science', 'principles', 'patterns', 'reference-architectures','leadership','career', 'platform-engineering', 'mobile-system-design', 'observability', 'distributed-systems', 'backend-for-mobile', 'security', 'release-engineering'):
         hashes = snapshot[tree+'_sha256']
         actual_paths = {tree+'.md'} | {str(p.relative_to(ROOT)) for p in (ROOT/tree).rglob('*.md')}
         if actual_paths != set(hashes):

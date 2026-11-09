@@ -1,0 +1,8 @@
+<!-- Teaching layer over the approved source 4520147. -->
+<!-- @opening -->
+<p class="story-lead">Another team owns the API your migration depends on. They see a new maintenance cost while your team sees a blocked release. Start with the effect on both teams and ask for a decision they can make.</p>
+
+<!-- @before How To Ask For Things :: staff -->
+### Make the ask concrete
+
+Name the interface change, the risk the other team would take on and what your team can do to reduce that work. Ask who can decide and what evidence they need. Keep the decision and reasons in the shared proposal. [Google review comment guidance](https://google.github.io/eng-practices/review/reviewer/comments.html).

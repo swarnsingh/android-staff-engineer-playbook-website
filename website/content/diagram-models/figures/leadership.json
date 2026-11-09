@@ -1,0 +1,270 @@
+[
+  {
+    "path": "leadership/incident-response-on-call",
+    "diagram": "daa69627f80dbc2f",
+    "number": 1,
+    "title": "Response continues through verification and follow-up",
+    "caption": "Acknowledge, triage and coordinate mitigation. Verify recovery before closing the incident. The acknowledgement, update and postmortem times shown are example policy.",
+    "sources": [
+      "https://sre.google/sre-book/managing-incidents/",
+      "https://sre.google/sre-book/postmortem-culture/"
+    ],
+    "kind": "map",
+    "nodes": [
+      {
+        "id": "alert",
+        "title": "Alert",
+        "role": "neutral",
+        "detail": "Monitor detects a signal"
+      },
+      {
+        "id": "ack",
+        "title": "Acknowledge",
+        "role": "runtime",
+        "detail": "Example 15 minute target"
+      },
+      {
+        "id": "triage",
+        "title": "Triage",
+        "role": "runtime",
+        "detail": "Validate and set severity"
+      },
+      {
+        "id": "channel",
+        "title": "Open channel",
+        "role": "runtime",
+        "detail": "Coordinate the response"
+      },
+      {
+        "id": "ic",
+        "title": "Assign incident lead",
+        "role": "runtime",
+        "detail": "Example for SEV-1 and SEV-2"
+      },
+      {
+        "id": "mitigate",
+        "title": "Mitigate",
+        "role": "runtime",
+        "detail": "Halt, disable or revert"
+      },
+      {
+        "id": "status",
+        "title": "Publish updates",
+        "role": "runtime",
+        "detail": "Example every 15–30 minutes"
+      },
+      {
+        "id": "verify",
+        "title": "Verify recovery",
+        "role": "runtime",
+        "detail": "Check observed impact"
+      },
+      {
+        "id": "close",
+        "title": "Close incident",
+        "role": "runtime",
+        "detail": "Start example 72 hour clock"
+      },
+      {
+        "id": "review",
+        "title": "Postmortem",
+        "role": "runtime",
+        "detail": "Learn without blame"
+      },
+      {
+        "id": "actions",
+        "title": "Follow-up actions",
+        "role": "queue",
+        "detail": "Assign and track owners"
+      }
+    ],
+    "groups": [
+      {
+        "id": "scope",
+        "label": "Example incident process",
+        "nodes": [
+          "alert",
+          "ack",
+          "triage",
+          "channel",
+          "ic",
+          "mitigate",
+          "status",
+          "verify",
+          "close",
+          "review",
+          "actions"
+        ]
+      }
+    ],
+    "edges": [
+      {
+        "from": "alert",
+        "to": "ack",
+        "label": "page on-call"
+      },
+      {
+        "from": "ack",
+        "to": "triage",
+        "label": "assess"
+      },
+      {
+        "from": "triage",
+        "to": "channel",
+        "label": "coordinate"
+      },
+      {
+        "from": "channel",
+        "to": "ic",
+        "label": "name owner"
+      },
+      {
+        "from": "ic",
+        "to": "mitigate",
+        "label": "reduce impact"
+      },
+      {
+        "from": "mitigate",
+        "to": "status",
+        "label": "report status"
+      },
+      {
+        "from": "status",
+        "to": "verify",
+        "label": "check recovery"
+      },
+      {
+        "from": "verify",
+        "to": "close",
+        "label": "confirm"
+      },
+      {
+        "from": "close",
+        "to": "review",
+        "label": "review outcome"
+      },
+      {
+        "from": "review",
+        "to": "actions",
+        "label": "track changes"
+      }
+    ],
+    "layout": "snake"
+  },
+  {
+    "path": "leadership/influence-without-authority",
+    "diagram": "5fadd53957187ede",
+    "number": 1,
+    "title": "Reporting lines help locate the people who own decisions",
+    "caption": "The example shows formal reporting lines. To coordinate a change across these teams, speak to the owner of the affected work and make the ask explicit.",
+    "sources": [
+      "https://www.atlassian.com/team-playbook/plays/daci",
+      "https://google.github.io/eng-practices/review/reviewer/comments.html"
+    ],
+    "kind": "map",
+    "nodes": [
+      {
+        "id": "director",
+        "title": "Director",
+        "role": "runtime",
+        "detail": "Oversees three teams"
+      },
+      {
+        "id": "em1",
+        "title": "Engineering manager",
+        "role": "runtime",
+        "detail": "Your team"
+      },
+      {
+        "id": "em2",
+        "title": "Engineering manager 2",
+        "role": "runtime",
+        "detail": "Second team"
+      },
+      {
+        "id": "em3",
+        "title": "Engineering manager 3",
+        "role": "runtime",
+        "detail": "Third team"
+      },
+      {
+        "id": "me",
+        "title": "Your role",
+        "role": "client",
+        "detail": "Technical contributor"
+      },
+      {
+        "id": "tl2",
+        "title": "Tech lead 2",
+        "role": "client",
+        "detail": "Second team counterpart"
+      },
+      {
+        "id": "tl3",
+        "title": "Tech lead 3",
+        "role": "client",
+        "detail": "Third team counterpart"
+      },
+      {
+        "id": "juniors",
+        "title": "Junior engineers",
+        "role": "client",
+        "detail": "Engineers you support"
+      }
+    ],
+    "groups": [
+      {
+        "id": "scope",
+        "label": "Example organization",
+        "nodes": [
+          "director",
+          "em1",
+          "em2",
+          "em3",
+          "me",
+          "tl2",
+          "tl3",
+          "juniors"
+        ]
+      }
+    ],
+    "edges": [
+      {
+        "from": "director",
+        "to": "em1",
+        "label": "management line"
+      },
+      {
+        "from": "director",
+        "to": "em2",
+        "label": "management line"
+      },
+      {
+        "from": "director",
+        "to": "em3",
+        "label": "management line"
+      },
+      {
+        "from": "em1",
+        "to": "me",
+        "label": "team line"
+      },
+      {
+        "from": "em2",
+        "to": "tl2",
+        "label": "team line"
+      },
+      {
+        "from": "em3",
+        "to": "tl3",
+        "label": "team line"
+      },
+      {
+        "from": "me",
+        "to": "juniors",
+        "label": "support and guidance"
+      }
+    ],
+    "layout": "layers"
+  }
+]

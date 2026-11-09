@@ -1194,24 +1194,24 @@ window.PLAYBOOK_CATALOG = [
     "icon": "◎",
     "chapters": [
       {
-        "title": "Leadership: Escalation and Decision Making",
-        "path": "leadership/escalation-and-decision-making.md"
-      },
-      {
         "title": "Leadership: Incident Response & On-Call",
         "path": "leadership/incident-response-on-call.md"
-      },
-      {
-        "title": "Leadership: Influence Without Authority",
-        "path": "leadership/influence-without-authority.md"
       },
       {
         "title": "Leadership: Running a Design Review",
         "path": "leadership/running-a-design-review.md"
       },
       {
+        "title": "Leadership: Influence Without Authority",
+        "path": "leadership/influence-without-authority.md"
+      },
+      {
         "title": "Leadership: Technical Mentorship (Scaling Yourself)",
         "path": "leadership/technical-mentorship.md"
+      },
+      {
+        "title": "Leadership: Escalation and Decision Making",
+        "path": "leadership/escalation-and-decision-making.md"
       }
     ]
   },

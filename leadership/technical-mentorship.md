@@ -4,6 +4,8 @@
 
 ---
 
+The cadences, capacities and time horizons below are examples to negotiate with the mentee and manager, not validated career timelines or quotas. Sponsorship offers access and advocacy; it does not guarantee promotion. Respect consent, confidentiality and equitable access to opportunities.
+
 ## Mentor vs Sponsor
 
 These get conflated; they're different:
@@ -76,7 +78,7 @@ Look for engineers in your org who:
 
 ### 2. Build the relationship
 
-You can't effectively sponsor someone you don't know. Spend 30-60 days mentoring before sponsoring. Understand their goals, their gaps, their next stretch.
+You can't effectively sponsor someone you don't know. Establish enough context to advocate accurately; a mandatory mentoring waiting period can withhold opportunities from people who are already ready. Understand their goals, their gaps, their next stretch.
 
 ### 3. Find the opportunity
 
@@ -90,11 +92,11 @@ If your sponsee struggles in the early stages, defend them publicly. Their setba
 
 ### 5. Step out of the way
 
-The point of sponsorship is the sponsee earning *their own* credibility. After the first 2-3 sponsored opportunities, they should be operating independently. If you're still vouching for them year three, sponsorship didn't take.
+The point of sponsorship is the sponsee earning *their own* credibility. Review whether sponsorship is producing appropriate access and increasing independence. Continuing advocacy can remain useful at later levels; neither opportunity count nor elapsed years proves success or failure.
 
 ### Pace
 
-You can effectively sponsor 2-4 people at once. More than that, you can't deeply advocate; less than that, you're not exercising the muscle.
+Choose a sustainable sponsorship load from the opportunities, advocacy required and your commitments. There is no universal minimum or maximum number.
 
 ---
 
@@ -142,9 +144,9 @@ Making it explicit prevents drift (the relationship that never ends and never pr
 
 ### From the mentor's side
 
-- **Solving instead of teaching.** "Here's how to fix it: [code]." The mentee learns nothing about debugging.
+- **Solving instead of teaching.** "Here's how to fix it: [code]." A fix without explanation can miss a learning opportunity; direct help is still appropriate when urgency or safety requires it.
 - **Telling instead of asking.** "You should use a Mutex here." Better: "What's the concurrency model in this code?"
-- **The lecture loop.** Mentor talks for 30 minutes, mentee listens. Mentee retains 10%.
+- **The lecture loop.** Mentor talks for 30 minutes, mentee listens. Passive listening may hide misunderstandings; ask the mentee to apply the idea and check their understanding.
 - **Vague guidance.** "Be more strategic." Useless. Try: "Next time you write an RFC, structure it as a business case first; here's an example."
 - **The 'find your own way' cop-out.** "I can't really tell you what to do; you have to figure it out." Sometimes useful; often just lazy mentorship.
 - **Optimizing for the mentor's ego.** "Let me tell you about when I solved a similar problem at <famous company>." Not useful unless directly applicable.
@@ -152,7 +154,7 @@ Making it explicit prevents drift (the relationship that never ends and never pr
 ### From the mentee's side
 
 - **No agenda.** Showing up with nothing prepared. The mentor's time is finite; respect it.
-- **Wanting answers, not skills.** "Just tell me what to do." Mentorship is about getting better, not getting answers.
+- **Wanting answers, not skills.** "Just tell me what to do." Agree when coaching is useful and when a direct answer, demonstration or urgent intervention is appropriate.
 - **Not following through.** Discusses an action in the 1:1; doesn't do it; shows up next month with the same problem.
 - **Confiding too much.** A mentor is not a therapist; keep personal vents to other forums.
 - **Skipping the work.** Asking the mentor to read your RFC without doing the deep reading themselves first.
@@ -266,3 +268,6 @@ This is how engineering cultures of learning scale. Without it, mentorship stays
 - [Tanya Reilly — "Being Glue"](https://noidea.dog/glue) — mentorship as glue work.
 - [Cate Huston — "DRI Your Support System"](https://cate.blog/2021/11/22/dri-your-support-system/) — practical mentoring and sponsorship distinctions.
 - [Will Larson — "Sponsoring is more important than mentoring"](https://lethain.com/) — the case for sponsorship.
+- [Lara Hogan: what sponsorship looks like](https://larahogan.me/blog/what-sponsorship-looks-like/)
+- [Tanya Reilly: Being Glue](https://www.noidea.dog/glue)
+- [Google review guidance: direction and learning](https://google.github.io/eng-practices/review/reviewer/comments.html)

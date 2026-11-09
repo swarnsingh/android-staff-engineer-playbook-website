@@ -4,6 +4,8 @@
 
 ---
 
+These are working heuristics, not measured laws of influence. Staff roles differ in delegated authority; relationship counts, elapsed months and exchange ratios are illustrative. Collaboration should serve shared goals rather than create a debt of personal favors.
+
 ## Why Influence Matters
 
 Most Staff-level work crosses team boundaries. A Staff engineer wants:
@@ -28,7 +30,7 @@ Every load-bearing decision you make right (or wrong) accumulates. After 18 mont
 This is the *primary* currency. You can be the friendliest person in the office and the best mentor; if your technical calls are routinely wrong, your influence will be capped.
 
 **How to build it:**
-- Pick fights you can win. Don't make ambiguous calls publicly; make decisive calls on questions where you have clear data.
+- Pick fights you can win. Make uncertainty explicit, seek the needed evidence and explain the tradeoff. Important decisions often remain uncertain; hiding that uncertainty does not demonstrate judgment.
 - Show your reasoning. RFCs make your thinking visible; reviewers can audit; correct calls become reputation.
 - Take responsibility when wrong. "I was wrong about X; here's what I learned" builds *more* credibility than never being wrong.
 
@@ -46,7 +48,7 @@ See [`technical-mentorship.md`](technical-mentorship.md).
 
 ### 4. Written artifacts the org relies on
 
-The engineer who wrote the architecture doc *is* the architect. The engineer who wrote the runbook *is* the on-call lead. The engineer who wrote the hiring rubric *defines* the team's bar.
+Writing influential artifacts can improve alignment, but authorship does not itself grant architectural, incident-command or hiring authority. Name the owners and obtain the required reviews.
 
 Writing converts your opinion into the team's reality. Years later, your influence persists in the documents people still consult.
 
@@ -60,7 +62,7 @@ How they're built: a monthly coffee, an offer to help on something hard, public 
 
 ## The Influence Map
 
-Lara Hogan's tool: take 30 minutes to literally draw who you need influence with and where you stand today.
+A useful exercise, consistent with relationship-focused influence guidance, is to map stakeholders and current working relationships. This diagram is a local exercise rather than a verified reproduction of a specific author’s tool.
 
 ```mermaid
 flowchart TD
@@ -88,7 +90,7 @@ The blank spots are your assignment. If you've never had a 1:1 with the iOS Staf
 
 Treat influence like a bank account. You can deposit (do favors, publicly credit, help on hard problems) and withdraw (ask for prioritization, push for architectural changes, escalate).
 
-**A staff engineer who only withdraws goes bankrupt.** Make 5 deposits for every withdrawal.
+**A staff engineer who only withdraws goes bankrupt.** Use the bank-account metaphor as a reminder to be useful and reliable, not a five-to-one transaction rule.
 
 ### Deposit patterns
 
@@ -196,7 +198,7 @@ The choice is whether to influence intentionally or accidentally.
 
 You're the model. They're watching how you handle disagreement, how you write RFCs, how you respond to failure.
 
-- **Public praise; private criticism.** Always.
+- **Give respectful, specific feedback.** Sensitive personal feedback usually belongs in private; factual technical disagreement and corrections can belong in the shared review so everyone can assess the evidence.
 - **Take their ideas seriously.** Even ones that won't work. The act of being heard converts a junior into an advocate.
 - **Show your work.** A junior who watches you struggle through a hard problem learns more than from any lecture.
 - **Sponsor visible opportunities.** "Have Priya present this at all-hands instead of me." Costs you nothing; means everything to her.
@@ -233,7 +235,7 @@ You're the model. They're watching how you handle disagreement, how you write RF
 ## Answer Key
 
 1. **Why is influence the dominant currency for a Staff engineer, more than authority?**
-   A Staff engineer doesn't have direct managerial authority. To drive cross-team initiatives, they must rely entirely on influence to persuade others to align and execute.
+   A Staff engineer doesn't have direct managerial authority. To drive cross-team initiatives, they often need influence across teams, alongside whatever authority their organization has explicitly delegated.
 2. **Give a concrete example of how you've earned influence in the past 6 months. How did you spend any of it?**
    (Self-reflection) Example: Earning influence by volunteering to debug a critical issue for a peer team (deposit), and spending it later by asking their Tech Lead to adopt a new shared API schema (withdrawal).
 3. **Walk through the Influence Map exercise for your current team and adjacent teams. Where are the gaps?**
@@ -259,3 +261,5 @@ You're the model. They're watching how you handle disagreement, how you write RF
 - [Lara Hogan — "Managing Up"](https://larahogan.me/blog/) — the upward dimension.
 - [Tanya Reilly — "The Staff Engineer's Path"](https://www.oreilly.com/library/view/the-staff-engineers/9781098118723/) — extensive treatment of influence.
 - [Will Larson — "Staff Engineer"](https://staffeng.com/book) — interviews on building influence.
+- [Google review comments: respectful public technical feedback](https://google.github.io/eng-practices/review/reviewer/comments.html)
+- [Will Larson: variation in Staff roles](https://staffeng.com/guides/staff-archetypes/)

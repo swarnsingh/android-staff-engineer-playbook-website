@@ -403,5 +403,20 @@
     "source_pr": 81,
     "scope": "Exact approved Career index and all five chapters.",
     "method": "Exact git show bytes from merged main; SHA-256 over raw bytes."
+  },
+  "leadership_sha256": {
+    "leadership.md": "ec245daecee542db2b43076ee357a389f9a2c0abda4540f16ba3770cd8e336c8",
+    "leadership/incident-response-on-call.md": "4a8be85b9ae8723a98d6da8c30b6ab8d41600ebf4aa50f53fd6ce72963353664",
+    "leadership/running-a-design-review.md": "332f86df204ec98e147bf5ff98c8c4f381efe9aeb4475729646ddee2436808a4",
+    "leadership/influence-without-authority.md": "7013e858c51d4f345b359849061ed584b698228995beb3edde29c3f1ef3ebc82",
+    "leadership/technical-mentorship.md": "9580498b16f8032fb25cc1f9b58a7c9c834d62cb262221f254c90f09fb7e6294",
+    "leadership/escalation-and-decision-making.md": "32d5ef69dc7af833524547a8122ebfaecd5c88880c92f52437aa85a4d1d1ce95"
+  },
+  "leadership_provenance": {
+    "repository": "https://github.com/swarnsingh/android-staff-engineer-playbook",
+    "commit": "45201470a80d644a12eac0d9ff787e34f09062a2",
+    "source_pr": 81,
+    "scope": "Exact approved Leadership index and all five chapters.",
+    "method": "Exact git show bytes from merged main; SHA-256 over raw bytes."
   }
 }
