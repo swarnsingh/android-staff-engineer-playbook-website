@@ -1,0 +1,8 @@
+{
+  "leadership.md": "Work from incident response and design review to cross-team influence, mentorship and escalation.",
+  "leadership/incident-response-on-call.md": "Coordinate detection, mitigation and follow-through during a mobile incident.",
+  "leadership/running-a-design-review.md": "Give reviewers a decision to make, the alternatives and the evidence they need.",
+  "leadership/influence-without-authority.md": "Work across reporting lines by identifying the owner and the cost of the proposed change.",
+  "leadership/technical-mentorship.md": "Choose advice, feedback or advocacy based on what the engineer needs next.",
+  "leadership/escalation-and-decision-making.md": "Route a decision to someone with authority over the trade-off and make disagreement visible."
+}

@@ -1,0 +1,8 @@
+<!-- Teaching layer over the approved source 4520147. -->
+<!-- @opening -->
+<p class="story-lead">Crash reports climb after a staged release. The team has a rollout control, a fallback and several people looking at the same dashboard. Assign one owner to coordinate decisions and keep the mitigation path visible.</p>
+
+<!-- @before Mitigation Toolbox (Mobile Specifics) :: staff -->
+### Track who remains affected after mitigation
+
+Write down which versions are already installed and which users the selected action can reach. Give the incident lead an owner for verification and a time for the next update. Use the chapter’s severity matrix and times as examples of a team policy. [Google SRE incident management](https://sre.google/sre-book/managing-incidents/).

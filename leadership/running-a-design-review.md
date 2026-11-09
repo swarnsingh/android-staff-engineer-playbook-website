@@ -4,6 +4,8 @@
 
 ---
 
+This is a proposed review workflow, not an industry mandate. Durations, async percentages, attendance and approval states should fit the decision risk and organization. Google eng-practices below concerns code review; it supports review conduct, not this exact design-review schedule.
+
 ## Why Design Reviews Exist
 
 Every non-trivial architectural decision has multiple right answers and many wrong ones. You can't tell which is which by yourself — your brain is the one that built the proposal. Other brains will see things you can't.
@@ -39,7 +41,7 @@ The Staff engineer (as facilitator) ensures:
 - [ ] Author has responded to all async comments (resolved or escalated to the meeting).
 - [ ] Agenda for the meeting is published 24h before: "Open thread 1: X. Open thread 2: Y. Decision needed: Z."
 - [ ] DACI roles are clear: who's Driver, Approver, Contributors, Informed (see [`escalation-and-decision-making.md`](escalation-and-decision-making.md)).
-- [ ] If the Approver can't make the meeting, *postpone* — there's no point in a review without the decision-maker.
+- [ ] If approval is needed live, arrange an authorized delegate or postpone the decision. A technical discussion can still gather evidence for later async approval.
 
 If any of these are missing, push back on the author. Better to delay a week than to run a useless meeting.
 
@@ -87,7 +89,7 @@ A design review without a decision is a discussion. Force the decision before ti
 
 ## The Three Outcomes Of A Design Review
 
-Every review should end in one of three states:
+Record an explicit outcome. The following three are common; a time-bounded deferral with an owner, missing evidence and revisit date is also legitimate:
 
 1. **APPROVED.** Author proceeds; status APPROVED on the RFC. Approver and key reviewers sign.
 2. **NEEDS REVISION.** Approver is willing to approve after specific changes; author revises and re-circulates async.
@@ -197,13 +199,13 @@ This trades scheduling friction for cadence. The team gets used to the rhythm; R
 ## Answer Key
 
 1. **Why is async review usually more valuable than the sync meeting?**
-   Async review allows reviewers time to think deeply and resolves the majority of straightforward issues (the 90%), reserving the expensive synchronous time for only the complex, unresolved 10%.
+   Async review allows reviewers time to think deeply and can resolve straightforward issues and reserve synchronous time for unresolved questions; the 90/10 split is an illustration, not a measured expectation.
 2. **What's the right time-box for a design review? When would you go longer or shorter?**
    Typically 45 minutes. You might go shorter (or entirely async) for small, localized features, and longer (60-90 minutes) for platform-level changes or massive cross-team architectural decisions.
 3. **As facilitator, how do you handle a reviewer who hasn't read the RFC?**
    Cancel or postpone the meeting. A sync meeting relies on everyone being prepared to discuss the unresolved 10%, and unprepared reviewers will waste the group's time catching up.
 4. **The Approver can't attend the scheduled meeting. What do you do?**
-   Postpone the meeting. The main goal of the review is to reach a decision, which is impossible without the Approver present.
+   Postpone the meeting. The main goal of the review is to reach a decision, which needs the Approver’s recorded decision or an authorized delegate, not necessarily attendance. Otherwise gather evidence and request async approval.
 5. **The author keeps defending instead of listening. How do you intervene without humiliating them?**
    Re-route the conversation by summarizing the reviewer's concern neutrally and parking it as an open thread for async follow-up, shifting focus back to the agenda.
 6. **The meeting ends with no decision. What's the cost? How do you avoid it next time?**
@@ -221,6 +223,7 @@ This trades scheduling friction for cadence. The team gets used to the rhythm; R
 - [`influence-without-authority.md`](influence-without-authority.md) — pre-review relationship building.
 - [`technical-mentorship.md`](technical-mentorship.md) — letting a junior facilitate as practice.
 - [`../career/writing-rfcs.md`](../career/writing-rfcs.md) — what gets reviewed.
-- [Google eng-practices — Design Doc Reviews](https://google.github.io/eng-practices/) — practical examples.
+- [Google eng-practices — Review Standard](https://google.github.io/eng-practices/review/reviewer/standard.html) — code-review principles; not a design-document approval policy.
 - [Lara Hogan — Resilient Management](https://larahogan.me/blog/) — meeting facilitation patterns.
-- [Stripe — Working Backwards from Decisions](https://stripe.com/blog/) — decision-process patterns.
+- [Atlassian — DACI](https://www.atlassian.com/team-playbook/plays/daci) — explicit decision ownership.
+- [Google review comments](https://google.github.io/eng-practices/review/reviewer/comments.html)

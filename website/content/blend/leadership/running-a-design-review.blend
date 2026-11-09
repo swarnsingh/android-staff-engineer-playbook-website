@@ -1,0 +1,8 @@
+<!-- Teaching layer over the approved source 4520147. -->
+<!-- @opening -->
+<p class="story-lead">A review invite says “Discuss the architecture,” but two teams expect different decisions from the meeting. Name the decision and who owns it before collecting feedback.</p>
+
+<!-- @before After The Meeting: The Wrap-Up :: staff -->
+### Record the outcome and the next owner
+
+Write the result in the RFC and separate accepted conditions from open questions. Assign an owner to each follow-up. If the group asks for another review, record what new evidence could change the decision. [Atlassian DACI decision roles](https://www.atlassian.com/team-playbook/plays/daci).

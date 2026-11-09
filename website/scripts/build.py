@@ -29,6 +29,7 @@ TREES = {
     'principles': {'title': 'Principles', 'phases': None},
     'patterns': {'title': 'Patterns', 'phases': None},
     'reference-architectures': {'title': 'Reference Architectures', 'phases': None},
+    'leadership': {'title': 'Leadership', 'phases': None},
     'career': {'title': 'Career', 'phases': None},
     'platform-engineering': {'title': 'Platform Engineering', 'phases': None},
     'kotlin': {'title': 'Kotlin', 'phases': None},
@@ -59,6 +60,13 @@ def phases(slug):
             ('Phase 1 — Product and store flows', paths[:3]),
             ('Phase 2 — Durability and trust', paths[3:5]),
             ('Phase 3 — Real-time and media', paths[5:]),
+        ]
+    if slug == 'leadership':
+        sequence = (ROOT/f'{slug}.md').read_text().split('## Guided Reading Sequence', 1)[1].split('**Next:**', 1)[0]
+        paths = re.findall(r'\]\((leadership/[^)#]+\.md)\)', sequence)
+        return [
+            ('Phase 1 — Operations and reviews', paths[:2]),
+            ('Phase 2 — Influence, mentorship and decisions', paths[2:]),
         ]
     if slug == 'career':
         sequence = (ROOT/f'{slug}.md').read_text().split('## Guided Reading Sequence', 1)[1].split('**Finish:**', 1)[0]
@@ -699,7 +707,7 @@ INTRO = {
 
 def intro(path):
     extras={}
-    for name in ('engineering-fundamentals','computer-science','principles','patterns','reference-architectures','career','platform-engineering','mobile-system-design','observability','distributed-systems','release-engineering','security','backend-for-mobile'):
+    for name in ('engineering-fundamentals','computer-science','principles','patterns','reference-architectures','leadership','career','platform-engineering','mobile-system-design','observability','distributed-systems','release-engineering','security','backend-for-mobile'):
         extras.update(json.loads((WEB/f'content/{name}.json').read_text()))
     return extras.get(path) or INTRO.get(path) or INTRO[Path(path).stem]
 
@@ -955,7 +963,7 @@ def build(skip_diagrams=False):
             cards=[]
             for index,(heading,paths) in enumerate(groups,1):
                 label=re.sub(r'^Phase \d+\s*[—–-]\s*','',heading)
-                starts_chapter = slug in {'engineering-fundamentals', 'principles', 'patterns', 'reference-architectures','career'}
+                starts_chapter = slug in {'engineering-fundamentals', 'principles', 'patterns', 'reference-architectures','leadership','career'}
                 target=route(paths[0]) if starts_chapter else '#'+slug_heading(heading)
                 action='Start this phase' if starts_chapter else 'View sequence'
                 cards.append(f'<li><a href="{target}"><span class="phase-number">Phase {index}</span><strong>{escape(label)}</strong><span class="phase-count">{len(paths)} {"chapter" if len(paths)==1 else "chapters"} · {action} →</span></a></li>')

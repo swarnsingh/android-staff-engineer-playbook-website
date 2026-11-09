@@ -4,9 +4,11 @@
 
 ---
 
+Severity cutoffs, acknowledgement/update/postmortem deadlines and rotation sizes are example policies to agree locally. The timeline and numbers are fictional teaching inputs. Adapt response roles and escalation to the incident; mitigate ongoing data/security harm and verify recovery before deferring deeper analysis.
+
 ## On-Call Philosophy
 
-On-call is the system's pain feedback loop. Teams that build flaky software feel it at 3 AM. Teams that build resilient software don't get paged. The Staff engineer's long-term job is to *reduce the pages*, not to be the strongest fighter.
+On-call is the system's pain feedback loop. Teams that build flaky software feel it at 3 AM. Even resilient systems can page because dependencies fail or unexpected conditions arise. Judge actionability and user impact rather than treating a page as proof of poor engineering. The Staff engineer's long-term job is to *reduce the pages*, not to be the strongest fighter.
 
 **Mitigation > Resolution.** When PagerDuty fires, the goal is to stop the bleeding *now*, not to write a clever fix. The root-cause fix happens at 10 AM Monday with rested engineers.
 
@@ -51,9 +53,9 @@ The matrix is the team's contract with themselves. *Adhere to it.* Calling every
 
 For SEV-1/2, somebody must coordinate. That person is the IC. The IC:
 
-- **Does not** look at code.
-- **Does not** query logs.
-- **Does** coordinate the humans.
+- Prioritizes coordination, decisions and communication.
+- Delegates hands-on investigation when staffing allows.
+- Can combine roles in a small response, but makes that explicit and hands them off as the incident grows.
 
 Their tools:
 
@@ -65,7 +67,7 @@ Their tools:
 
 An IC who tries to *also* debug the issue becomes a bottleneck. The IC's discipline is to coordinate, not to fix.
 
-For your first SEV-1 as IC, follow the [Google SRE IC Playbook](https://sre.google/workbook/incident-response/) verbatim. After three, you'll have a feel for it.
+Study the [Google SRE incident-response practices](https://sre.google/workbook/incident-response/), then rehearse the team’s own roles, tools and escalation paths. Familiarity after a fixed number of incidents is not assured.
 
 ---
 
@@ -77,13 +79,13 @@ For your first SEV-1 as IC, follow the [Google SRE IC Playbook](https://sre.goog
 | Specific feature broken | Flip kill switch via flag service (see [`../release-engineering/kill-switches.md`](../release-engineering/kill-switches.md)) |
 | BFF endpoint failing | Coordinate with backend on-call to roll back their deploy |
 | Crash spike on specific OEM | Cohort-specific kill switch via flag variant |
-| Payment provider issue | Switch to fallback PSP via remote config |
-| Cert pin failure (post-rotation) | Emergency app update via In-App Updates; pin-disable flag if it exists |
+| Payment provider issue | Reconcile in-flight operations; use a pre-integrated fallback only for eligible new operations. Do not blindly replay a possibly successful charge at another provider. |
+| Cert pin failure (post-rotation) | Restore a valid chain matching a shipped backup pin where possible; ship a corrected app and offer supported update flows. Any authenticated recovery configuration must remain reachable; never bypass TLS/hostname verification. |
 | ANR spike | Investigate; likely a synchronous main-thread call in new release; halt + investigate |
 | Network call storm overwhelming BFF | Client-side rate limiter via remote config |
 | Data corruption from a bug | Halt rollout; investigate scope; potentially write a one-time cleanup migration |
 
-The mobile-specific gotcha: **users on the bad version cannot be force-updated quickly**. Halting the rollout stops *new* installs of the bad version; existing affected users stay broken until the kill switch + hotfix lands. *Always* pair "halt rollout" with "flip the feature kill switch" if the offending feature is isolable.
+The mobile-specific gotcha: **users on the bad version cannot be force-updated quickly**. Halting prevents additional users receiving that staged release; users already on it remain on it. Use a compatible kill switch only if clients can fetch/activate it and the fallback is safe, and plan an update or server mitigation for remaining impact. In-app updates prompt eligible active users; they do not instantly force-update the installed fleet.
 
 ---
 
@@ -113,7 +115,7 @@ Cadence beats content. Stakeholders not in the channel need predictable updates 
 
 ## The Blameless Post-Mortem (COE)
 
-Within 72 hours of resolution, write the post-mortem. Structure:
+Set a locally agreed postmortem deadline; 72 hours is an example. Record evidence while it is available, and protect sensitive data in the incident artifacts. Structure:
 
 ```markdown
 # Post-Mortem: <One-line summary>
@@ -143,12 +145,12 @@ Within 72 hours of resolution, write the post-mortem. Structure:
 | HH:MM | Feature kill switch flipped |
 | HH:MM | Mitigation verified; crash rate returned to baseline |
 
-## Root Cause Analysis (5 Whys)
+## Contributing Factors (illustrative hypothesis chain)
 1. Why did the app crash? Because of a NullPointerException in CheckoutViewModel.
 2. Why was the data null? Because the backend returned null for shipping_address.
-3. Why did the app crash on null? Because the Retrofit model declared shipping_address as non-null String.
+3. Why did the app crash on null? The observed converter/null-handling path failed and was not mapped to an explicit error state. Retrofit alone does not determine null decoding behavior.
 4. Why did the client/server schemas diverge? Because we don't have a contract testing pipeline.
-5. **Root cause:** No automated contract testing between client and server.
+5. **Candidate prevention:** Add contract coverage for this case. Verify each causal link against evidence; missing tests alone are not a complete root cause.
 
 ## What Went Well
 - Auto-halt at 99% crash-free fired within 15 min.
@@ -174,7 +176,7 @@ Within 72 hours of resolution, write the post-mortem. Structure:
 ### What makes the post-mortem blameless
 
 - **Replace "Bob made a mistake" with "the system allowed Bob to make a mistake without catching it."** Bob is a human; humans make mistakes. The system should have safety rails.
-- **Use passive voice for actions you'd otherwise blame.** "The change was merged" rather than "Bob merged the change." This forces focus on the system, not the person.
+- **Use factual, non-judgmental language.** Preserve who did what when it is needed to understand the timeline; blamelessness is not deleting actors or accountability. Explain the information and constraints people had, and the system conditions that shaped the outcome.
 - **Action items address the system, not the person.** "Add contract testing" not "tell Bob to be more careful."
 - **The IC's job is to ensure the meeting stays focused on the system.** If anyone says "if Bob had just...", redirect: "What property of the system should have prevented this regardless of who made the change?"
 
@@ -188,12 +190,12 @@ If on-call pages 10 times a week for things that don't need human intervention, 
 
 The Staff engineer audits alerts quarterly:
 
-- Alerts that fire and auto-resolve in < 5 min: delete or downgrade to a dashboard.
+- Short auto-resolving alerts: assess user impact, error-budget burn and required intervention before suppressing or downgrading. A brief security, payment or data-loss incident can still demand a page.
 - Alerts with no runbook: write the runbook or delete the alert.
 - Alerts that the team has muted: investigate why; either fix or delete.
 - Alerts that fire on weekends but are addressed Monday: downgrade to non-paging.
 
-Healthy on-call: 2-3 actionable pages per shift, each with a clear runbook.
+Set a sustainable paging-load budget for the shift duration, urgency and staffing. There is no universal healthy page count; every paging alert needs an actionable owner and response.
 
 ### Rotation discipline
 
@@ -242,7 +244,7 @@ Healthy on-call: 2-3 actionable pages per shift, each with a clear runbook.
 1. **What's the difference between Mitigation and Resolution? Why is the distinction critical?**
    Mitigation stops the immediate user pain, while resolution fixes the underlying bug. It is critical because during an incident, the goal is purely to stop the bleeding fast; root cause analysis belongs in daylight hours.
 2. **What does an Incident Commander do — and crucially, what do they NOT do?**
-   The IC coordinates humans, assigns tasks, enforces communication discipline, and communicates status upwards. They crucially do NOT look at code, query logs, or try to fix the issue themselves.
+   The IC owns coordination and communication and delegates investigation where possible. A small response may combine roles explicitly; expand and hand off when hands-on work would prevent coordination.
 3. **Why are blameless post-mortems essential? What does a punitive post-mortem produce?**
    Blameless post-mortems focus on fixing the system that allowed a human to make an error. Punitive post-mortems produce fear, causing engineers to hide incidents and obscure data.
 4. **How do you decide what's a SEV-1 vs SEV-2? Why is over-classifying as bad as under-classifying?**
@@ -250,7 +252,7 @@ Healthy on-call: 2-3 actionable pages per shift, each with a clear runbook.
 5. **Walk through the 5 Whys for a crash you'd actually expect in a banking app.**
    1. Why crash? NullPointerException. 2. Why null? Backend returned missing field. 3. Why missing field? Legacy DB timeout. 4. Why did timeout cause a missing field? API didn't have a fallback state. 5. Why no fallback? No contract testing to enforce schemas.
 6. **The on-call rotation has 10 pages per week. What's your audit plan?**
-   Review all pages: delete or downgrade alerts that auto-resolve in under 5 minutes, enforce writing runbooks, fix muted alerts, and shift non-urgent alerts to business-hours-only.
+   Review all pages: assess duration together with user impact, urgency and required action; improve runbooks, investigate muted alerts and downgrade only those that do not need immediate response.
 7. **The CEO joins the incident channel and starts asking technical questions. How do you handle it?**
    As the IC, politely but firmly direct the CEO to the status updates thread. "We are mitigating a SEV-1. I will provide a high-level update every 15 minutes. Please hold questions so the team can focus."
 8. **A junior pushed a bad config and caused the incident. How do you write the post-mortem?**
@@ -266,3 +268,8 @@ Healthy on-call: 2-3 actionable pages per shift, each with a clear runbook.
 - [Google SRE Workbook — Incident Response](https://sre.google/workbook/incident-response/) — practical patterns.
 - [Atlassian Incident Handbook](https://www.atlassian.com/incident-management/handbook) — runbook templates.
 - [PagerDuty Incident Response](https://response.pagerduty.com/) — comprehensive open-source playbook.
+- [Google SRE blameless postmortems](https://sre.google/sre-book/postmortem-culture/)
+- [Google SRE alerting tradeoffs](https://sre.google/workbook/alerting-on-slos/)
+- [Google Play staged-rollout halt semantics](https://support.google.com/googleplay/android-developer/answer/6346149)
+- [Android in-app update scope](https://developer.android.com/guide/playcore/in-app-updates)
+- [Android TLS security guidance](https://developer.android.com/privacy-and-security/security-ssl)

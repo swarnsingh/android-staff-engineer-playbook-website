@@ -17,7 +17,7 @@ def fingerprints():
   'website/design-system/components/bundle.js','website/tools/browser_audit_runner.js',
   'website/tools/ux_audit_runner.js','website/tools/prepare_browser_audit.py']
  files += ['website/scripts/design_tokens.py']
- files += ['website/content/principles.json','website/content/patterns.json','website/content/reference-architectures.json','website/content/career.json']
+ files += ['website/content/principles.json','website/content/patterns.json','website/content/reference-architectures.json','website/content/leadership.json','website/content/career.json']
  files += ['website/scripts/static_figures.py','website/content/static-figures.json']
  files += ['website/content/code-pairs.json','website/content/code-kotlin-only.json','website/scripts/check_cs_code.py']
  files += [str(f.relative_to(ROOT)) for f in (ROOT/'website/content/blend').rglob('*.blend')]
@@ -111,6 +111,8 @@ def check(source_root=None):
  assert len(topic_pairs)==65 and all(c['ok'] for c in topic_pairs), 'Patterns original Q&A pairing failed'
  topic_pairs=[c for p in browser['pages'] if audit_tree(p['href'])=='career' for v in p['preservation']['views'] for c in v.get('pairChecks',[])]
  assert len(topic_pairs)==40 and all(c['ok'] for c in topic_pairs), 'Career original Q&A pairing failed'
+ topic_pairs=[c for p in browser['pages'] if audit_tree(p['href'])=='leadership' for v in p['preservation']['views'] for c in v.get('pairChecks',[])]
+ assert len(topic_pairs)==40 and all(c['ok'] for c in topic_pairs), 'Leadership original Q&A pairing failed'
  # Kotlin/Android and Fundamentals counts are fixed; newer trees add pairs that must all pass.
  assert len(core_pairs)==928 and len(fundamentals_pairs)==130 and all(c['ok'] for c in pairs),'Question/answer pairing failed'
  kotlin=json.loads((ux/'kotlin-validation.json').read_text())
