@@ -1,0 +1,8 @@
+<!-- Teaching layer over the approved Patterns source 4520147. -->
+<!-- @opening -->
+<p class="story-lead">The user selects a profile picture, taps again and leaves before the upload starts. The worker will need the selected image and the same operation identity later. Follow what is saved before enqueueing.</p>
+
+<!-- @before 4. Failure Modes & Tradeoffs :: staff -->
+### Trace the save and enqueue boundary
+
+Inspect what remains if the process exits after saving the operation but before WorkManager accepts it. The recovery scan can find that row and enqueue by its name. The saved server key covers repeated sends of the same logical upload. Unique work covers unfinished jobs with the same name. [WorkManager unique work](https://developer.android.com/develop/background-work/background-tasks/persistent/how-to/manage-work#unique-work).

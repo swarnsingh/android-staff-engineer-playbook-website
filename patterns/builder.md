@@ -8,7 +8,7 @@
 
 When an object requires numerous parameters to initialize—especially when many are optional—passing them all into a single constructor becomes unreadable and prone to errors (passing the `width` integer into the `height` integer slot).
 
-The Builder pattern solves this by providing a mutable step-by-step construction object. Once all parameters are set, you call `.build()` to generate an immutable instance of the final object.
+The Builder pattern solves this by providing a mutable step-by-step construction object. Calling `.build()` produces the configured object. Whether that object is immutable is a separate API contract; a builder alone does not ensure it.
 
 ---
 
@@ -27,7 +27,7 @@ val notification = NotificationCompat.Builder(context, CHANNEL_ID)
     .setPriority(NotificationCompat.PRIORITY_HIGH)
     .setAutoCancel(true)
     .setStyle(NotificationCompat.BigTextStyle().bigText("Longer text here..."))
-    .build() // Returns the immutable Notification object
+    .build() // Returns a Notification; build() does not make all its fields immutable
 ```
 
 ### Example: OkHttpClient.Builder
@@ -58,7 +58,7 @@ val specificClient = client.newBuilder()
 
 ## 2. Why Kotlin Killed the Classic Builder
 
-If you are writing new Kotlin code, **do not write classic Builder classes.**
+Prefer named/default parameters for straightforward Kotlin construction. Builders remain useful for Java callers, staged validation, incremental configuration and construction protocols.
 
 ### The Telescoping Constructor Problem
 In Java, if you had optional parameters, you had to write multiple constructors:
@@ -71,7 +71,7 @@ public class User {
 ```
 
 ### The Kotlin Solution: Named + Default Parameters
-Kotlin eliminates the need for Builder classes for data models completely.
+Named/default parameters often remove repetitive setters for simple models; they do not replace every builder contract.
 
 ```kotlin
 // Define defaults in the constructor
@@ -93,7 +93,7 @@ val user = User(
 ```
 
 ### The Data Class `copy()` Method (The Micro-Builder)
-If you need to mutate an existing immutable object, Kotlin's `data class` provides a generated `copy()` method, which acts exactly like OkHttp's `newBuilder()`.
+If you need to mutate an existing immutable object, Kotlin's `data class` provides a generated `copy()` method, which creates a shallow copy with selected constructor properties changed. It is not a general guarantee of deep immutability or the same resource-sharing contract as OkHttp's `newBuilder()`.
 
 ```kotlin
 val updatedUser = user.copy(isActive = false)
@@ -103,7 +103,7 @@ val updatedUser = user.copy(isActive = false)
 
 ## 3. The Modern Kotlin Builder: Type-Safe DSLs
 
-While classic object Builders are dead in Kotlin, the pattern evolved into **Type-Safe Builders** (Domain-Specific Languages). This uses Kotlin's "lambdas with receivers" to create highly readable, declarative configuration blocks.
+Alongside classic builders, the pattern evolved into **Type-Safe Builders** (Domain-Specific Languages). This uses Kotlin's "lambdas with receivers" to create highly readable, declarative configuration blocks.
 
 This is the exact technology that powers Jetpack Compose, the Ktor networking client, and Kotlin Gradle scripts (`build.gradle.kts`).
 
@@ -120,7 +120,7 @@ val event = AnalyticsEvent.Builder("checkout")
 
 We build a Kotlin DSL:
 ```kotlin
-// The resulting immutable object
+// Read-only map snapshot; values must satisfy the event schema's ownership contract
 data class AnalyticsEvent(
     val name: String,
     val properties: Map<String, Any>
@@ -134,7 +134,7 @@ class AnalyticsEventBuilder(private val name: String) {
         properties[key] = value
     }
     
-    fun build(): AnalyticsEvent = AnalyticsEvent(name, properties)
+    fun build(): AnalyticsEvent = AnalyticsEvent(name, properties.toMap())
 }
 
 // The Higher-Order Function (The DSL entry point)
@@ -171,7 +171,7 @@ Column(
     }
 }
 ```
-Under the hood, these functions emit nodes into a `SlotTable`—they are building the UI tree dynamically.
+Compose records composition groups and remembered values separately from the emitted UI nodes. The slot table is not the layout tree; layout nodes are managed through the composition/applier machinery.
 
 ---
 
@@ -181,7 +181,7 @@ Under the hood, these functions emit nodes into a `SlotTable`—they are buildin
 |---|---|---|
 | **Builder Boilerplate** | Writing Java-style Builder classes in Kotlin for data models. | Delete the Builder. Use a Kotlin `data class` with default parameters and named arguments. |
 | **Incomplete Object State** | Calling `.build()` before mandatory parameters are provided. | In a classic Builder, pass mandatory parameters into the Builder's constructor (e.g. `AlertDialog.Builder(context)`), and leave only optional parameters as builder methods. |
-| **Mutable Leakage** | The Builder returns an object that can still be mutated, or passes a mutable collection into the final object. | The `.build()` method must return a strictly immutable object. If passing lists, use `.toList()` inside `build()` to create an immutable copy. |
+| **Mutable Leakage** | The Builder returns an object that can still be mutated, or passes a mutable collection into the final object. | Define an ownership contract. A defensive `.toList()` copy prevents later structural mutation through the builder's original list, but is shallow and exposes a read-only interface, not guaranteed deep immutability. Copy or restrict mutable elements as needed. |
 | **DSL Scope Pollution** | In nested Kotlin DSLs, you accidentally call a method from the outer builder inside the inner builder. | Use the `@DslMarker` annotation to restrict scope resolution in nested lambdas. |
 
 ---
@@ -222,7 +222,7 @@ When a Builder has 50 methods, it often means the resulting object violates the 
 1. **Immutability: Why does Retrofit use reflection/proxies instead of exposing a Builder to the developer?**
    Retrofit uses dynamic proxies to construct HTTP requests declaratively via interfaces, abstracting away the boilerplate of manually building OkHttp `Request` objects. This allows developers to define the API contract cleanly, while Retrofit handles the repetitive translation internally.
 2. **Kotlin Features: How does the Kotlin compiler handle named arguments and default parameters at the JVM bytecode level?**
-   It generates a synthetic constructor with a bitmask parameter. The bitmask tracks which arguments were provided. Inside the constructor, it uses the bitmask to inject default values for missing arguments before calling the actual constructor, avoiding telescoping constructors.
+   It generates a synthetic constructor with a bitmask parameter. For Kotlin/JVM constructors with defaults, synthetic default-argument machinery uses a mask/marker to select missing arguments; ordinary functions use default-argument helpers. Named arguments are resolved at the call site. Exact bytecode is a backend/version detail, not a generated builder or automatic overload for every combination.
 3. **DSL Mechanics: Explain the concept of a "Lambda with Receiver" (`T.() -> Unit`).**
    A lambda with receiver injects an instance of type `T` into the lambda scope as `this`. It allows you to call methods and access properties of `T` directly without prefixing them, making the code read like a domain-specific configuration block.
 4. **DslMarker: How does the `@DslMarker` annotation prevent scope pollution at compile time?**
@@ -235,3 +235,9 @@ When a Builder has 50 methods, it often means the resulting object violates the 
 - [`../android/compose/compose-runtime.md`](../android/compose/compose-runtime.md) — How Jetpack Compose uses DSLs to build the UI Slot Table.
 - [`../android/networking-and-security/retrofit-and-okhttp.md`](../android/networking-and-security/retrofit-and-okhttp.md) — Extensive use of the `OkHttpClient.Builder` for network configuration.
 - [`factory.md`](factory.md) — How Builders compare to Factories for object creation.
+- [Kotlin default and named parameters](https://kotlinlang.org/docs/functions.html#parameters)
+- [Kotlin data-class shallow copy](https://kotlinlang.org/docs/data-classes.html#copying)
+- [Kotlin read-only versus mutable collections](https://kotlinlang.org/docs/collections-overview.html)
+- [Kotlin type-safe builders and DSL markers](https://kotlinlang.org/docs/type-safe-builders.html)
+- [Compose runtime design and slot table](https://android.googlesource.com/platform/frameworks/support/+/androidx-main/compose/runtime/design/how-compose-works.md)
+- [Notification API fields](https://developer.android.com/reference/android/app/Notification)

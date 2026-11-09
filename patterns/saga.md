@@ -1,6 +1,6 @@
 # Saga Pattern
 
-> The Saga pattern manages long-running, distributed transactions without using global locks (like two-phase commits). While typically a backend microservices concept, mobile apps orchestrate mini-sagas constantly. A Staff engineer recognizes that a mobile "Checkout Flow" (Validate Cart -> Charge Card -> Upload Receipt -> Update UI) is a Saga. On Android, the Saga pattern is mechanically implemented using **WorkManager Chaining**, and its most critical feature is the **Compensating Action**—the ability to cleanly roll back local device state when step 3 of a 4-step remote process fails.
+> The Saga pattern manages long-running, distributed transactions without using global locks (like two-phase commits). While typically a backend microservices concept, mobile apps orchestrate mini-sagas constantly. A Staff engineer recognizes that a mobile "Checkout Flow" (Validate Cart -> Charge Card -> Upload Receipt -> Update UI) is a Saga. WorkManager can execute a persistent DAG of local workflow steps, but chaining alone is not a saga coordinator: compensation, durable progress and recovery need explicit design. A compensation is a new business operation, not an atomic database rollback.
 
 ---
 
@@ -34,13 +34,13 @@ A saga provides durable progress and explicit compensations, not distributed ato
 
 There are two ways to organize a Saga:
 1. **Choreography:** Events are published, and services react independently. (e.g., The app fires a "Payment Successful" event, and the UI listens for it to update). This is messy on mobile.
-2. **Orchestration:** A central controller explicitly commands the steps. **This is the preferred pattern for Android.** The Android app acts as the Orchestrator for complex user flows.
+2. **Orchestration:** A central controller explicitly commands the steps. A durable coordinator makes dependencies explicit. Keep authoritative payment/critical business orchestration server-side; an Android client can coordinate recoverable local work.
 
 ---
 
 ## 2. Core Android Example: WorkManager Chaining
 
-Android's `WorkManager` is the perfect Saga Orchestrator. It allows you to define a strict DAG (Directed Acyclic Graph) of operations that execute sequentially, passing data between steps, even if the app is killed or the network drops.
+Android's WorkManager can schedule workflow steps, but does not supply a saga log or automatic compensation. It allows you to define a strict DAG (Directed Acyclic Graph) of operations that execute sequentially, passing data between steps, even if the app is killed or the network drops.
 
 ### The Saga Scenario: A Complex Photo Upload
 Imagine a social media app where creating a post requires three distinct API calls to three different microservices:
@@ -50,36 +50,48 @@ Imagine a social media app where creating a post requires three distinct API cal
 
 ### Creating the Orchestration (The Saga)
 ```kotlin
-class PostViewModel(private val workManager: WorkManager) : ViewModel() {
-
-    fun createPost(imageUri: Uri, caption: String) {
-        // Step 1: Compress
-        val compressWork = OneTimeWorkRequestBuilder<CompressWorker>()
-            .setInputData(workDataOf("URI" to imageUri.toString()))
+class PostViewModel(
+    private val workManager: WorkManager,
+    private val images: PrivateImageStore,
+    private val sagas: PostSagaStore,
+) : ViewModel() {
+    // A UI-owned coroutine calls this and handles storage/enqueue failure.
+    // draftId is persisted with the draft, not regenerated for each tap.
+    suspend fun createPost(draftId: String, imageUri: Uri, caption: String): String {
+        val fileId = images.copyOnceToPrivateStorage(draftId, imageUri)
+        val saga = sagas.getOrCreate(draftId, fileId, caption)
+        if (saga.isTerminal) return saga.id
+        fun input(step: String, key: String) = workDataOf(
+            "SAGA_ID" to saga.id, "FILE_ID" to saga.fileId,
+            "STEP" to step, "STEP_KEY" to key,
+        )
+        val compressWork = OneTimeWorkRequestBuilder<CompressAndFilterWorker>()
+            .setInputData(input("compress", saga.compressKey))
             .build()
-            
-        // Step 2: Upload (Requires output of Step 1)
-        val uploadWork = OneTimeWorkRequestBuilder<UploadWorker>()
-            .setConstraints(Constraints.Builder().setRequiredNetworkType(NetworkType.CONNECTED).build())
+        val connected = Constraints.Builder().setRequiredNetworkType(NetworkType.CONNECTED).build()
+        val uploadWork = OneTimeWorkRequestBuilder<UploadToS3Worker>()
+            .setInputData(input("upload", saga.uploadKey))
+            .setConstraints(connected)
             .build()
-            
-        // Step 3: Notify Backend (Requires output of Step 2)
         val notifyWork = OneTimeWorkRequestBuilder<NotifyBackendWorker>()
-            .setInputData(workDataOf("CAPTION" to caption))
-            .setConstraints(Constraints.Builder().setRequiredNetworkType(NetworkType.CONNECTED).build())
+            .setInputData(input("publish", saga.publishKey))
+            .setConstraints(connected)
             .build()
-
-        // The Orchestrator Chaining
-        workManager
-            .beginWith(compressWork)
+        workManager.beginUniqueWork(saga.id, ExistingWorkPolicy.KEEP, compressWork)
             .then(uploadWork)
             .then(notifyWork)
             .enqueue()
+            .await()
+        return saga.id
     }
 }
 ```
 
-Because WorkManager serializes the inputs/outputs between chained workers, if `uploadWork` succeeds, but `notifyWork` fails due to a network drop, WorkManager will pause the Saga and resume *only* `notifyWork` when the network returns. It will not re-run the compression or the S3 upload.
+`PrivateImageStore` has the [durable copy contract](command.md#issuing-the-command) used by the Command example. `PostSagaStore.getOrCreate` atomically returns/inserts one account-scoped saga per saved draft, retaining the image ID, caption, phase, per-step keys and compensation key before any worker runs. Repeated calls for that draft use the original immutable payload; edits require an explicitly new operation. Pending sagas are discovered by a recovery scan if enqueue was interrupted.
+
+Each worker loads the saga, verifies its step/key against the record, records its phase before the external call, sends that saved key, and durably records the result. `NotifyBackendWorker` sends `saga.publishKey` when publishing; the backend deduplicates that logical publish. Save intermediate file/upload IDs in the saga record so later workers and recovery do not depend on transitive input forwarding. `KEEP` suppresses only unfinished duplicate chains; workers also short-circuit completed phases and reconcile unknown outcomes before replay, within the provider's deduplication window. This is an integration fragment requiring these store/worker implementations, not automatic saga behavior supplied by WorkManager.
+
+Because WorkManager serializes the inputs/outputs between chained workers, if `uploadWork` succeeds, but `notifyWork` fails due to a network drop, a retryable failure must return Result.retry(); a permanent Result.failure() fails dependent work instead. Constraints and backoff bound eligibility, not a guaranteed resume time. Completed prerequisites need not rerun, but the same worker can repeat side effects after a lost acknowledgement or crash.
 
 ---
 
@@ -92,33 +104,18 @@ Imagine a Checkout Saga:
 2. Charge Credit Card (Success)
 3. Confirm Order (Permanent Failure - HTTP 403)
 
-If the Saga stops here, the user is charged, but the order doesn't exist. The mobile app must orchestrate the rollback.
+If the Saga stops here, the user is charged, but the order doesn't exist. The backend must own the payment/order compensation protocol; the mobile app queries its durable status.
 
 ### Implementing Rollbacks in Android
-We can achieve this by observing the terminal states of the WorkManager chain and enqueuing a rollback command if necessary.
 
-```kotlin
-// In an application-scoped component or repository
-workManager.getWorkInfoByIdLiveData(notifyWork.id).observeForever { workInfo ->
-    if (workInfo != null && workInfo.state == WorkInfo.State.FAILED) {
-        
-        // The Saga failed at the final step! We must execute a compensating action.
-        val transactionId = workInfo.outputData.getString("TXN_ID")
-        
-        if (transactionId != null) {
-            val refundWork = OneTimeWorkRequestBuilder<RefundWorker>()
-                .setInputData(workDataOf("TXN_ID" to transactionId))
-                .setConstraints(Constraints.Builder().setRequiredNetworkType(NetworkType.CONNECTED).build())
-                .build()
-                
-            workManager.enqueue(refundWork)
-        }
-    }
-}
-```
-**Staff Insight:** While mobile clients *can* orchestrate distributed sagas, doing so for financial transactions is incredibly dangerous (the user might delete the app before the compensating action fires). Critical sagas (like payments) must be orchestrated entirely on the backend. The mobile app should only orchestrate non-critical sagas (like uploading media or syncing local databases).
+For a recoverable media-upload workflow, persist the saga ID, phase, resource ownership and stable compensation key before each external step. A UI observer or `observeForever` callback is not a durable recovery coordinator and can trigger duplicate or missed cleanup.
 
----
+1. A restart/recovery scan finds incomplete workflow records and schedules reconciliation independently of an open screen.
+2. Reconcile an unknown publish/upload outcome with the backend before deleting anything; an acknowledgement may have been lost after a successful publish.
+3. For a confirmed permanent publish failure, invoke the authorized, idempotent orphan-upload cleanup and persist its result. A cleanup acknowledgement can also be lost, so its stable key and outcome remain recoverable.
+4. Classify retry, cancellation and manual-repair states. Cancelling WorkManager does not undo completed remote effects or automatically schedule compensation.
+
+App uninstall can remove the local recovery record. The backend therefore owns financial/critical workflows and should also expire or reconcile orphaned uploads. Local WorkManager work helps execute the protocol; it cannot turn device storage into a distributed commit log.
 
 ## 4. Failure Modes & Tradeoffs
 
@@ -133,18 +130,18 @@ workManager.getWorkInfoByIdLiveData(notifyWork.id).observeForever { workInfo ->
 ## 5. Common Pitfalls
 
 ### Pitfall 1: Leaking Output Data in WorkManager Chains
-In WorkManager, the output data of Step 1 is merged with the input data of Step 2, which is merged with the output of Step 3. If you use generic keys like `"ID"`, Step 3 might accidentally overwrite the ID from Step 1.
+In WorkManager, a worker receives merged direct-prerequisite outputs plus its own input. Earlier input/history is not automatically forwarded transitively; a downstream worker sees only what its prerequisites explicitly output. If you use generic keys like `"ID"`, Step 3 might accidentally overwrite the ID from Step 1.
 *Fix:* Use highly specific keys for WorkManager data payloads (`"POST_ID"`, `"IMAGE_S3_URL"`). Use an `InputMerger` (like `OverwritingInputMerger`) deliberately.
 
 ### Pitfall 2: Sync vs Async Sagas
 Users expect a checkout flow to be synchronous (blocking the screen with a spinner). WorkManager is asynchronous.
-*Fix:* Do not use WorkManager for user-blocking Sagas. Use Kotlin Coroutines in the `ViewModel` for synchronous sagas, falling back to WorkManager *only* for the compensating actions if the app is killed during a failure.
+*Fix:* Do not use WorkManager for user-blocking Sagas. Use a lifecycle-owned coroutine for immediate UI coordination, with durable backend operation status and reconciliation. A ViewModel coroutine cannot guarantee a fallback enqueue after the process has already died; persist recovery intent before relying on scheduled compensation.
 
 ---
 
 ## Probing Questions
 
-1.  **Choreography vs Orchestration:** EventBus implementations (where `Worker A` broadcasts an event, and `Worker B` listens for it to start) represent Choreographed Sagas. Why is Choreography considered an anti-pattern for mobile apps compared to WorkManager's Orchestration?
+1.  **Choreography vs Orchestration:** EventBus implementations (where `Worker A` broadcasts an event, and `Worker B` listens for it to start) represent Choreographed Sagas. Why is an in-memory EventBus insufficient as the only recovery mechanism for a durable mobile workflow?
 2.  **ACID Properties:** Sagas sacrifice one of the ACID properties of traditional databases to achieve availability in distributed systems. Which property is sacrificed, and how do compensating actions attempt to simulate it?
 3.  **WorkManager Cancellation:** You orchestrate a 5-step Saga. The user presses a "Cancel" button in the UI during Step 2. You call `workManager.cancelUniqueWork()`. Does WorkManager automatically execute compensating actions for Step 1? How must you architect manual cancellation?
 4.  **Idempotency:** Why is it absolutely critical that the API endpoints used in a Compensating Action (e.g., `POST /api/refund`) are idempotent? What happens if the network drops during the refund response?
@@ -153,10 +150,10 @@ Users expect a checkout flow to be synchronous (blocking the screen with a spinn
 ## Answer Key
 
 1. **Choreography vs Orchestration:** Choreography on mobile creates implicit dependencies that are hard to debug and visualize. If the app is killed, choreographing events via EventBus is lost, whereas WorkManager orchestration persists the DAG.
-2. **ACID Properties:** Isolation is sacrificed. Compensating actions simulate Atomicity by rolling back, but intermediate states are visible to other transactions (hence lack of isolation).
-3. **WorkManager Cancellation:** WorkManager does NOT automatically execute compensating actions on cancellation. You must intercept the cancellation (or observe it) and manually enqueue the compensating WorkRequests for the completed steps.
+2. **ACID Properties:** Isolation is sacrificed. A saga lacks global ACID atomicity/isolation: intermediate local commits are visible, and compensation is another business action that can fail or differ from undo. It does not erase an email, payment delay or other already-observed effect.
+3. **WorkManager Cancellation:** WorkManager does NOT automatically execute compensating actions on cancellation. Persist cancellation/reconciliation intent in a durable workflow record and make recovery discover it. Determine completed/unknown steps before compensation; an in-memory observer alone cannot guarantee that cleanup is enqueued.
 4. **Idempotency:** If the network drops during the refund response, WorkManager will retry the refund. The backend must be idempotent so it doesn't refund the user twice for the same transaction.
-5. **BFF Synergy:** The BFF acts as the orchestrator. The mobile client sends a single "StartCheckout" request to the BFF, and the BFF reliably executes the Saga across microservices without relying on the phone's flaky network.
+5. **BFF Synergy:** A backend coordinator with durable progress, deduplication, retries, compensation and operator recovery can own the critical workflow. A BFF proxy alone supplies none of those guarantees; the client still persists operation identity and reconciles unknown outcomes.
 
 ## Further Reading
 
@@ -164,3 +161,8 @@ Users expect a checkout flow to be synchronous (blocking the screen with a spinn
 - [`retry.md`](retry.md) — Why Sagas and Compensating Actions must utilize durable retries.
 - [`../android/concurrency/workmanager.md`](../android/concurrency/workmanager.md) — Deep dive into the SQLite-backed engine that powers Android Sagas.
 - [`../backend-for-mobile/bff-pattern.md`](../backend-for-mobile/bff-pattern.md) — How to move orchestration off the phone and onto a dedicated server.
+- [Microsoft saga local transactions and compensation limits](https://learn.microsoft.com/en-us/azure/architecture/patterns/saga)
+- [WorkManager dependency, input merging and failure behavior](https://developer.android.com/develop/background-work/background-tasks/persistent/how-to/chain-work)
+- [Android persistent-work scope](https://developer.android.com/develop/background-work/background-tasks/persistent)
+- [Server-verified payment outcomes](https://docs.stripe.com/payments/payment-intents/verifying-status)
+- [Unique work conflict policies](https://developer.android.com/develop/background-work/background-tasks/persistent/how-to/manage-work)

@@ -1,0 +1,464 @@
+[
+  {
+    "path": "patterns/strategy",
+    "diagram": "ead4ae48afe5be68",
+    "number": 1,
+    "title": "The context delegates through a strategy contract",
+    "caption": "The context calls one chosen implementation through a stable interface. The three implementations are alternatives, so the arrows do not describe three successive calls.",
+    "sources": [
+      "https://dagger.dev/dev-guide/multibindings.html#map-multibindings"
+    ],
+    "kind": "map",
+    "nodes": [
+      {
+        "id": "caller",
+        "title": "Context",
+        "role": "client",
+        "detail": "Selects and calls a policy"
+      },
+      {
+        "id": "contract",
+        "title": "Strategy interface",
+        "role": "neutral",
+        "detail": "Shared input and output"
+      },
+      {
+        "id": "a",
+        "title": "Strategy A",
+        "role": "runtime",
+        "detail": "First policy"
+      },
+      {
+        "id": "b",
+        "title": "Strategy B",
+        "role": "runtime",
+        "detail": "Second policy"
+      },
+      {
+        "id": "c",
+        "title": "Strategy C",
+        "role": "runtime",
+        "detail": "Third policy"
+      }
+    ],
+    "edges": [
+      {
+        "from": "caller",
+        "to": "contract",
+        "label": "delegate"
+      },
+      {
+        "from": "a",
+        "to": "contract",
+        "label": "implements",
+        "style": "dashed"
+      },
+      {
+        "from": "b",
+        "to": "contract",
+        "label": "implements",
+        "style": "dashed"
+      },
+      {
+        "from": "c",
+        "to": "contract",
+        "label": "implements",
+        "style": "dashed"
+      }
+    ],
+    "groups": [
+      {
+        "id": "selection",
+        "label": "Calling code",
+        "nodes": [
+          "caller",
+          "contract"
+        ]
+      },
+      {
+        "id": "options",
+        "label": "Policy implementations",
+        "nodes": [
+          "a",
+          "b",
+          "c"
+        ]
+      }
+    ]
+  },
+  {
+    "path": "patterns/observer",
+    "diagram": "9c5f316df532a72b",
+    "number": 1,
+    "title": "Two collectors can start two executions or share one producer",
+    "caption": "Collecting the cold flow twice starts its work twice. The hot stream exists separately from the collectors. What a late subscriber receives depends on the StateFlow or SharedFlow contract and replay settings.",
+    "sources": [
+      "https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines.flow/-shared-flow/",
+      "https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines.flow/-state-flow/"
+    ],
+    "kind": "map",
+    "nodes": [
+      {
+        "id": "cold",
+        "title": "Cold flow",
+        "role": "neutral",
+        "detail": "Work starts on collection"
+      },
+      {
+        "id": "c1",
+        "title": "Collector A",
+        "role": "client",
+        "detail": "Its own execution"
+      },
+      {
+        "id": "c2",
+        "title": "Collector B",
+        "role": "client",
+        "detail": "Its own execution"
+      },
+      {
+        "id": "producer",
+        "title": "Producer",
+        "role": "runtime",
+        "detail": "Runs in its owning scope"
+      },
+      {
+        "id": "hot",
+        "title": "Hot flow",
+        "role": "neutral",
+        "detail": "StateFlow or SharedFlow"
+      },
+      {
+        "id": "h1",
+        "title": "Collector A",
+        "role": "client",
+        "detail": "Reads shared stream"
+      },
+      {
+        "id": "h2",
+        "title": "Collector B",
+        "role": "client",
+        "detail": "Reads shared stream"
+      }
+    ],
+    "edges": [
+      {
+        "from": "cold",
+        "to": "c1",
+        "label": "start on A collection"
+      },
+      {
+        "from": "cold",
+        "to": "c2",
+        "label": "start on B collection"
+      },
+      {
+        "from": "producer",
+        "to": "hot",
+        "label": "publish updates"
+      },
+      {
+        "from": "hot",
+        "to": "h1",
+        "label": "observe"
+      },
+      {
+        "from": "hot",
+        "to": "h2",
+        "label": "observe"
+      }
+    ],
+    "groups": [
+      {
+        "id": "cold-path",
+        "label": "Cold collection",
+        "nodes": [
+          "cold",
+          "c1",
+          "c2"
+        ]
+      },
+      {
+        "id": "hot-path",
+        "label": "Shared producer",
+        "nodes": [
+          "producer",
+          "hot",
+          "h1",
+          "h2"
+        ]
+      }
+    ]
+  },
+  {
+    "path": "patterns/state",
+    "diagram": "5b5841e28d7e1528",
+    "number": 1,
+    "title": "A reducer computes a valid next state before the UI renders",
+    "caption": "State and event are inputs to the transition. The next state feeds rendering and can describe an effect to run separately. Keep network and storage calls outside the pure reducer.",
+    "sources": [
+      "https://developer.android.com/topic/architecture/ui-layer/state-production",
+      "https://kotlinlang.org/docs/sealed-classes.html"
+    ],
+    "kind": "map",
+    "nodes": [
+      {
+        "id": "current",
+        "title": "Current state",
+        "role": "storage",
+        "detail": "Sealed state value"
+      },
+      {
+        "id": "event",
+        "title": "Typed event",
+        "role": "client",
+        "detail": "Input to the transition"
+      },
+      {
+        "id": "reducer",
+        "title": "Reducer",
+        "role": "runtime",
+        "detail": "Computes the transition"
+      },
+      {
+        "id": "next",
+        "title": "Next valid state",
+        "role": "storage",
+        "detail": "Value after the event"
+      },
+      {
+        "id": "view",
+        "title": "UI",
+        "role": "client",
+        "detail": "Renders the state"
+      },
+      {
+        "id": "effects",
+        "title": "Effect command",
+        "role": "queue",
+        "detail": "Data describing work"
+      }
+    ],
+    "edges": [
+      {
+        "from": "current",
+        "to": "reducer",
+        "label": "supply state"
+      },
+      {
+        "from": "event",
+        "to": "reducer",
+        "label": "supply event"
+      },
+      {
+        "from": "reducer",
+        "to": "next",
+        "label": "return next state"
+      },
+      {
+        "from": "next",
+        "to": "view",
+        "label": "render"
+      },
+      {
+        "from": "next",
+        "to": "effects",
+        "label": "describe work"
+      }
+    ],
+    "groups": [
+      {
+        "id": "input",
+        "label": "Transition inputs",
+        "nodes": [
+          "current",
+          "event"
+        ]
+      },
+      {
+        "id": "transition",
+        "label": "Pure transition",
+        "nodes": [
+          "reducer",
+          "next"
+        ]
+      },
+      {
+        "id": "consumers",
+        "label": "Separate consumers",
+        "nodes": [
+          "view",
+          "effects"
+        ]
+      }
+    ]
+  },
+  {
+    "path": "patterns/circuit-breaker",
+    "diagram": "782d1a35f796f88d",
+    "number": 1,
+    "title": "Recovery depends on the half-open probe",
+    "caption": "The breaker starts closed. Enough recorded failures open it. After the wait, a bounded probe can close the breaker on success or return it to open on failure.",
+    "sources": [
+      "https://resilience4j.readme.io/docs/circuitbreaker"
+    ],
+    "kind": "map",
+    "nodes": [
+      {
+        "id": "initial",
+        "title": "Initial state",
+        "role": "neutral",
+        "detail": "Breaker starts",
+        "col": 0,
+        "row": 0
+      },
+      {
+        "id": "closed",
+        "title": "Closed",
+        "role": "runtime",
+        "detail": "Admit normal calls",
+        "col": 0,
+        "row": 1
+      },
+      {
+        "id": "open",
+        "title": "Open",
+        "role": "runtime",
+        "detail": "Reject ordinary calls",
+        "col": 0,
+        "row": 2
+      },
+      {
+        "id": "half",
+        "title": "Half-open",
+        "role": "runtime",
+        "detail": "Admit limited probes",
+        "col": 0,
+        "row": 3
+      }
+    ],
+    "edges": [
+      {
+        "from": "initial",
+        "to": "closed",
+        "label": "start"
+      },
+      {
+        "from": "closed",
+        "to": "open",
+        "label": [
+          "failure threshold",
+          "reached"
+        ]
+      },
+      {
+        "from": "open",
+        "to": "half",
+        "label": "wait elapsed"
+      },
+      {
+        "from": "half",
+        "to": "closed",
+        "label": [
+          "probe",
+          "succeeds"
+        ],
+        "route": "around",
+        "side": "left"
+      },
+      {
+        "from": "half",
+        "to": "open",
+        "label": [
+          "probe",
+          "fails"
+        ],
+        "route": "around",
+        "side": "right"
+      }
+    ],
+    "groups": [
+      {
+        "id": "breaker",
+        "label": "Circuit breaker",
+        "nodes": [
+          "initial",
+          "closed",
+          "open",
+          "half"
+        ]
+      }
+    ],
+    "reading": "Follow the condition on each arrow from the current state."
+  },
+  {
+    "path": "patterns/saga",
+    "diagram": "0ffca6cdd1e63729",
+    "number": 1,
+    "title": "The orchestrator compensates completed work after confirmed failure",
+    "caption": "The publish step returns a confirmed failure. The orchestrator compensates metadata before the stored media. A lost reply would require reconciliation first.",
+    "sources": [
+      "https://learn.microsoft.com/en-us/azure/architecture/patterns/saga"
+    ],
+    "kind": "sequence",
+    "participants": [
+      {
+        "id": "o",
+        "title": "Orchestrator",
+        "role": "runtime",
+        "detail": "Coordinates steps"
+      },
+      {
+        "id": "media",
+        "title": "Upload",
+        "role": "storage",
+        "detail": "Stores media"
+      },
+      {
+        "id": "metadata",
+        "title": "Metadata",
+        "role": "storage",
+        "detail": "Stores post data"
+      },
+      {
+        "id": "publish",
+        "title": "Publish",
+        "role": "runtime",
+        "detail": "Publishes post"
+      }
+    ],
+    "events": [
+      {
+        "from": "o",
+        "to": "media",
+        "label": "Store media"
+      },
+      {
+        "from": "o",
+        "to": "metadata",
+        "label": "Create metadata"
+      },
+      {
+        "from": "o",
+        "to": "publish",
+        "label": "Publish"
+      },
+      {
+        "from": "publish",
+        "to": "o",
+        "label": "Confirmed failure",
+        "style": "dashed"
+      },
+      {
+        "from": "o",
+        "to": "metadata",
+        "label": "Compensate metadata"
+      },
+      {
+        "from": "o",
+        "to": "media",
+        "label": "Compensate upload"
+      }
+    ]
+  }
+]

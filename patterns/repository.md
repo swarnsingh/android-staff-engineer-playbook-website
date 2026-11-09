@@ -1,6 +1,6 @@
 # Repository Pattern
 
-> The Repository pattern mediates between the domain and data mapping layers using a collection-like interface for accessing domain objects. In Android, the Repository pattern is arguably the single most important architectural boundary. It dictates that the UI layer (ViewModel) must never know *where* data comes from. A Staff engineer uses the Repository as the **Single Source of Truth (SSOT)**, flawlessly orchestrating the complex dance between a local SQLite database (Room), a remote API (Retrofit), and in-memory caches.
+> The Repository pattern mediates between the domain and data mapping layers using a collection-like interface for accessing domain objects. In Android, the Repository pattern is arguably the single most important architectural boundary. It dictates that the UI layer (ViewModel) must never know *where* data comes from. The repository defines source-of-truth and reconciliation policy, coordinating the complex dance between a local SQLite database (Room), a remote API (Retrofit), and in-memory caches.
 
 ---
 
@@ -14,20 +14,27 @@ The Repository extracts this logic. To the ViewModel, the Repository looks like 
 
 ## 1. The Core Android Implementation: The Single Source of Truth
 
-In a modern, production-grade Android app, data is usually fetched from a network, but it must be displayed immediately the *next* time the user opens the app (Offline-First). 
+For this offline-first feature, display retained data without waiting for a fresh network read when the cache has usable contents. Empty, evicted, stale, unauthorized or corrupt local data still needs an explicit outcome. This is a product policy rather than a requirement for every repository.
 
 This requires two data sources:
 1. **Remote Data Source** (Retrofit API)
 2. **Local Data Source** (Room Database)
 
-**The Golden Rule of the SSOT:** The UI *only* ever observes the Local Data Source. The Remote Data Source *only* ever writes to the Local Data Source. 
+**The local-first policy in this example:** The UI *only* ever observes the Local Data Source. The Remote Data Source *only* ever writes to the Local Data Source.
 
 ### The Network-Bound Resource Strategy
 
 ```kotlin
+// HTTP and transport failures share this boundary type; local DB errors do not.
+class NetworkSyncException(
+    message: String,
+    cause: Throwable,
+    val statusCode: Int? = null,
+) : Exception(message, cause)
+
 // The Repository Interface (Domain Layer)
 interface UserRepository {
-    fun getUserStream(userId: String): Flow<User>
+    fun getUserStream(userId: String): Flow<User?>
     suspend fun refreshUser(userId: String)
 }
 
@@ -39,32 +46,32 @@ class UserRepositoryImpl(
 ) : UserRepository {
 
     // 1. The UI observes the local database directly
-    override fun getUserStream(userId: String): Flow<User> {
-        return userDao.observeUser(userId).map { it.toDomainModel() }
+    override fun getUserStream(userId: String): Flow<User?> {
+        return userDao.observeUser(userId).map { it?.toDomainModel() }
     }
 
     // 2. The Network updates the database, NOT the UI
     override suspend fun refreshUser(userId: String) {
         withContext(ioDispatcher) {
-            try {
-                // Fetch from network
-                val networkUser = api.getUser(userId)
-                
-                // Write to database. 
-                // Because the UI is observing the DB via Room Flow, 
-                // the UI will automatically update!
-                userDao.insert(networkUser.toEntity())
-                
-            } catch (e: Exception) {
-                // Handle or rethrow network error
-                throw NetworkSyncException("Failed to fetch user", e)
+            val networkUser = try {
+                api.getUser(userId)
+            } catch (cancelled: CancellationException) {
+                throw cancelled
+            } catch (failure: HttpException) {
+                throw NetworkSyncException("HTTP ${failure.code()}", failure, failure.code())
+            } catch (failure: IOException) {
+                throw NetworkSyncException("Failed to fetch user", failure)
             }
+            // Local persistence errors are not relabeled as network errors.
+            userDao.insert(networkUser.toEntity())
         }
     }
 }
 ```
 
-This pattern solves dozens of race conditions. If the user rotates the screen while the network call is happening, the new `Activity` immediately reads the cached data from the Room `Flow`. When the network call finishes, Room emits the new data, and the UI updates seamlessly.
+`refreshUser` wraps Retrofit body-call `HttpException` with its status and transport `IOException` as `NetworkSyncException`. It rethrows cancellation and leaves mapping/database failures outside that wrapper.
+
+This chooses Room as the observed source; it still needs freshness, account isolation and request-order/conflict rules. Repositories for other data need not use Room or a separate domain layer. If the user rotates the screen while the network call is happening, a new collector can read retained Room state. Its first emission, refresh completion, account lifetime and failure UX still depend on the owning implementation.
 
 ---
 
@@ -98,16 +105,16 @@ class ProductRepository(
         // 3. Check Network (Slowest)
         val networkProduct = api.getProduct(id)
         val domainProduct = networkProduct.toDomainModel()
-        
+
         // Update both caches
         dao.insert(networkProduct.toEntity())
         cacheMutex.withLock { memoryCache[id] = domainProduct }
-        
+
         return domainProduct
     }
 }
 ```
-**Staff Insight:** Hardcoding caching logic into the repository is fine for small apps, but in massive codebases, this logic is often abstracted using the `Store` library by Dropbox, which provides declarative Kotlin flows for multi-tiered caching.
+**Staff Insight:** Hardcoding caching logic into the repository is fine for small apps, but in massive codebases, this logic is often abstracted using the `Store` library now hosted by Mobile Native Foundation, which provides declarative Kotlin flows for multi-tiered caching.
 
 ---
 
@@ -124,7 +131,7 @@ data class User(val id: String, val fullName: String)
 // The Repository handles the dirty translation
 override suspend fun refreshUser(id: String) {
     val networkObj: NetworkUser = api.getUser(id)
-    
+
     // Map Network -> DB Entity
     val entity = UserEntity(
         id = networkObj.userId,
@@ -154,7 +161,7 @@ If the backend changes `firstName` to `given_name` in the JSON API, you only cha
 |---|---|---|
 | **Fractured State** | The Repository returns network data directly to the UI, bypassing the database. Later, another screen reads the database and gets stale data. | Strictly enforce the Single Source of Truth rule. The network must write to the database, and the UI must read from the database. |
 | **Fat Repositories** | A `UserRepository` that handles login, fetching profiles, uploading avatars, and tracking friends. The class becomes 2,000 lines long. | Split repositories by entity or subdomain (e.g. `AuthRepository`, `ProfileRepository`, `SocialRepository`). |
-| **Leaking Data Models** | Returning Retrofit models (`NetworkUser`) or Room entities (`UserEntity`) directly to the ViewModel. | The ViewModel must only receive Domain models. Use mapper extension functions (`.toDomain()`) inside the Repository. |
+| **Leaking Data Models** | Returning Retrofit models (`NetworkUser`) or Room entities (`UserEntity`) directly to the ViewModel. | Expose stable app-facing models; map persistence/wire representations when their semantics or ownership differ. Android does not require a separate domain type for every entity. Use mapper extension functions (`.toDomain()`) inside the Repository. |
 
 ---
 
@@ -164,7 +171,7 @@ If the backend changes `firstName` to `given_name` in the JSON API, you only cha
 ```kotlin
 class BadRepository {
     private val repoScope = CoroutineScope(Dispatchers.IO)
-    
+
     fun fetchData() {
         repoScope.launch { api.getData() } // BAD! Fire and forget.
     }
@@ -175,7 +182,7 @@ If the user leaves the screen, the ViewModel is destroyed, but the Repository's 
 
 ### Pitfall 2: Bypassing the Repository
 A developer needs to fetch a user's avatar. They inject `UserApi` directly into the `ProfileViewModel` because "it's just a quick network call, I don't need a repository."
-*Fix:* This breaks the offline-first architecture. When the user opens the app on a plane, the avatar will fail to load because it wasn't routed through the Repository's caching layer. Injecting APIs directly into ViewModels is an architectural strict-fail.
+*Fix:* This breaks the offline-first architecture. When the user opens the app on a plane, the avatar will fail to load because it wasn't routed through the Repository's caching layer. A direct API dependency bypasses the caching policy in this local-first example. Define the repository boundary from the project's consistency/testability needs rather than claiming an Android platform prohibition.
 
 ---
 
@@ -189,11 +196,11 @@ A developer needs to fetch a user's avatar. They inject `UserApi` directly into 
 
 ## Answer Key
 
-1. **Concurrency:** Use a Coroutine `Mutex` to lock the cache check and network call, or use a `Deferred` in the memory cache so the second caller awaits the first caller's network request instead of starting a new one.
+1. **Concurrency:** The sample locks only map access and can still issue duplicate requests after concurrent misses. Add per-key single-flight coordination around fetch/promotion, with cancellation/failure cleanup and account-scoped lifetime; serializing the whole fetch under one mutex is simpler but also blocks unrelated keys.
 2. **Flow Consolidation:** NetworkBoundResource exposes loading/error states in the same stream. Returning a Result from refresh while observing Room separates the UI state (Room) from the action result (the refresh call). The separate approach is often better for Compose because the UI state flow remains purely data-driven.
 3. **Pagination:** RemoteMediator orchestrates fetching from the API and inserting into Room, but the PagingData stream strictly observes the Room database as the SSOT.
 4. **Data Deletion:** Have repositories observe an application-wide `AuthState` flow, or use a dependency injection framework to scope the repositories to a UserComponent that is destroyed on logout.
-5. **Multiplatform:** A shared interface (e.g., `interface AppDatabase`) or using a multiplatform library like SQLDelight that provides a common SQL interface while compiling down to Room/SQLite on Android and CoreData/SQLite on iOS.
+5. **Multiplatform:** A shared interface (e.g., `interface AppDatabase`) or using a database port with independently implemented Room/CoreData adapters. Alternatively, use Room KMP or SQLDelight with supported platform SQLite drivers. SQLDelight generates Kotlin APIs from SQL; it does not compile into Room or CoreData.
 
 ## Further Reading
 
@@ -201,3 +208,10 @@ A developer needs to fetch a user's avatar. They inject `UserApi` directly into 
 - [`../android/architecture/viewmodel.md`](../android/architecture/viewmodel.md) — How ViewModels consume Repository flows lifecycle-safely.
 - [`../android/data-and-di/room-vs-datastore.md`](../android/data-and-di/room-vs-datastore.md) — Choosing the right persistence layer for the local data source.
 - [`adapter.md`](adapter.md) — The mechanical pattern used to map Network models to Domain models.
+- [Android data-layer sources and repository responsibilities](https://developer.android.com/topic/architecture/data-layer)
+- [Room KMP support](https://developer.android.com/kotlin/multiplatform/room)
+- [SQLDelight generated APIs and drivers](https://github.com/sqldelight/sqldelight)
+- [Store maintained repository](https://github.com/MobileNativeFoundation/Store)
+- [Coroutine cancellation](https://kotlinlang.org/docs/cancellation-and-timeouts.html)
+- [Paging network/database integration](https://developer.android.com/topic/libraries/architecture/paging/v3-network-db)
+- [Retrofit HTTP errors from suspending body calls](https://raw.githubusercontent.com/square/retrofit/trunk/retrofit/src/main/java/retrofit2/KotlinExtensions.kt)

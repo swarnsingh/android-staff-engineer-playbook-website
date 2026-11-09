@@ -1,0 +1,8 @@
+<!-- Teaching layer over the approved Patterns source 4520147. -->
+<!-- @opening -->
+<p class="story-lead">An upload hits a temporary 503 and the server supplies a wait hint. The device then goes offline. Decide when another request is allowed and what the user sees if the retry budget runs out.</p>
+
+<!-- @before 4. Failure Modes & Tradeoffs :: staff -->
+### Follow the same operation through backoff
+
+The saved operation supplies the same key to each request. A retry becomes eligible when its backoff and network constraints allow it. The chapter’s persisted wait hint adds a separate gate before the request. Treat a final local failure and a verified remote outcome as separate facts. [HTTP Retry-After](https://www.rfc-editor.org/rfc/rfc9110.html#section-10.2.3).

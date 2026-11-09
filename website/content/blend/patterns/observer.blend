@@ -1,0 +1,8 @@
+<!-- Teaching layer over the approved Patterns source 4520147. -->
+<!-- @opening -->
+<p class="story-lead">The payment succeeds while the receipt screen is being recreated. The ViewModel knows which receipt to show, but no view is collecting for a moment. Decide what the next view needs to see to finish the interaction.</p>
+
+<!-- @before 5. Failure Modes & Tradeoffs :: staff -->
+### Keep required progress until it is acknowledged
+
+Follow the receipt request through success, collector recreation and UI acknowledgement. The request stays in state until the UI handles that request ID. This covers a gap in collection while the state owner survives. Recover the actual order state from a durable source after process death. [Android UI events](https://developer.android.com/topic/architecture/ui-layer/events).

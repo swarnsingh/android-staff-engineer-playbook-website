@@ -348,5 +348,27 @@
     "source_pr": 81,
     "scope": "Exact approved Principles index and all 11 chapters.",
     "method": "Exact git show bytes from merged main; SHA-256 over raw bytes."
+  },
+  "patterns_sha256": {
+    "patterns.md": "7003ad453baccb3df05b42006bc453b75c15319c73a1bfb708b64d569da2efd1",
+    "patterns/repository.md": "3b025ee990565e37fe3dbe9899281fe75d184c1f86d1f8b531562e6b4bb71052",
+    "patterns/adapter.md": "821085ed203e123e3072e21afc25f4193d48705f07cb13b1b31b761ee4869277",
+    "patterns/factory.md": "d7879b3ebb27fd034741df6c4f84466eb8b9d37eb9166d336df6701dd3b5225d",
+    "patterns/builder.md": "6947355e66c737130a0d9157995989b2bf17b01e9ccc3332f2c74f7cc49d728a",
+    "patterns/strategy.md": "310d127d3ddde17cbfab5658dc8d6599719834b42772a3926dbcc5037505d1ca",
+    "patterns/decorator.md": "fcc472f8fb3718a97453a63b5dfde76480fcc8b693a33be5059747b1d00bbfdb",
+    "patterns/observer.md": "cdf6cfa45b3f5e06320059d2e7904c623b7f9b8e04cec889799ab339451a3f97",
+    "patterns/state.md": "8ef2225f9178370063f24ca089ed1fa2ca3a9464dbe9c3dc88c1f800a1860d7f",
+    "patterns/command.md": "44ccb5e1bda7b3e3312b97f4297fee3e5208882f6c61bd4505b7eb0abf8c3435",
+    "patterns/retry.md": "d4f47794c1c8d71f698871b3806743a449fc4fc80a964ea65b5c12eec2c25451",
+    "patterns/circuit-breaker.md": "2f38f9c5a30b0e1c6e2c830f3eeca83d684d96fa82fe8b22441a23296d2c655c",
+    "patterns/saga.md": "039482f1bacd3d50be1a4ae309d68de1045ae9ee03cbbd80ac6abedb4f36b85f"
+  },
+  "patterns_provenance": {
+    "repository": "https://github.com/swarnsingh/android-staff-engineer-playbook",
+    "commit": "45201470a80d644a12eac0d9ff787e34f09062a2",
+    "source_pr": 81,
+    "scope": "Exact approved Patterns index and all 12 chapters.",
+    "method": "Exact git show bytes from merged main; SHA-256 over raw bytes."
   }
 }

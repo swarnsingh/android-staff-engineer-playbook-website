@@ -27,6 +27,7 @@ TREES = {
     'engineering-fundamentals': {'title': 'Engineering Fundamentals', 'phases': None},
     'computer-science': {'title': 'Computer Science', 'phases': None},
     'principles': {'title': 'Principles', 'phases': None},
+    'patterns': {'title': 'Patterns', 'phases': None},
     'platform-engineering': {'title': 'Platform Engineering', 'phases': None},
     'kotlin': {'title': 'Kotlin', 'phases': None},
     'android': {'title': 'Android', 'phases': [1, 2, 3, 4, 5, 6, 7, 8, 9]},
@@ -681,7 +682,7 @@ INTRO = {
 
 def intro(path):
     extras={}
-    for name in ('engineering-fundamentals','computer-science','principles','platform-engineering','mobile-system-design','observability','distributed-systems','release-engineering','security','backend-for-mobile'):
+    for name in ('engineering-fundamentals','computer-science','principles','patterns','platform-engineering','mobile-system-design','observability','distributed-systems','release-engineering','security','backend-for-mobile'):
         extras.update(json.loads((WEB/f'content/{name}.json').read_text()))
     return extras.get(path) or INTRO.get(path) or INTRO[Path(path).stem]
 
@@ -937,7 +938,7 @@ def build(skip_diagrams=False):
             cards=[]
             for index,(heading,paths) in enumerate(groups,1):
                 label=re.sub(r'^Phase \d+\s*[—–-]\s*','',heading)
-                starts_chapter = slug in {'engineering-fundamentals', 'principles'}
+                starts_chapter = slug in {'engineering-fundamentals', 'principles', 'patterns'}
                 target=route(paths[0]) if starts_chapter else '#'+slug_heading(heading)
                 action='Start this phase' if starts_chapter else 'View sequence'
                 cards.append(f'<li><a href="{target}"><span class="phase-number">Phase {index}</span><strong>{escape(label)}</strong><span class="phase-count">{len(paths)} {"chapter" if len(paths)==1 else "chapters"} · {action} →</span></a></li>')

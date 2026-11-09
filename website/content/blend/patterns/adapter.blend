@@ -1,0 +1,8 @@
+<!-- Teaching layer over the approved Patterns source 4520147. -->
+<!-- @opening -->
+<p class="story-lead">Checkout succeeds, then the analytics adapter receives a value its provider cannot accept. The adapter still has to protect the caller’s main operation. Decide which validation belongs at the call site and which belongs at the boundary.</p>
+
+<!-- @before 4. Failure Modes & Tradeoffs :: staff -->
+### Keep the app contract at the boundary
+
+Define the app event and validate it before tracking. Keep the provider-specific mapping in the adapter. For list rendering, treat the submitted data as a snapshot for the duration of diffing so the adapter can compare stable inputs. [DiffUtil snapshot requirements](https://developer.android.com/reference/androidx/recyclerview/widget/DiffUtil).
