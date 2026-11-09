@@ -1,0 +1,8 @@
+<!-- Teaching layer over the approved blueprint source 4520147. -->
+<!-- @opening -->
+<p class="story-lead">A cashier takes a card while the terminal has lost its connection. The store needs a receipt and a clear decision about whether the payment is confirmed. Trace the provider result before presenting success to the cashier.</p>
+
+<!-- @before Failure Modes :: staff -->
+### Make pending authorization visible at the counter
+
+Keep the operation until the provider status can be verified. An approved receipt follows verified approval. Pending authorization or forwarding needs a pending label. If the merchant accepts offline risk under the provider’s contract, state that risk on the receipt and reconcile after reconnect. [Stripe Terminal offline operation](https://docs.stripe.com/terminal/features/operate-offline/overview?reader-type=bluetooth).

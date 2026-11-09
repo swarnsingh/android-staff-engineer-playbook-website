@@ -1,0 +1,8 @@
+<!-- Teaching layer over the approved blueprint source 4520147. -->
+<!-- @opening -->
+<p class="story-lead">A reader opens the feed on a weak connection and immediately likes a cached post. The screen needs a usable snapshot, and the pending change needs a place to survive a restart. Follow the read and write paths separately.</p>
+
+<!-- @before Failure Modes :: staff -->
+### Review the two commits
+
+The feed refresh writes the reconciled snapshot to the local source. The engagement path saves the desired like state and its pending mutation together. Check what the reader sees if the refresh or the outbound write is delayed. Decide how the UI communicates freshness and pending work. [Android offline-first guidance](https://developer.android.com/topic/architecture/data-layer/offline-first).

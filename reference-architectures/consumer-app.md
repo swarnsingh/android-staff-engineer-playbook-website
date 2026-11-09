@@ -1,8 +1,12 @@
 # Consumer App — Reference Architecture
 
-> The settled blueprint for a high-scale consumer app (Instagram, Twitter/X, TikTok, Reddit, Pinterest). The defining trade-off: **breadth and engagement dominate**. Cold-start latency, smooth scroll, A/B test velocity, and analytics richness matter more than any single feature's depth. Login is optional or deferred; the app must work for an anonymous first-time visitor.
+> An illustrative blueprint for a high-scale, feed-oriented consumer app. The defining trade-off: **breadth and engagement dominate**. Cold-start latency, smooth scroll, A/B test velocity, and analytics richness matter more than any single feature's depth. Login is optional or deferred; the app must work for an anonymous first-time visitor.
 
 ---
+
+## Scope and Assumptions
+
+This example assumes a feed product with optional anonymous browsing. Latency, cache, queue, player-pool and rollout numbers are starting budgets to measure on a defined device/network cohort, not Android defaults or industry guarantees. Tracking is limited by consent, necessity and retention policy.
 
 ## Requirements
 
@@ -22,7 +26,7 @@
 - **Scroll smoothness at 60-120Hz.** Compose with stable keys, Coil 3 with bounded memory cache, lazy media decoding.
 - **Cellular-friendly.** Default to lower bitrate on metered networks; tier images by `network_class`.
 - **Massive scale.** 100M+ DAU. Server-side sharding, BFF per region.
-- **Analytics-driven.** Every user action logged. Every screen render measured. Every cohort sliced.
+- **Analytics-driven.** Measure a defined set of product events and performance signals, with minimization, retention and consent controls.
 - **Experimentation velocity.** Server-driven layout, feature flags as kill switches, per-flag rollout fractions.
 - **Privacy-aware.** GDPR / CCPA consent gating; opt-out for personalised tracking.
 
@@ -54,7 +58,7 @@ The defining property: **the home feed is the product**. Cold start to first use
 ### UI Layer
 
 - **Compose with Lazy lists** as the default container. `LazyColumn` for the feed, `LazyVerticalGrid` for discovery. Items keyed by stable post id.
-- **Coil 3** as the image loader with a `MemoryCache.Builder().maxSizePercent(0.25).build()` budget. Disk cache 200-400 MB. Auto-disposal on item leaving the viewport.
+- **Coil 3** as the image loader with a `MemoryCache.Builder().maxSizePercent(context, 0.25).build()` budget. Disk cache 200-400 MB. Requests follow the owning Compose lifecycle; leaving the visible viewport is not itself a guarantee of immediate disposal.
 - **Media3 / ExoPlayer** for inline video with a 2-3 player pool — players reused as cards scroll. Muted autoplay by default.
 - **Server-driven layout** for promoted content: the BFF can ship layout JSON (Lego-style block composition) to the client. Lets the growth team experiment without app releases.
 
@@ -70,7 +74,7 @@ See [`mobile-system-design/news-feed.md`](../mobile-system-design/news-feed.md) 
 
 ### Pager + RemoteMediator
 
-Standard pagination pattern. `RemoteMediator` reconciles the local Room cache with server-fetched pages. Stable keys prevent duplicates across page boundaries. The Room cache survives process death — when the user returns, the feed renders instantly from cache while the network refresh runs in parallel.
+Standard pagination pattern. `RemoteMediator` reconciles the local Room cache with server-fetched pages. Stable item keys preserve item identity in the UI; unique database keys and the server pagination contract handle duplicate rows across page boundaries. The Room cache survives process death — when the user returns, the feed renders instantly from cache while the network refresh runs in parallel.
 
 ### FlagsRepository
 
@@ -85,7 +89,7 @@ See [`mobile-system-design/feature-flags-and-remote-config.md`](../mobile-system
 
 ### Analytics SDK
 
-The product team's lifeblood. Tracks every screen view, every tap, every dwell time. Built on the durable queue + batched flush pattern; reusable across all consumer apps in the portfolio.
+The product team's lifeblood. Tracks selected screen, interaction and dwell events where the data policy permits. Built on the durable queue + batched flush pattern; reusable across all consumer apps in the portfolio.
 
 Tagging dimensions (low-cardinality only): app_version, android_api, oem, country, network_class, fg_state, experiment cohort. Never `userId` (PII + cardinality blast).
 
@@ -100,7 +104,7 @@ See [`mobile-system-design/telemetry-sdk.md`](../mobile-system-design/telemetry-
 ### Push (FCM)
 
 - Data messages, not notification messages — client decides whether to show.
-- High-priority for genuine engagement events (mention, DM); normal for promotional pings.
+- High priority only for time-sensitive, user-visible notifications; normal priority for other work. Delivery is not guaranteed, and high priority can be deprioritized when it does not produce visible notifications.
 - Channels per category so users can mute promotional without losing DMs.
 
 See [`mobile-system-design/push-notifications.md`](../mobile-system-design/push-notifications.md).
@@ -130,7 +134,7 @@ sequenceDiagram
     VM->>User: invisible swap — newer cards take precedence
 ```
 
-The cache-first render pattern is the entire performance story. The user sees content in ~300 ms (TTID); the freshness arrives within budget but invisibly.
+The cache-first render pattern is the entire performance story. A 300 ms cached-content render is an illustrative measurement target. TTID measures the first drawn frame; TTFD measures the app-declared fully drawn state. Neither metric by itself proves the feed is useful or fresh.
 
 ### Optimistic Like
 
@@ -145,15 +149,17 @@ sequenceDiagram
 
     UI->>VM: like(postId)
     VM->>Repo: toggleLike(postId, liked=true)
-    Repo->>Local: UPDATE posts SET liked=true, likeCount=likeCount+1
-    Repo->>Out: enqueue { postId, action=like, idempotency_key }
+    Repo->>Local: BEGIN transaction
+    Repo->>Local: UPDATE desired like state
+    Repo->>Out: INSERT account-scoped mutation + idempotency key
+    Repo->>Local: COMMIT transaction
     Repo-->>UI: ✓ instantly
     Out->>Net: POST /v1/engagement (background)
     Net-->>Out: 200 OK
     Out->>Out: dequeue
 ```
 
-Optimistic UI is the default. The Engagement API treats the action as idempotent via the client-side key. Server eventually reconciles.
+The desired like state and outbox entry commit in one Room transaction. The worker retries the same logical operation with the same key; server-side deduplication is required. Reconcile stale fetches without overwriting a queued choice, and isolate pending work by account.
 
 ---
 
@@ -170,11 +176,11 @@ The general rule: **anything the user already saw remains visible offline; anyth
 
 ## Security
 
-- **TLS 1.3 + cert pinning** at the BFF. Pinning the leaf + intermediate; rotation discipline documented. See [`security/certificate-pinning.md`](../security/certificate-pinning.md).
+- **HTTPS with normal trust validation** at the BFF. If the threat model justifies pinning, specify backup keys, rotation and recovery; pinning is not Android's recommended default. See [`security/certificate-pinning.md`](../security/certificate-pinning.md).
 - **Authentication:** OAuth + PKCE; keep tokens in memory when possible and use a Keystore-protected ciphertext envelope only when continuity requires persistence. Anonymous sessions are allowed; account creation is deferred to an engagement moment.
 - **App Check / Play Integrity** to deter scripted account creation and bot engagement. Verdicts evaluated server-side; client never trusts its own verdict.
 - **No FLAG_SECURE** on most screens (consumer apps share screenshots happily). Reserve for the rare sensitive screen (DM containing financial info — but that's an edge case).
-- **R8 minify + obfuscate.** Not a security boundary, but raises the bar for casual reverse engineering and stops API endpoints from leaking as plain strings.
+- **R8 minify + obfuscate.** Not a security boundary, but raises the bar for casual reverse engineering and does not guarantee string encryption or hide API endpoints from an attacker controlling the client.
 - **Privacy:** consent flow on first launch; opt-out for personalised tracking; data-deletion path on request. See [`mobile-system-design/security-and-privacy.md`](../mobile-system-design/security-and-privacy.md).
 
 ---
@@ -198,7 +204,7 @@ See [`observability/dashboards.md`](../observability/dashboards.md), [`observabi
 
 **Feed fetch fails on cold launch with no cache.** First-ever user, network drops mid-launch. Render an inviting empty state with retry; never a blank screen.
 
-**Coil cache overflows memory.** Bitmap pool hits OOM. Bound cache to 25% of heap; bitmap-aware `sizeOf` calculation.
+**Image loading exhausts memory.** Memory-cache bounds do not cover every in-flight decode or displayed bitmap. Measure total memory, bound request dimensions and concurrent decoding, and tune the cache budget. Coil 3 does not provide the old Coil 1 bitmap-pool model.
 
 **ExoPlayer pool starves.** Twenty videos in viewport requesting playback; only 2 players. Mitigation: only the visible item plays; pre-roll the next.
 
@@ -232,7 +238,7 @@ See [`observability/dashboards.md`](../observability/dashboards.md), [`observabi
 
 ### Scaling analytics
 
-- Sampling at the SDK level (10-50% of low-stakes events). User-action events always 100%.
+- Sampling at the SDK level (10-50% of low-stakes events). Select event-specific sampling and consent rules; do not treat every user action as mandatory telemetry.
 - Schema enforcement via KSP codegen; server registry validates.
 - Batched flush; never per-event network.
 
@@ -267,6 +273,18 @@ See [`observability/dashboards.md`](../observability/dashboards.md), [`observabi
 | Analytics | In-house SDK | Schema-enforced, batched, sampled |
 | Telemetry | Crashlytics + Vitals + JankStats | Industry standard |
 | Experimentation | Server-evaluated flags | Sticky bucketing, kill switches |
+
+---
+
+## Further Reading
+
+- [Coil 3 image loader and cache configuration](https://coil-kt.github.io/coil/image_loaders/)
+- [Paging with a network and database](https://developer.android.com/topic/libraries/architecture/paging/v3-network-db)
+- [Stable keys in Compose lists](https://developer.android.com/develop/ui/compose/lists#item-keys)
+- [TTID and TTFD definitions](https://developer.android.com/topic/performance/vitals/launch-time)
+- [FCM priority and deprioritization](https://firebase.google.com/docs/cloud-messaging/android-message-priority)
+- [Android TLS and pinning guidance](https://developer.android.com/privacy-and-security/security-ssl)
+- [R8 optimization and obfuscation](https://developer.android.com/topic/performance/app-optimization/enable-app-optimization)
 
 ---
 

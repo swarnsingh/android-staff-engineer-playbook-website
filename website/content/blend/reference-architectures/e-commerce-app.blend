@@ -1,0 +1,8 @@
+<!-- Teaching layer over the approved blueprint source 4520147. -->
+<!-- @opening -->
+<p class="story-lead">The payment UI returns while the order still says pending. A shopper needs to know whether to wait or retry. Follow the saved checkout operation to the backend decision before showing a final receipt.</p>
+
+<!-- @before Failure Modes :: staff -->
+### Decide what each payment status permits
+
+A verified paid order can show a receipt. While processing, keep the operation and show a status screen that resumes reconciliation. On a confirmed failure, keep the cart available for recovery. The payment callback is an input to reconciliation. [Payment status verification](https://docs.stripe.com/payments/payment-intents/verifying-status).

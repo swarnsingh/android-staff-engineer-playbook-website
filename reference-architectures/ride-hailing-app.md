@@ -1,8 +1,12 @@
 # Ride-Hailing App — Reference Architecture
 
-> The settled blueprint for a two-sided ride-hailing platform (Uber, Lyft, Ola, Grab, Bolt). The defining trade-off: **real-time bi-directional state synchronization** between rider, driver, and dispatcher dominates everything. Battery on the driver side, location accuracy at low cost, trip state convergence across two devices, foreground-service discipline — these are the architectural axes.
+> An illustrative blueprint for a two-sided ride-hailing platform. The defining trade-off: **real-time bi-directional state synchronization** between rider, driver, and dispatcher dominates everything. Battery on the driver side, location accuracy at low cost, trip state convergence across two devices, foreground-service discipline — these are the architectural axes.
 
 ---
+
+## Scope and Assumptions
+
+The dispatcher owns accepted trip transitions; clients show pending intent separately. Battery, accuracy, timing and retry numbers below are example fleet targets, not location or delivery guarantees. Driver tracking requires the appropriate runtime permissions and a legally started location foreground service; a rider UI alone does not justify continuous background tracking.
 
 ## Requirements
 
@@ -52,8 +56,8 @@ flowchart TB
     Dispatcher --> Matcher[Matching Engine]
     Dispatcher --> TripSvc[Trip Service]
     TripSvc --> TripDB[(Postgres/CockroachDB<br/>durable trip state)]
-    DTrip --> Room[(Room: trip state cache)]
-    RTrip --> Room
+    DTrip --> DRoom[(Driver device Room cache)]
+    RTrip --> RRoom[(Rider device Room cache)]
 ```
 
 The defining property: **the server is the trip state authority**; both apps converge to it. The driver app continuously streams location; the rider app reads location updates. State transitions (ACCEPTED, ARRIVED, etc.) are server-issued; both clients reconcile to the server.
@@ -80,23 +84,23 @@ The defining property: **the server is the trip state authority**; both apps con
 ### LocationStreamer (Driver-side, the critical module)
 
 ```kotlin
-class LocationStreamer(
-    private val client: FusedLocationProviderClient,
-    private val socket: TripSocket,
-    private val buffer: LocationBuffer,
-) {
-    fun start() {
-        val request = LocationRequest.Builder(Priority.PRIORITY_HIGH_ACCURACY, intervalMs = 4_000L)
+// Fragment: a location-service owner supplies the callback, permissions and
+// notification, observes Task failures, and unregisters during teardown.
+class LocationStreamer(private val client: FusedLocationProviderClient) {
+    fun start(callback: LocationCallback): Task<Void> {
+        val request = LocationRequest.Builder(Priority.PRIORITY_HIGH_ACCURACY, 4_000L)
             .setMinUpdateDistanceMeters(10f)
-            .setGranularity(Granularity.GRANULARITY_FINE)
+            .setGranularity(Granularity.GRANULARITY_PERMISSION_LEVEL)
             .build()
-        client.requestLocationUpdates(request, callback, Looper.getMainLooper())
+        return client.requestLocationUpdates(request, callback, Looper.getMainLooper())
     }
-    // intervals adapt: 4s while driving, 10s while stopped, 1s during pickup approach
+
+    fun stop(callback: LocationCallback): Task<Void> =
+        client.removeLocationUpdates(callback)
 }
 ```
 
-Runs inside a `FOREGROUND_SERVICE_TYPE_LOCATION` foreground service. The service is the entire reason the driver app survives the OS's aggressive background killers. Persistent notification visible to the driver while on duty.
+Runs inside a `FOREGROUND_SERVICE_TYPE_LOCATION` foreground service. Declare the location service type and required permissions, start it from an allowed context, and maintain its user-visible notification. A foreground service improves execution priority but does not make the process immortal; recover trip state after termination.
 
 Adaptive intervals balance battery and accuracy:
 - 4s default while moving.
@@ -109,7 +113,7 @@ See [`mobile-system-design/ride-hailing.md`](../mobile-system-design/ride-hailin
 
 ```
 OFFERED → ACCEPTED → DRIVER_EN_ROUTE → ARRIVED → IN_TRIP → COMPLETED
-              ↘ CANCELLED (any state, by either party or system)
+              ↘ CANCELLED (eligible pre-completion states, server policy)
 ```
 
 - Modeled as a [state machine](../engineering-fundamentals/state-machines.md) on both apps.
@@ -171,7 +175,7 @@ sequenceDiagram
     end
 ```
 
-The offer-accept loop runs server-side; both clients see only the final state. Each offer has a 15-30 second TTL; if the driver doesn't respond, it expires and the next candidate is tried.
+The offer-accept loop runs server-side; the driver receives offers while the rider sees request/match progress. Each offer has a 15-30 second TTL; if the driver doesn't respond, it expires and the next candidate is tried.
 
 ### Driver Location Ping
 
@@ -218,9 +222,9 @@ sequenceDiagram
     R->>R: render "driver arrived" screen + notification
 ```
 
-Both apps see the same `trip.update` event; both transition in sync. Local optimistic update on the driver side; rider sees the server's authoritative state.
+Both apps reconcile versioned `trip.update` events when received; network delay means they need not transition simultaneously. The driver may show pending intent, while accepted trip state remains server-authoritative.
 
-**Idempotency-Key Nuance:** State transitions (like swiping "Arrived") are high-stakes. The client generates a UUID v4 `Idempotency-Key` at the exact moment of the swipe and includes it in the header. If the network drops *during* the transition and the client retries the POST, the server sees the same key and returns the cached 200 OK without re-triggering business logic. The server typically caches these keys in Redis for 24 hours.
+**Idempotency-Key Nuance:** State transitions (like swiping "Arrived") are high-stakes. Persist a UUID v4 `Idempotency-Key` with the account/trip-bound operation before sending it, and include it in the header. If the network drops *during* the transition, an unchanged retry with the same key within the deduplication window recovers the original outcome without repeating the transition. Define the deduplication retention from the retry horizon and protect the business transition atomically; a Redis TTL alone does not prevent a race between recording the key and applying the transition.
 
 ---
 
@@ -229,9 +233,9 @@ Both apps see the same `trip.update` event; both transition in sync. Local optim
 | Subsystem | Offline behavior |
 |---|---|
 | **Driver location stream** | Buffer pings in Room; flush on reconnect. Map UI shows stale-location indicator. |
-| **Trip state** | Rendered from local Room mirror. State transitions blocked offline; queued with explicit UX ("Will sync when connected"). |
-| **Map tiles** | Cached via the Maps SDK; pre-fetched for the trip route on accept. |
-| **Navigation** | Continues from cached route; rerouting requires network. |
+| **Trip state** | Rendered from local Room mirror. Do not claim an accepted server transition while offline. Queue only transition intents that the product explicitly permits, show pending status, and revalidate the current server version on reconnect. |
+| **Map tiles** | Treat SDK tile caching as provider-controlled. Do not promise route-area prefetch or offline downloads without an SDK/product and license that explicitly support them. |
+| **Navigation** | Offline guidance requires an explicitly supported navigation/offline-data product. A Routes API response alone is not a complete offline navigation engine. |
 | **Receipt / earnings view** | Cached; new data requires reconnect. |
 | **Ride request (rider-side)** | Blocked offline; clear UX with retry. |
 | **Voice / chat** | Blocked offline; messages queue with delivery status. |
@@ -247,7 +251,7 @@ The driver-side location buffer is the architectural keystone. Without it, a 90-
 - **Driver authentication includes biometric step-up** for high-risk actions (cash-out, profile changes).
 - **Location data classification.** Live driver location goes to dispatcher; aggregated history goes to product analytics with privacy controls.
 - **Fraud signals.** Sudden location jumps (GPS spoofing), unusual route choices, rejection patterns — telemetry signals to server-side fraud ML. The client emits; the server decides.
-- **Background location permission UX.** Android 10+ requires explicit "Allow all the time"; the app must educate the driver before requesting.
+- **Location permission UX.** Separate foreground/while-in-use access from genuine background access. Android 10 introduces background-location permission; Android 11+ grants it through settings rather than the foreground dialog. A correctly started location foreground service can use while-in-use access while running, subject to start restrictions. Request only the access the feature needs, and handle approximate location and revocation.
 - **Rider privacy.** Rider's exact home pin-drop optionally fuzzed to nearest intersection.
 - See [`mobile-system-design/security-and-privacy.md`](../mobile-system-design/security-and-privacy.md).
 
@@ -268,7 +272,7 @@ The driver-side location buffer is the architectural keystone. Without it, a 90-
 
 ## Failure Modes
 
-**Driver app killed by OEM mid-trip.** Xiaomi/OPPO/Vivo aggressive battery savers may kill the foreground service. *Mitigation:* explicit driver onboarding educates on battery whitelist; foreground service uses `START_REDELIVER_INTENT`; FCM-based wake on next event; lost trip reconciled via REST on next launch.
+**Driver app killed by OEM mid-trip.** Xiaomi/OPPO/Vivo aggressive battery savers may kill the foreground service. *Mitigation:* explicit driver onboarding educates on battery whitelist; persist pending work and reconcile through REST when execution resumes. `START_REDELIVER_INTENT` is a restart policy, not a liveness guarantee; FCM and foreground-service exceptions cannot be relied on to restart a force-stopped or otherwise restricted app.
 
 **GPS spoofing for fake driver compliance.** Some drivers spoof location to game the system. *Mitigation:* server-side detection (impossible speed, abrupt jumps); client emits raw sensor data (accelerometer, gyroscope) for cross-validation.
 
@@ -282,7 +286,7 @@ The driver-side location buffer is the architectural keystone. Without it, a 90-
 
 **Driver app crashes during pickup approach.** *Mitigation:* trip state in Room survives; on relaunch, the trip UI rehydrates to the current state; location streaming resumes.
 
-**Map SDK fails to render in tunnel.** *Mitigation:* fallback to text-only navigation cues; cached tiles render; the SDK gracefully degrades.
+**Map SDK fails to render in tunnel.** *Mitigation:* use available text guidance only when it is valid; render tiles only if retained and usable; show an honest unavailable/stale-map state when the selected SDK has no usable offline map; do not assume tiles are retained.
 
 **Background location permission revoked mid-shift.** Driver toggled in settings. *Mitigation:* app detects, alerts driver loudly, blocks new trip acceptance until restored.
 
@@ -336,11 +340,24 @@ The driver-side location buffer is the architectural keystone. Without it, a 90-
 | Tokens | Private ciphertext envelope | Direct Android Keystore key |
 | Location | FusedLocationProviderClient + foreground service | Best accuracy/battery balance |
 | Maps | Google Maps SDK (or Mapbox in some markets) | Mature, tile caching |
-| Navigation | Google Routes API + voice cues | Offline-cached on accept |
+| Navigation | Provider-supported navigation integration | Offline behavior depends on product, data availability and licensing |
 | Background | WorkManager (off-duty), foreground service (on duty) | Lifecycle correctness |
-| Push | FCM (data + high-priority for offers) | Wake on offer |
+| Push | FCM with user-visible priority policy | Best-effort offer hint; reconcile with server |
 | Payment | PSP SDK (Stripe / Adyen / Razorpay) | PCI scope reduction |
 | Voice | Twilio / Plivo masked numbers | Privacy |
+
+---
+
+## Further Reading
+
+- [Fused LocationRequest builder contract](https://developers.google.com/android/reference/com/google/android/gms/location/LocationRequest.Builder)
+- [Kotlin calling Java: named arguments](https://kotlinlang.org/docs/java-interop.html)
+- [Android location permission scopes](https://developer.android.com/develop/sensors-and-location/location/permissions)
+- [Background location permission flow](https://developer.android.com/develop/sensors-and-location/location/permissions/background)
+- [Location foreground-service prerequisites](https://developer.android.com/develop/background-work/services/fgs/service-types#location)
+- [Background foreground-service start limits](https://developer.android.com/develop/background-work/services/fgs/restrictions-bg-start)
+- [Maps SDK caching policies](https://developers.google.com/maps/documentation/android-sdk/policies)
+- [FCM priority limits](https://firebase.google.com/docs/cloud-messaging/android-message-priority)
 
 ---
 

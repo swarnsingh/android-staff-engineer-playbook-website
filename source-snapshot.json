@@ -370,5 +370,23 @@
     "source_pr": 81,
     "scope": "Exact approved Patterns index and all 12 chapters.",
     "method": "Exact git show bytes from merged main; SHA-256 over raw bytes."
+  },
+  "reference-architectures_sha256": {
+    "reference-architectures.md": "ed56fbf282df30933a7cb56590305613499409f5448a8ccf7836f2dd772f0a92",
+    "reference-architectures/consumer-app.md": "f82a769b90b50545329e70f6fb35d2edeba23eff7cb4bc9bab98f036f6dbcd7b",
+    "reference-architectures/e-commerce-app.md": "053a344c04e1032299194d2f35cd1418ed767451fc6a5cb35b4e22e5907a492a",
+    "reference-architectures/merchant-app.md": "8040c1a66c86c1e18a4f4baa0d2cea3ec06dc0cc90fc705ae20f6b1c079918c7",
+    "reference-architectures/offline-first-app.md": "ff064ff10b4aca26c1a47d37395c467e83824546e0c7182d2e28001608df94b6",
+    "reference-architectures/banking-app.md": "f21aafc3550b676d1a7efc68c7dc1bf86cf2488912c47f77166a486094d20c2b",
+    "reference-architectures/ride-hailing-app.md": "4375e62eb044e1a8db602d4ad175bf174207a9ea56304d1c8d9f01cb1b35811d",
+    "reference-architectures/social-media-app.md": "f12c58329e86d5b13ff9ce57311a9c5d249c28ad47e328ac247f9671bc1ef5bb",
+    "reference-architectures/video-streaming-app.md": "83ff59c10f98caebba4fe58d4e64b9bbe396fd16da093ed7a7ac52e369e44fd7"
+  },
+  "reference-architectures_provenance": {
+    "repository": "https://github.com/swarnsingh/android-staff-engineer-playbook",
+    "commit": "45201470a80d644a12eac0d9ff787e34f09062a2",
+    "source_pr": 81,
+    "scope": "Exact approved Reference Architectures index and all 8 chapters.",
+    "method": "Exact git show bytes from merged main; SHA-256 over raw bytes."
   }
 }

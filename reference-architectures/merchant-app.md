@@ -1,8 +1,12 @@
 # Merchant App — Reference Architecture
 
-> The settled blueprint for a B2B merchant/seller mobile client (Shopify POS, Square Seller, Stripe Dashboard, Toast for Restaurants, Uber Eats for Restaurants). The defining trade-off: **reliability and operational continuity dominate over consumer polish**. The merchant cannot lose an order. The cashier cannot have the app crash during a card-present transaction. The kitchen printer must fire even if the BFF is flaky. Offline-capable, peripheral-aware, audit-rich.
+> An illustrative blueprint for a B2B merchant/seller mobile client. The defining trade-off: **reliability and operational continuity dominate over consumer polish**. The merchant cannot lose an order. The cashier cannot have the app crash during a card-present transaction. The kitchen printer must fire even if the BFF is flaky. Offline-capable, peripheral-aware, audit-rich.
 
 ---
+
+## Scope and Assumptions
+
+This design assumes managed merchant tablets and a provider-supported reader integration. Payment authorization, capture and settlement follow that provider's contract. Example queue limits, retention periods, retry intervals and support floors are product choices. Offline collection and printer acknowledgement require explicit recovery policies.
 
 ## Requirements
 
@@ -66,15 +70,15 @@ The defining property: **orders are server-pushed in real time** via a persisten
 ### OrdersRepository + OrdersSocket
 
 - Persistent **WebSocket** to the orders BFF, foregrounded while the app is open. On disconnect: exponential backoff with jitter; status visible in the persistent UI bar.
-- Every incoming order is upserted to Room **inside the WebSocket frame handler**, before the UI Flow emits. Reading order data, the UI is always reading Room — the socket is a *write path* into the local store.
+- Every incoming order is upserted to Room **through a serialized repository ingestion path off the socket callback thread**, before the UI Flow emits. Reading order data, the UI is always reading Room — the socket is a *write path* into the local store.
 - REST fallback for late catch-up: on reconnect, `GET /v1/orders?since=<watermark>` syncs any orders missed during the disconnect.
-- Order state transitions (accepted, preparing, etc.) are local writes that fire a REST mutation in parallel; idempotency keys ensure retries are safe.
+- Order state transitions commit pending local state and an account/store-scoped outbox entry atomically. A worker sends the mutation with the same key on retry; the server checks transition/version and deduplicates it.
 
 ### PaymentRepository (Card-Present)
 
 The most regulated module in the app. Talks to certified payment hardware (PIN-Pad, mPOS reader) via vendor SDK:
 
-- **EMV chip flow:** card inserted → kernel selects app → user enters PIN on the PED → app receives tokenized result. App **never sees** PAN, expiry, or PIN. PCI scope: out of scope for cardholder data.
+- **EMV chip flow:** card inserted → kernel selects app → user enters PIN on the PED → app receives tokenized result. Keep PIN entry in the certified device/SDK and avoid application-owned PAN capture. Returned metadata and PCI scope depend on the assessed reader/provider integration; expiry or masked card metadata can still be exposed.
 - **Contactless (NFC) flow:** card tapped → kernel selects app → tokenized result.
 - **Refund flow:** original transaction lookup → server-issued refund authorization → printed receipt.
 - **Tip flow:** post-authorization tip adjustment supported by the kernel and the PSP.
@@ -93,7 +97,7 @@ Connection to the PIN-Pad over Bluetooth Classic or USB; auto-reconnect; explici
 
 The most overlooked but most operationally critical module. Centralizes Bluetooth/USB/Wi-Fi peripheral lifecycle:
 
-- **Printer:** ESC/POS protocol over Bluetooth. Auto-reconnect on disconnect. Print job queue with retry; never silently drop a kitchen ticket.
+- **Printer:** ESC/POS protocol over Bluetooth. Auto-reconnect on disconnect. Persist print jobs with stable order/job IDs. On unknown print outcome, reconcile device status or require an explicit reprint; blind retries can print duplicate tickets.
 - **Barcode scanner:** typically a Bluetooth HID device (acts like a keyboard); read via `KeyEvent` from focused text field. Configurable suffix (Enter / Tab) to trigger submission.
 - **Cash drawer:** triggered via a relay through the receipt printer.
 - **Customer-facing display:** optional second screen (some POS devices have one).
@@ -115,16 +119,20 @@ sequenceDiagram
     participant Repo as OrdersRepository
     participant Room
     participant UI
+    participant Print as Print Worker / PeripheralManager
     participant Printer
 
     Cust->>API: place order
     API->>WS: broadcast {order.created, ...}
     WS->>Repo: frame received
-    Repo->>Room: UPSERT order + items (transaction)
+    Repo->>Room: UPSERT order + items + unique print job (transaction)
     Room-->>UI: Flow emit (new order in list)
     UI->>UI: play sound + flash badge
-    UI->>Printer: print kitchen ticket (auto)
-    Printer-->>UI: ack (or "printer offline" alert)
+    Print->>Room: claim pending print job
+    Print->>Printer: print kitchen ticket (job ID)
+    Printer-->>Print: known success, failure or unknown outcome
+    Print->>Room: persist job outcome
+    Room-->>UI: printer/job status
 ```
 
 The auto-print is part of the operational continuity contract: if the printer is offline, the system alerts the cashier loudly so they can manually intervene.
@@ -145,14 +153,23 @@ sequenceDiagram
     Repo->>PinPad: connect + startTransaction(4520)
     PinPad->>PinPad: user inserts/taps card
     PinPad->>PinPad: PIN entry on PED (app blind)
-    PinPad-->>Repo: tokenized result + EMV data
-    Repo->>API: POST /v1/payments (token, EMV data, Idempotency-Key)
-    API-->>Repo: { paymentId, status: APPROVED }
-    Repo->>Room: insert audit_log entry
-    Repo->>UI: print receipt + show success
+    PinPad-->>Repo: provider payment identifier/status
+    Repo->>API: reconcile provider payment (stable operation ID)
+    Note over PinPad,API: Certified SDK/processor owns authorization flow
+    API-->>Repo: APPROVED | PENDING | REJECTED/DECLINED
+    Repo->>Room: persist verified status and audit entry
+    alt Verified approval
+        Repo->>UI: print approved receipt + show success
+    else Pending authorization or forwarding
+        Repo->>UI: pending receipt + pending status (not approved)
+        Note over Repo,UI: If accepting offline risk, label receipt as accepted at merchant risk
+        Repo->>Room: retain operation for reconciliation on reconnect/resume
+    else Rejected or declined
+        Repo->>UI: show payment failure + recovery options
+    end
 ```
 
-The PIN-Pad SDK abstracts the EMV kernel. The app's only responsibility: pass the amount in, receive the tokenized result, send to the PSP, log the audit entry.
+The PIN-Pad SDK abstracts the EMV kernel. The app persists an operation identity, follows the provider's collection/authorization flow and reconciles unknown outcomes. The backend verifies payment status; collection, authorization, capture and settlement are distinct states.
 
 ---
 
@@ -164,7 +181,7 @@ Operational continuity is the highest priority. Offline is a real scenario (in-s
 |---|---|
 | **Order list view** | Renders from Room cache. New orders only arrive when WebSocket reconnects, but existing orders are visible. |
 | **Order status updates** | Queue in outbox; sync on reconnect. UI shows "Pending sync" badge. |
-| **Card-present payment** | Card readers are local hardware; transactions can complete *offline* if the PSP SDK supports store-and-forward mode. Approval is conditional; tokens stored, settled when network returns. |
+| **Card-present payment** | Card readers are local hardware; transactions can complete *offline* if the PSP SDK supports store-and-forward mode. Collection is pending forwarding/authorization, not a guaranteed approval. Provider-managed storage forwards on reconnect and the merchant bears the documented decline/non-payment risk. |
 | **Cash payments** | Always offline-capable. Logged to audit; reconciled at end of shift. |
 | **Inventory adjustments** | Queue locally; sync on reconnect. Optimistic UI. |
 | **Receipts / kitchen tickets** | Printed locally (Bluetooth peripheral). No network required. |
@@ -176,13 +193,13 @@ Store-and-forward card transactions are the highest-stakes offline path. The PIN
 
 ## Security
 
-- **PCI DSS scope minimization.** Card data flows from PIN-Pad to PSP without entering the app's process. PCI scope: SAQ-A or SAQ-B-IP depending on hardware.
-- **Staff authentication.** PIN-based shift login (numeric pad, not OS keyboard, to avoid keylogger spoofing). Session bound to staff ID; every action logged.
+- **PCI DSS scope minimization.** Card data flows from PIN-Pad to PSP without entering the app's process. Applicable PCI validation depends on all eligibility criteria and the actual integration, as agreed with the acquirer/assessor; hardware alone does not select an SAQ.
+- **Staff authentication.** PIN-based shift login with attempt limits and staff-bound sessions. A custom numeric pad is not protection against a compromised process, accessibility abuse or overlays. Session bound to staff ID; every action logged.
 - **Permission roles** enforced server-side; client-side checks are UX hints, not security boundaries.
 - **Tablet kiosk mode.** Many merchants run the app in `LOCK_TASK` mode so cashiers can't exit to other apps. Configured via Android MDM (Knox / Android Enterprise).
 - **Encrypted local store** for cached merchant data when the threat model or regulation requires it. Persist tokens as a private ciphertext envelope protected by Android Keystore; use database encryption such as SQLCipher only when its operational costs are justified.
 - **No PAN in logs**, ever. PIN-Pad SDK isolates this; the app only sees tokens like `tok_xxx`.
-- **Audit log immutability.** Append-only Room table. Synced to server at end of shift; the local copy is the disputed-transaction trail.
+- **Audit trail integrity.** The app writes an append-only local queue, but Room does not make it immutable against a privileged attacker or device loss. Sync to a server-controlled, access-restricted audit store; authenticate records and monitor missing sequence ranges.
 - See [`security/secure-storage-on-android.md`](../security/secure-storage-on-android.md), [`mobile-system-design/security-and-privacy.md`](../mobile-system-design/security-and-privacy.md).
 
 ---
@@ -192,7 +209,7 @@ Store-and-forward card transactions are the highest-stakes offline path. The PIN
 - **Operational metrics first.** Order ingestion rate, average time-to-acknowledge, payment success rate, printer success rate. Dashboards visible to merchant operations.
 - **Per-store cohorting.** A failing printer at Store 47 must surface as Store-47-specific, not lost in a global average.
 - **Peripheral health telemetry.** Auto-reconnect count, time-since-last-print, time-since-last-card-read. Merchant ops team uses this to deploy field replacements proactively.
-- **Audit log replay.** When a merchant disputes a transaction, the local audit log is the source of truth. Synced to server but always also available on-device for 90 days.
+- **Audit log replay.** Use the server/provider payment record and collected audit evidence for reconciliation. On-device retention (for example, 90 days) is a storage/privacy policy, not a guarantee after theft, uninstall or local tampering.
 - **Crash-free shifts.** Track crashes per merchant per shift, not per user. A crash during a 4-hour shift on a wall-mounted tablet is more disruptive than a consumer-app crash.
 - See [`observability/dashboards.md`](../observability/dashboards.md), [`observability/slis.md`](../observability/slis.md).
 
@@ -210,11 +227,11 @@ Store-and-forward card transactions are the highest-stakes offline path. The PIN
 
 **Tablet runs out of disk after a long offline shift.** Outbox + audit log grew unboundedly. *Mitigation:* hard cap on outbox size (with explicit user warning at threshold); audit log rotated to compressed archive monthly; cloud-sync at end of shift drains queues.
 
-**Staff PIN guessed by another staff member.** *Mitigation:* PIN-only is not strong auth; for sensitive actions (refund > threshold), require manager card-swipe (a separate physical token). Audit logs are immutable.
+**Staff PIN guessed by another staff member.** *Mitigation:* PIN-only is not strong auth; for sensitive actions (refund > threshold), require manager card-swipe (a separate physical token). Local append-only code does not prove tamper resistance; retain authoritative server evidence.
 
-**Tablet stolen.** *Mitigation:* MDM remote wipe; sessions invalidated server-side on suspicious activity; no cached PII beyond current shift.
+**Tablet stolen.** *Mitigation:* MDM remote wipe; sessions invalidated server-side on suspicious activity; minimize cached PII and enforce the chosen retention/backup policy; remote wipe cannot be assumed to execute on an offline stolen device.
 
-**App auto-update during a shift causes a long restart.** *Mitigation:* defer in-app updates during business hours via Play's update priority + custom scheduling; promote major updates only during overnight windows.
+**App auto-update during a shift causes a long restart.** *Mitigation:* avoid starting an in-app update flow during a transaction. Use managed-device/app-update policy where available to coordinate installations; an in-app priority value does not schedule or prevent Play auto-updates. Persist recovery state for an unexpected restart.
 
 ---
 
@@ -233,7 +250,7 @@ Store-and-forward card transactions are the highest-stakes offline path. The PIN
 
 ### Scaling payment regions
 
-- PSP SDK varies by country (Square US, Adyen EU, Razorpay India). `:core:payment` boundary swaps under the same `PaymentRepository`.
+- Select PSP SDKs for their documented supported countries, currencies, reader types and payment methods. `:core:payment` boundary swaps under the same `PaymentRepository`.
 - Country-specific compliance (e.g., GST invoicing in India, fiscal printers in Italy) implemented as per-country `:feature:tax-<country>` modules.
 
 ### Scaling staff count
@@ -276,6 +293,18 @@ See [`release-engineering/release-strategy.md`](../release-engineering/release-s
 
 ---
 
+## Further Reading
+
+- [Stripe Terminal offline collection and forwarding](https://docs.stripe.com/terminal/features/operate-offline/overview?reader-type=bluetooth)
+- [PCI SSC SAQ eligibility criteria](https://www.pcisecuritystandards.org/faqs/1443/)
+- [Provider integration security responsibilities](https://docs.stripe.com/security/guide)
+- [Managed Google Play update policy](https://developers.google.com/android/work/play/emm-api/update)
+- [Android in-app update contracts](https://developer.android.com/guide/playcore/in-app-updates/kotlin-java)
+- [SQLite transactions](https://www.sqlite.org/lang_transaction.html)
+- [Android dedicated-device lock task mode](https://developer.android.com/work/dpc/dedicated-devices/lock-task-mode)
+
+---
+
 ## Related
 
 - [`mobile-system-design/payment-flow.md`](../mobile-system-design/payment-flow.md) — payment reasoning exercise.
@@ -288,4 +317,4 @@ See [`release-engineering/release-strategy.md`](../release-engineering/release-s
 
 ---
 
-> **In short:** Merchant apps optimize for operational continuity. The kitchen ticket must print. The card reader must work. The order count must be live. Where consumer apps optimize for engagement and e-commerce for conversion, merchant optimizes for *the shift never failing*. That means: real-time WebSocket with WebSocket-as-write-path-to-Room, peripheral lifecycle as a first-class module, audit logs as immutable local truth, off-hours rollouts, kill switches per peripheral and per PSP.
+> **In short:** Merchant apps optimize for operational continuity. The kitchen ticket must print. The card reader must work. The order count must be live. Where consumer apps optimize for engagement and e-commerce for conversion, merchant optimizes for *the shift never failing*. That means: real-time WebSocket with WebSocket-as-write-path-to-Room, peripheral lifecycle as a first-class module, local audit capture with server-verified reconciliation, off-hours rollouts, kill switches per peripheral and per PSP.

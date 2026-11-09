@@ -4,14 +4,18 @@ This blueprint describes the architectural shape of an app designed to function 
 
 ---
 
+## Scope and Assumptions
+
+Android defines offline-first around all or a critical subset of core functionality; it does not require every read/write or the full remote dataset to work offline. This blueprint chooses local-first behavior for its supported data and reversible writes. Local disk errors, authorization changes and later server rejection remain visible failure states. Numbers below are example targets to measure, not platform guarantees.
+
 ## Requirements
 
 ### Functional
 
-- All read operations must succeed without network access. The full local data set is available at any time.
-- All write operations must succeed without network access. Mutations queue locally and reconcile when connectivity returns.
+- Supported reads use local data without waiting for the network. Surface missing/evicted data and local storage errors explicitly.
+- Supported writes commit locally and reconcile later. Storage, validation, quota or policy failures can reject a local write; the UI must distinguish local acceptance from remote acceptance.
 - Data created on multiple devices for the same user must converge to a single consistent state, deterministically.
-- The user must not be able to observe a difference in behavior between online and offline operation in the read path. The write path may surface "syncing" indicators but must not block the UI.
+- For supported data that is retained locally and usable, reads should behave consistently online and offline; missing or evicted data remains an explicit outcome. The write path may surface "syncing" indicators but must not block the UI.
 - Background sync must respect platform constraints (Doze, App Standby). See [`../android/concurrency/battery-optimizations.md`](../android/concurrency/battery-optimizations.md).
 
 ### Non-functional
@@ -19,7 +23,7 @@ This blueprint describes the architectural shape of an app designed to function 
 - **Read latency:** sub-frame (<16ms) for typical operations. Reads are local.
 - **Write latency:** sub-frame for the local write. Server-side acknowledgment is asynchronous.
 - **Sync convergence:** eventual, with an explicit target scoped to **foreground (or expedited) sync**: with the app in the foreground and connectivity available, the active working set converges within seconds (p95 < 30s) and the full dataset within minutes (p95 < 5 min). Treat sustained foreground convergence beyond that window as an incident signal, not a tuning knob — alert on it. Background sync is explicitly excluded from this SLO: under Doze/App Standby the OS may legally defer WorkManager runs far past these windows, and paging on OS-scheduled deferral is a false alarm, not a sync incident.
-- **Storage:** the full user-relevant data set must fit on-device. Partial datasets are a different architecture (offline-tolerant, not offline-first).
+- **Storage:** define the offline working set, quota and eviction policy. An offline-first app may retain only the critical subset it promises; unbounded full-dataset replication is not a requirement.
 - **Battery:** background sync must not drain the device. Use [WorkManager](../android/concurrency/workmanager.md) constraints (charging, unmetered network) where appropriate.
 - **Conflict semantics:** deterministic. See *Sync Strategy* below.
 
@@ -79,7 +83,7 @@ The outbox is the bridge between UI writes and server sync. Without it, you have
 
 ### Sync Engine
 
-The component that moves data between local and remote. Runs as a background service ([WorkManager](../android/concurrency/workmanager.md)) or as a long-lived foreground service for active sync.
+The component that moves data between local and remote. Use lifecycle-owned coroutine work for immediate in-app sync and [WorkManager](../android/concurrency/workmanager.md) for eligible persistent work. WorkManager is a scheduler, not an unrestricted background service. Foreground services require a justified user-visible task, declared type/permissions and compliance with start and duration limits.
 
 Three responsibilities:
 
@@ -141,7 +145,7 @@ sequenceDiagram
             Sync->>DB: Apply merged
         end
     end
-    Sync->>DB: Update watermark
+    Sync->>DB: Commit applied page + its watermark atomically
 ```
 
 ---
@@ -161,19 +165,19 @@ Three viable strategies, depending on conflict tolerance and engineering investm
 
 1. **Last-Write-Wins (LWW).** Each record has a `last_modified` timestamp. On conflict, the most recent timestamp wins. Simplest; loses data on concurrent edits.
 2. **Operational Transforms (OT).** Mutations are transformed against intervening remote mutations before applying. Complex to implement correctly; used by Google Docs.
-3. **CRDTs.** Conflict-free Replicated Data Types. Operations are designed to commute mathematically, so any order of application produces the same result. See [`../distributed-systems/crdts.md`](../distributed-systems/crdts.md). Best fit for true offline-first systems.
+3. **CRDTs.** Choose a type whose concurrent semantics fit the feature. State-based merge and operation-based delivery have different assumptions; not every operation-based design tolerates arbitrary delivery order. See [`../distributed-systems/crdts.md`](../distributed-systems/crdts.md). Convergence alone does not protect every user intent or business invariant.
 
-The choice is recorded in an ADR (e.g., [`../distributed-systems/lww-vs-crdt.md`](../distributed-systems/lww-vs-crdt.md)). For most notes-style apps, LWW is sufficient; for collaboratively-edited documents, CRDTs.
+Record the project's choice in its own ADR, using the [LWW/CRDT decision guide](../distributed-systems/lww-vs-crdt.md) for criteria. LWW is suitable only when discarding concurrent edits is acceptable; shared drafts may need richer merge or explicit conflict recovery.
 
 ---
 
 ## Security
 
-- **Local DB encryption.** The on-device DB holds the user's full data set. Use SQLCipher or platform-level full-disk encryption.
+- **Local DB protection.** Device file-based encryption and app-level database encryption protect different boundaries; they are not interchangeable. Choose app-level protection and key/backup handling from the data threat model, and keep sensitive outbox contents out of telemetry.
 - **Outbox sensitivity.** The outbox holds *unsent* mutations — sometimes more sensitive than the steady-state DB (e.g., a not-yet-submitted draft). Same protection as the DB; do not ship outbox contents to crash reports or analytics.
 - **Sync auth.** Server-side mutations carry per-request authentication. Idempotency keys are *not* credentials.
 - **Tenant isolation.** If the app is multi-tenant, the local DB must include tenant scoping at the schema level. A user switching accounts must result in a clean DB swap, not a filter.
-- **Replay resistance.** Mutations in the outbox can survive process death and OS upgrades. For sensitive operations (financial, identity), include a server-issued nonce or signed timestamp so the server can reject mutations that became stale (e.g., user changed password between mutation creation and sync).
+- **Replay resistance.** Mutations in the outbox can survive process death and OS upgrades. For sensitive operations (financial, identity), bind queued operations to the owning account/session and revalidate authorization and operation expiry at drain time. A client signature or timestamp does not by itself prove current authorization; a server-issued challenge may require online interaction and cannot be assumed available offline.
 - See [`../security.md`](../security.md) for cross-cutting topics.
 
 ---
@@ -195,11 +199,11 @@ The choice is recorded in an ADR (e.g., [`../distributed-systems/lww-vs-crdt.md`
 
 ## Failure Modes
 
-**Outbox grows unboundedly.** The server is unreachable for an extended period; mutations accumulate. The local DB fills the device storage. Mitigation: bounded outbox with two thresholds — a soft warning surfaced to the user (sensible default: ~1,000 pending mutations or ~50 MB, whichever comes first) and a hard cap (~5,000 mutations) at which the app refuses further writes (or evicts oldest with an explicit user warning). Tune both to your mutation size and offline-duration profile; the point is that both limits exist and are user-visible before data is at risk.
+**Outbox grows unboundedly.** The server is unreachable for an extended period; mutations accumulate. The local DB fills the device storage. Mitigation: bounded outbox with two thresholds — a soft warning surfaced to the user (sensible default: ~1,000 pending mutations or ~50 MB, whichever comes first) and a hard cap (~5,000 mutations) at which the app refuses further writes (or offers explicit export/discard recovery rather than silently deleting accepted, unsynced user work). Tune both to your mutation size and offline-duration profile; the point is that both limits exist and are user-visible before data is at risk.
 
 **Schema drift between client and server.** Server adds a required field; old clients submit mutations missing it. Mitigation: schema versioning on both sides; reject incompatible mutations server-side with a structured error that the client can interpret.
 
-**Clock skew on conflict resolution.** LWW depends on timestamps; device clocks drift. Mitigation: use a hybrid logical clock (HLC) instead of wall time; or move conflict resolution server-side where the clock is trusted.
+**Clock skew on conflict resolution.** LWW depends on timestamps; device clocks drift. Mitigation: define an ordering/tie-break rule and a conflict UX consistent with the data contract. HLC tracks causal order and tolerates clock anomalies; it does not discover the true latest real-world intent or recover concurrent edits discarded by LWW. A server clock does not reconstruct offline intent order.
 
 **Multi-device divergence.** Two devices make conflicting offline edits. Mitigation: deterministic conflict resolution (LWW, OT, or CRDTs — see *Sync Strategy*); surface unresolvable conflicts in the UI rather than silently dropping data.
 
@@ -223,7 +227,7 @@ The choice is recorded in an ADR (e.g., [`../distributed-systems/lww-vs-crdt.md`
 
 - Local-DB scaling is per-device; not a server concern.
 - The sync API must scale horizontally. Watermark-based pull (vs full-state pull) is what makes this tractable — bandwidth scales with change rate, not data size.
-- Conflict resolution complexity grows superlinearly with the number of concurrent editors. For >5 active concurrent editors per record, CRDTs become necessary; LWW degrades to "noticeable data loss."
+- Conflict resolution complexity grows superlinearly with the number of concurrent editors. There is no universal editor-count threshold requiring CRDTs. Choose LWW, explicit conflicts, OT or a suitable CRDT from concurrent-edit semantics and acceptable lost intent; even two concurrent writers can lose edits under LWW.
 
 ### Scaling sync engines
 
@@ -242,9 +246,20 @@ The choice is recorded in an ADR (e.g., [`../distributed-systems/lww-vs-crdt.md`
 
 ---
 
+## Further Reading
+
+- [Android offline-first definition and write strategies](https://developer.android.com/topic/architecture/data-layer/offline-first)
+- [Android persistent-work recommendations](https://developer.android.com/develop/background-work/background-tasks/persistent)
+- [Foreground-service start restrictions](https://developer.android.com/develop/background-work/services/fgs/restrictions-bg-start)
+- [SQLite atomic transactions](https://www.sqlite.org/lang_transaction.html)
+- [Original hybrid logical clock paper](https://cse.buffalo.edu/tech-reports/2014-04.pdf)
+- [Android file-based encryption boundary](https://source.android.com/docs/security/features/encryption/file-based)
+
+---
+
 ## Related
 
 - [`offline-sync` in worked design problems](../mobile-system-design/offline-sync.md) — the design-reasoning exercise that this blueprint is the settled answer to.
 - [`../distributed-systems/idempotency.md`](../distributed-systems/idempotency.md), [`../distributed-systems/crdts.md`](../distributed-systems/crdts.md) — the theory underneath.
 - [`../engineering-fundamentals/state-machines.md`](../engineering-fundamentals/state-machines.md) — the sync engine is a state machine.
-- [`../distributed-systems/lww-vs-crdt.md`](../distributed-systems/lww-vs-crdt.md) — the conflict-resolution decision.
+- [`../distributed-systems/lww-vs-crdt.md`](../distributed-systems/lww-vs-crdt.md) — conflict-resolution comparison and decision criteria.

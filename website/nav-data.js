@@ -886,10 +886,6 @@ window.PLAYBOOK_CATALOG = [
     "icon": "▱",
     "chapters": [
       {
-        "title": "Banking App — Reference Architecture",
-        "path": "reference-architectures/banking-app.md"
-      },
-      {
         "title": "Consumer App — Reference Architecture",
         "path": "reference-architectures/consumer-app.md"
       },
@@ -904,6 +900,10 @@ window.PLAYBOOK_CATALOG = [
       {
         "title": "Offline-First App — Reference Architecture",
         "path": "reference-architectures/offline-first-app.md"
+      },
+      {
+        "title": "Banking App — Reference Architecture",
+        "path": "reference-architectures/banking-app.md"
       },
       {
         "title": "Ride-Hailing App — Reference Architecture",

@@ -1,0 +1,8 @@
+<!-- Teaching layer over the approved blueprint source 4520147. -->
+<!-- @opening -->
+<p class="story-lead">The biometric prompt succeeds, but the transfer request has yet to reach the bank. The customer still needs an accurate status. Follow the signed challenge through backend validation and the returned transfer state.</p>
+
+<!-- @before Failure Modes :: staff -->
+### Keep the transaction identity through recovery
+
+The local prompt enables use of the signing key in the example. The bank checks the challenge and the signature against the intended transfer. If the app loses the response, recover the existing transfer status before starting another. PROCESSING can support an initiated message. [Biometric authentication with cryptographic operations](https://developer.android.com/identity/sign-in/biometric-auth).

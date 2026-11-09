@@ -1,0 +1,8 @@
+<!-- Teaching layer over the approved blueprint source 4520147. -->
+<!-- @opening -->
+<p class="story-lead">A driver’s location stops updating for a few seconds just as the ride changes state. The rider still needs the correct trip status. Decide which updates can be batched or superseded and which need server confirmation.</p>
+
+<!-- @before Failure Modes :: staff -->
+### Use different recovery rules for location and trip state
+
+Display a freshness signal when the position feed stalls. Recover the durable trip state from the server after reconnect. Check that a retried driver action reuses its operation identity and that a stale location update cannot advance the trip. [Location foreground service requirements](https://developer.android.com/develop/background-work/services/fgs/service-types#location).

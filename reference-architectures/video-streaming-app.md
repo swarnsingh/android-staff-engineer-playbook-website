@@ -1,8 +1,12 @@
 # Video Streaming App — Reference Architecture
 
-> The settled blueprint for a long-form video streaming client (Netflix, YouTube, Prime Video, Disney+, HBO Max). The defining trade-off: **playback quality and time-to-first-frame dominate**. Adaptive bitrate, DRM, offline downloads, multi-screen casting, and cross-device resume are the architectural axes. Everything else — catalog browsing, search, recommendations — exists to feed the player.
+> An illustrative blueprint for a long-form video streaming client. The defining trade-off: **playback quality and time-to-first-frame dominate**. Adaptive bitrate, DRM, offline downloads, multi-screen casting, and cross-device resume are the architectural axes. Everything else — catalog browsing, search, recommendations — exists to feed the player.
 
 ---
+
+## Scope and Assumptions
+
+This design assumes content rights, a compatible device and a license policy that permits the requested playback/download. Timing, buffering, quality and rollout numbers are illustrative targets. DRM security level alone does not guarantee a resolution entitlement; codec, output protection and server policy also matter. Code is an application-integrated fragment, not a complete player.
 
 ## Requirements
 
@@ -10,12 +14,12 @@
 
 - Browse catalog (home, categories, search, recommendations).
 - Play long-form video (movies, episodes) with quality adaptation.
-- DRM-protected playback (Widevine L1 for HD/4K, L3 fallback for SD).
+- DRM-protected playback (Widevine with quality and fallback determined by license policy, device capability and output protection).
 - Subtitle / closed-caption rendering with system preference support.
 - Audio-track switching (multiple languages).
 - Resume playback across devices (TV ↔ mobile ↔ web).
 - Offline downloads for paid subscribers (per-region availability).
-- Casting to TVs (Chromecast, AirPlay-via-shim).
+- Casting to TVs (Google Cast through an explicitly supported sender/receiver integration).
 - Picture-in-picture and background audio mode.
 - User profiles per account (multi-profile household).
 - Parental controls, ratings, watchlist.
@@ -49,7 +53,7 @@ flowchart TB
     ExoPlayer --> CDN["CDN<br/>HLS / DASH segments"]
     PlayerRepo --> ResumeApi["Resume Point API<br/>cross-device sync"]
     DownloadRepo --> DownloadMgr[Media3 DownloadManager]
-    DownloadMgr --> DiskCache[(Encrypted disk cache<br/>local segments)]
+    DownloadMgr --> DiskCache[(App-private segment cache<br/>DRM-encrypted samples where supplied)]
     DownloadMgr --> OfflineLicense[Offline License Helper]
     UI --> CastSession["Cast Session<br/>Chromecast"]
 ```
@@ -79,19 +83,23 @@ Wraps ExoPlayer with the app's playback policy:
 - Surface lifecycle (Compose `AndroidView` for `PlayerView`).
 
 ```kotlin
-class PlayerRepository @Inject constructor(
-    private val playerFactory: ExoPlayerFactory,
-    private val drmSessionManager: DefaultDrmSessionManager,
-    private val resumePointApi: ResumePointApi,
+// Fragment: Asset is app-defined (manifestUrl, licenseUrl). The screen/service
+// owns the player, calls this on player.applicationLooper, and releases it.
+class PlayerRepository(
+    private val player: ExoPlayer,
+    private val mediaSourceFactory: DefaultMediaSourceFactory,
 ) {
-    fun preparePlayback(asset: Asset, resumeMs: Long?): ExoPlayer {
-        val mediaSource = HlsMediaSource.Factory(httpDataSourceFactory)
-            .setDrmSessionManagerProvider { drmSessionManager }
-            .createMediaSource(MediaItem.fromUri(asset.manifestUrl))
-        val player = playerFactory.create()
-        player.setMediaSource(mediaSource, /* startPositionMs = */ resumeMs ?: 0L)
+    fun preparePlayback(asset: Asset, resumeMs: Long?) {
+        val item = MediaItem.Builder()
+            .setUri(asset.manifestUrl)
+            .setDrmConfiguration(
+                MediaItem.DrmConfiguration.Builder(C.WIDEVINE_UUID)
+                    .setLicenseUri(asset.licenseUrl)
+                    .build()
+            )
+            .build()
+        player.setMediaSource(mediaSourceFactory.createMediaSource(item), resumeMs ?: 0L)
         player.prepare()
-        return player
     }
 }
 ```
@@ -103,7 +111,7 @@ See [`mobile-system-design/youtube-video-streaming.md`](../mobile-system-design/
 - Widevine session lifecycle.
 - Online provisioning on first use; offline license fetch for downloaded content.
 - Session reuse across content from the same DRM scope to avoid re-provisioning cost.
-- Graceful degradation: L1 → L3 if hardware path unavailable; SD-only on L3.
+- Graceful degradation: fall back only to tracks/security levels permitted by the license and device. If none qualify, show a supported recovery/unavailable state.
 
 ### ABR (Adaptive Bitrate)
 
@@ -118,8 +126,8 @@ See [`mobile-system-design/youtube-video-streaming.md`](../mobile-system-design/
 ### DownloadRepository (Offline)
 
 - `androidx.media3.exoplayer.offline.DownloadManager` orchestrates segment downloads.
-- Stores in app-private encrypted disk cache (`SimpleCache` over an encrypted backing store).
-- Offline license obtained via `OfflineLicenseHelper`; persisted with the content.
+- Uses an app-private `SimpleCache` through Media3 cache data sources. DRM-encrypted media stays encrypted, but `SimpleCache` does not itself encrypt clear media or cache metadata. Extra at-rest encryption needs a separately designed compatible data-source/sink layer.
+- Offline license obtained via `OfflineLicenseHelper`; persist the returned key-set identifier and configure it for offline playback. License storage, expiry and renewal are governed by MediaDrm and the provider.
 - Per-content metadata in Room (`download_state`, `bytes_downloaded`, `expires_at`).
 - Constraints: Wi-Fi-only by default; user can opt into cellular download with bandwidth warning.
 - Periodic license refresh (most subscriptions require renewal every N days).
@@ -129,7 +137,7 @@ See [`mobile-system-design/youtube-video-streaming.md`](../mobile-system-design/
 - Local resume position written to Room every 5s during playback.
 - Synced to server at pause / app background / 30s interval.
 - On play of any content: query `/v1/resume/<contentId>` and use as start position if more recent than local.
-- Cross-device convergence within ~5s.
+- The example 30-second upload interval cannot guarantee five-second cross-device freshness. Define and measure a foreground sync target consistent with upload cadence, connectivity and conflict ordering.
 
 ### Cast Session
 
@@ -168,7 +176,7 @@ sequenceDiagram
     UI-->>User: first frame (~1.2s)
 ```
 
-The TTFF chain has several parallelizable steps (resume fetch, manifest fetch, DRM provision). The implementation parallelizes them; the user sees the first frame in 1-2s.
+The TTFF chain has several parallelizable steps (resume fetch, manifest fetch, DRM provision). Some work can overlap, but license/segment steps have content-dependent prerequisites. The diagram shows dependencies, not a measured or guaranteed 1–2 second implementation.
 
 ### Mid-Playback Network Drop
 
@@ -190,7 +198,7 @@ sequenceDiagram
     end
 ```
 
-The 30s pre-buffered window is the resilience against typical network blips. Anything longer than 30s does cause a rebuffer pause; the player surfaces this clearly ("Buffering…").
+The 30s pre-buffered window is the resilience against typical network blips. Playback resumes or stalls according to actual buffered media, live-window limits and fetch policy; a nominal 30-second target is not a guaranteed reserve. A sustained outage eventually causes a pause; the player surfaces this clearly ("Buffering…").
 
 ### Cross-Device Resume
 
@@ -201,7 +209,7 @@ sequenceDiagram
     participant ResumeApi
     participant Server
 
-    Mobile->>Server: every 5s during playback: resume_position
+    Mobile->>Server: periodic upload (example 30s) and pause/exit: resume_position
     Server->>ResumeApi: persist (userId, contentId, positionMs)
     Note over Mobile: user stops on mobile at 23:14
     TV->>ResumeApi: GET resume for contentId
@@ -218,10 +226,10 @@ sequenceDiagram
 | **Catalog browsing** | Cached recent screens render from Room; new browsing blocked. |
 | **Search** | Cached recents; new queries blocked. |
 | **Online playback** | Blocked offline; clear UX directs to "Downloads" tab. |
-| **Offline downloads playback** | Fully functional; license validated locally; subtitle / audio track switching works. |
+| **Offline downloads playback** | Available only for downloaded tracks and valid offline keys; expiry, missing tracks or unsupported devices can block playback. |
 | **Resume points** | Local writes queue; sync on reconnect. |
 | **Profile changes** | Queue; sync on reconnect. |
-| **Cast** | Requires Wi-Fi (Cast is a LAN protocol). |
+| **Cast** | Requires a supported sender/receiver network setup; the receiver typically fetches media and licenses itself, so sender offline downloads are not automatically castable. |
 | **License renewal** | Done in background while online; downloaded content unlocked until expiry. |
 
 The downloads-for-offline subsystem is the largest engineering investment relative to its surface area. Worth it — for paid subscribers, offline travel-time playback is one of the top retention drivers.
@@ -230,11 +238,11 @@ The downloads-for-offline subsystem is the largest engineering investment relati
 
 ## Security
 
-- **DRM is the entire security model for content.** Widevine sessions; license server-side; HDCP enforcement on output paths.
-- **L1 hardware DRM** required for HD / 4K. Devices without L1 are SD-locked. Implement gracefully ("HD not available on this device").
+- **DRM is one content-protection boundary.** Entitlement checks, secure transport, output protection, token handling and server-side authorization remain necessary. Widevine sessions; license server-side; HDCP enforcement on output paths.
+- **Quality entitlement** depends on verified device/codec/output capabilities and the license policy; do not derive a universal HD/SD rule from L1/L3 alone. Implement gracefully ("HD not available on this device").
 - **No screen capture** during playback. `FLAG_SECURE` on the player surface (and HDCP downstream).
-- **TLS 1.3 + cert pinning** at the BFF and the DRM license server. See [`security/certificate-pinning.md`](../security/certificate-pinning.md).
-- **Encrypted offline cache.** Segments stored in encrypted form (SimpleCache + custom Cipher provider); license also encrypted at rest.
+- **HTTPS with normal trust validation** for the BFF/license path; provider-compatible optional pinning needs rotation and recovery. See [`security/certificate-pinning.md`](../security/certificate-pinning.md).
+- **Encrypted offline cache.** Preserve DRM-encrypted samples and protect offline key-set identifiers and metadata. `SimpleCache` has no generic custom-Cipher-provider switch that establishes encryption of every stored byte.
 - **OAuth tokens** remain in memory where possible; persisted tokens use a versioned ciphertext envelope protected by Android Keystore. PSP tokens for subscription billing receive the same treatment.
 - **Multi-profile privacy.** Per-profile watchlists, watch history, recommendations are isolated server-side. Kids profiles enforce parental controls server-validated.
 
@@ -288,12 +296,12 @@ See [`observability/slis.md`](../observability/slis.md), [`observability/dashboa
 
 - CDN-served segments at edge.
 - ABR ladder tuned per content (live sports differ from prestige drama).
-- DRM license server scaling: stateless; per-region.
+- Scale licensing according to the provider's entitlement, key and session model; do not assume the service is stateless.
 
 ### Offline downloads
 
-- License fetch is the bottleneck. Per-region license caches.
-- Segment downloads are CDN-served; scale infinitely.
+- Measure whether licensing limits startup/download throughput. Cache only what the license/entitlement contract permits; never share account-bound license responses across viewers.
+- Segment downloads are CDN-served but remain limited by origin/CDN capacity, quotas, device storage and network budgets.
 
 ### Multi-device scaling
 
@@ -301,7 +309,7 @@ See [`observability/slis.md`](../observability/slis.md), [`observability/dashboa
 
 ### Casting / Living-room scaling
 
-- Cast protocol is LAN; server-side has minimal involvement except for content authorization.
+- The sender controls a receiver session; the receiver ordinarily fetches manifests, media and licenses from services. Plan backend/CDN/authentication support for the receiver independently of local playback.
 
 ---
 
@@ -312,7 +320,7 @@ See [`observability/slis.md`](../observability/slis.md), [`observability/dashboa
 - **Strict crash-rate gating.** Player module crash-free target ≥ 99.9%. See [`release-engineering/crash-rate-gating.md`](../release-engineering/crash-rate-gating.md).
 - **Kill switches** for every DRM provider, every codec path, every recommendation surface. See [`release-engineering/kill-switches.md`](../release-engineering/kill-switches.md).
 - **Manual QA on critical content** (new high-profile launches) — at least sanity-check that the new release plays the marquee titles.
-- **Long support tail.** TVs and connected devices have long lifecycles. Mobile app support floor is typically Android 7+ to match TV / set-top expectations.
+- **Support matrix.** Choose supported Android, Media3, DRM and codec versions from the actual release dependencies and device fleet. A TV product lifetime does not imply a universal Android 7 mobile support floor.
 
 ---
 
@@ -325,16 +333,27 @@ See [`observability/slis.md`](../observability/slis.md), [`observability/dashboa
 | Catalog pagination | Paging 3 | Cursor pagination |
 | Images | Coil 3 | Poster art, episode thumbnails |
 | Player | Media3 / ExoPlayer | Industry standard ABR + DRM |
-| DRM | Widevine via Media3 | L1 for HD/4K, L3 fallback |
+| DRM | Widevine via Media3 | Policy- and capability-gated tracks/offline keys |
 | ABR | Media3 `DefaultTrackSelector` | Configurable bandwidth-based |
 | Offline | Media3 `DownloadManager` + `OfflineLicenseHelper` | License + segments durably stored |
 | Network | OkHttp + Retrofit + Cronet (where used) | Standard plus QUIC support for streaming |
 | Tokens | Private ciphertext envelope + Android Keystore | Subscription auth |
 | DI | Hilt | Standard |
-| Background | WorkManager | License refresh, download orchestration |
+| Background | Media3 DownloadService + eligible scheduled work | Download lifecycle; deferred license checks where permitted |
 | Push | FCM | Episode availability, new content alerts |
 | Cast | Google Cast SDK | TV handoff |
 | Picture-in-Picture | Android native (`enterPictureInPictureMode`) | OS-native PiP |
+
+---
+
+## Further Reading
+
+- [Media3 player construction, threading and release](https://developer.android.com/media/media3/exoplayer/hello-world)
+- [Media3 DRM and offline keys](https://developer.android.com/media/media3/exoplayer/drm)
+- [Media3 track selection policy](https://developer.android.com/media/media3/exoplayer/track-selection)
+- [Media3 DownloadManager, cache and DownloadService](https://developer.android.com/media/media3/exoplayer/downloading-media)
+- [Google Cast sender/receiver integration](https://developers.google.com/cast/docs/android_sender/integrate)
+- [Android network trust guidance](https://developer.android.com/privacy-and-security/security-ssl)
 
 ---
 
