@@ -1,0 +1,8 @@
+<!-- Teaching layer over the approved Principles source 4520147. -->
+<!-- @opening -->
+<p class="story-lead">The new checkout is standard, yet an old flag can still select the previous path. The flag dashboard looks quiet. Check what an older installed client or cached config can still reach before removing the branch.</p>
+
+<!-- @before Staff Engineer Thinking :: staff -->
+### Define evidence for deleting the fallback
+
+Record the last supported version that needs the branch, the config defaults it carries and how you would recover if removal exposes a gap. Recheck the evidence after the rollout. Delete the flag and its branch once supported paths are accounted for. [Remote Config loading strategies](https://firebase.google.com/docs/remote-config/loading).

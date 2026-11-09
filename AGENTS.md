@@ -92,6 +92,6 @@ The 3 November migration covers all 197 older teaching figures in Kotlin and And
 
 The 4 November follow-up centralizes ReaderShell CSS values and FigureMap drawing defaults in `componentCss` and `figureGeometry`. The source compiler rejects new raw dimensions. Its review inventories all 238 chapters, removes repeated prose from 21 lessons and records each retained length exception; original chapters, code and Q&A remain unchanged. See `website/reviews/tokens-editorial-2026-11-04/REPORT.md`.
 
-- 41 source chapters remain to be converted: Principles (11), Patterns (12), Reference Architectures (8), Leadership (5) and Career (5). This follow-up does not convert them.
+- 30 source chapters remain to be converted: Patterns (12), Reference Architectures (8), Leadership (5) and Career (5). Principles uses the approved 11 chapters from source PR #81.
 - 57 maps have a narrower, collision-checked phone composition. Complex maps and sequences retain labelled local scrolling; additional compositions need individual semantic review.
 - The single consolidated full manual phone review remains deferred until all planned topic trees and pages are integrated, as required by the rulebook. Automated mobile checks continue during this work.

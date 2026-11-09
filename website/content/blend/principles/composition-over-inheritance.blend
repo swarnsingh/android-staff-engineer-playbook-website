@@ -1,0 +1,8 @@
+<!-- Teaching layer over the approved Principles source 4520147. -->
+<!-- @opening -->
+<p class="story-lead">One screen needs authentication, another needs networking, and a third needs both. The subclass tree now has to encode combinations that can vary independently. Look at what happens when the screen holds both collaborators directly.</p>
+
+<!-- @before Staff Engineer Thinking :: staff -->
+### Use the two-behavior test
+
+Try changing the authentication rule while keeping the network behavior the same. If the two vary independently, give each its own collaborator and make the screen’s call order explicit. Keep inheritance when the subtype genuinely honors the parent contract and the shared lifecycle is intentional. [Kotlin inheritance](https://kotlinlang.org/docs/inheritance.html).

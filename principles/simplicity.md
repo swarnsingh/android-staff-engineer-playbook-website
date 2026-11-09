@@ -2,19 +2,19 @@
 
 ## Overview
 
-Simplicity is the highest virtue in software engineering. It means writing code that is easy to read, easy to understand, and easy to delete. It is the active rejection of "cleverness" and over-engineering. In a mobile environment, simple code crashes less, compiles faster, and allows new engineers to contribute immediately.
+Simplicity is the highest virtue in software engineering. It means writing code that is easy to read, easy to understand, and easy to delete. It is the active rejection of "cleverness" and over-engineering. In a mobile environment, reducing unnecessary complexity can make review and maintenance easier. Crash rate, build time and onboarding outcomes still need evidence.
 
 ## Why It Matters
 
-Code is read roughly 10 times more often than it is written. If you write a "clever" one-liner that saves you 3 minutes today, but takes 5 different engineers 30 minutes each to understand over the next year, you have stolen time from your team. 
+Code is repeatedly read during reviews, debugging and maintenance; there is no universal read-to-write ratio. If you write a "clever" one-liner that saves you 3 minutes today, but takes 5 different engineers 30 minutes each to understand over the next year, you have stolen time from your team.
 
 Furthermore, complexity is where bugs hide. A simple `if/else` statement rarely crashes. A massive, multi-layered inheritance hierarchy using reflection and dynamic proxies is a breeding ground for `NullPointerExceptions` and memory leaks.
 
 ## Historical Context
 
-Tony Hoare (inventor of Quicksort) said: *"There are two ways of constructing a software design: One way is to make it so simple that there are obviously no deficiencies, and the other way is to make it so complicated that there are no obvious deficiencies."* 
+Tony Hoare (inventor of Quicksort) said: *"There are two ways of constructing a software design: One way is to make it so simple that there are obviously no deficiencies, and the other way is to make it so complicated that there are no obvious deficiencies."*
 
-In the early days of Android, hardware was extremely limited, so developers wrote complex, highly-optimized code to squeeze out performance. Today, phones are supercomputers. The bottleneck is no longer the CPU; it is the developer's cognitive load. We must optimize for human readability.
+In the early days of Android, hardware was extremely limited, so developers wrote complex, highly-optimized code to squeeze out performance. Today, phones are supercomputers. CPU, memory, battery and frame deadlines remain real constraints. Prefer readable code, and use measurements to decide when performance complexity is justified.
 
 ## First Principles
 
@@ -40,7 +40,7 @@ Kotlin offers many powerful features. Junior engineers often use them to show of
 
 **Bad (Clever but Complex):**
 ```kotlin
-// What does this even do? 
+// What does this even do?
 val result = users.mapNotNull { it?.age?.takeIf { age -> age > 18 }?.let { age * 2 } }
 ```
 
@@ -70,7 +70,7 @@ abstract class BaseNetworkViewModel<T, R> : ViewModel() {
 ```
 
 **Good (Simple Duplication):**
-*(It is often better to just duplicate the 3 lines of `try/catch` and `State.Loading` in your two ViewModels than to build a generic Base class that ties them together forever).* 
+*(It is often better to just duplicate the 3 lines of `try/catch` and `State.Loading` in your two ViewModels than to build a generic Base class that ties them together forever).*
 As the saying goes: **"A little duplication is cheaper than the wrong abstraction."**
 
 ## Architecture
@@ -83,7 +83,7 @@ graph TD
         C1 --> D1[Abstract Repository]
         D1 --> E1[Database]
     end
-    
+
     subgraph "The Simple Way"
         A2[Screen] --> B2[Specific Use Case]
         B2 --> C2[Specific Repository]
@@ -97,8 +97,8 @@ graph TD
 
 Imagine an app with exactly two screens: a Login screen and a Home screen.
 
-- **Complex:** Setting up Dagger 2, creating Custom Scopes (`@LoggedInScope`), writing Subcomponents, and managing Component lifecycles manually. It takes 3 days to setup and requires 15 boilerplate files.
-- **Simple:** Creating a single `AppModule` object that manually instantiates the 4 required classes, or using a lightweight tool like Koin, or even just passing dependencies in the constructor. It takes 10 minutes.
+- **Option with more machinery:** A manually managed component hierarchy may add unnecessary setup if there are only a few dependencies and no scope complexity.
+- **Smaller starting point:** Constructor injection and an explicit composition root may suffice. Hilt can also be appropriate where lifecycle integration and team conventions already justify it. Compare requirements and maintenance costs; no fixed setup-time ratio applies.
 
 If the app grows to 50 screens, you can migrate to Hilt later. Starting with maximum complexity for a tiny app violates YAGNI.
 
@@ -115,7 +115,7 @@ If the app grows to 50 screens, you can migrate to Hilt later. Starting with max
 
 ## Failure Modes
 
-- **The "Not Invented Here" Syndrome:** Building a custom, complex image loading library from scratch because "Glide is too bloated." Your custom library will eventually become just as bloated, but with 10x more bugs because you are a team of one. Use the boring, standard tools.
+- **The "Not Invented Here" Syndrome:** Building a custom, complex image loading library from scratch because "Glide is too bloated." Your custom library will eventually become just as bloated, and requires you to own caching, cancellation, decoding and platform compatibility. A bug multiplier cannot be inferred from team size. Use the boring, standard tools.
 - **Design Pattern Soup:** Applying the Strategy pattern, the Factory pattern, and the Builder pattern to a class that just saves a String to `SharedPreferences`. Patterns exist to solve specific pain points; applying them before the pain exists is over-engineering.
 - **Premature Optimization:** Wasting 4 hours writing a complex bit-shifting algorithm to sort an array of 5 items to save 0.001 milliseconds of CPU time.
 
@@ -166,10 +166,13 @@ When reviewing code, a Staff engineer's primary job is to act as a shield agains
 9. **Explain the difference between Essential Complexity (the problem itself is hard) and Accidental Complexity (the code makes it hard).**
    Essential complexity is inherent to the problem (e.g., syncing offline data with conflict resolution). Accidental complexity is introduced by the developer's solution (e.g., using five layers of RxJava to handle a simple REST call).
 10. **How does writing unit tests force you to write simpler code?**
-    Writing unit tests forces you to decouple components, inject dependencies, and break down massive functions. If code is hard to test, it's usually because it's too complex and doing too many things.
+    Writing focused tests can reveal coupling and unclear contracts; it does not force a simple design. If code is hard to test, it's usually because it's too complex and doing too many things.
 
 ## Further Reading
 
 - [`prefer-deletion.md`](prefer-deletion.md) — The most direct way to achieve simplicity.
 - [`coupling-vs-cohesion.md`](../engineering-fundamentals/coupling-vs-cohesion.md) — Bad abstractions increase coupling. Simplicity keeps coupling low.
 - [KISS Principle (Keep It Simple, Stupid)](https://en.wikipedia.org/wiki/KISS_principle)
+- [YAGNI: evolutionary design rather than speculative features](https://martinfowler.com/bliki/Yagni.html)
+- [Google engineering practices: complexity in review](https://google.github.io/eng-practices/review/reviewer/looking-for.html)
+- [Android dependency-injection guidance](https://developer.android.com/training/dependency-injection)

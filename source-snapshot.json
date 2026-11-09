@@ -327,5 +327,26 @@
   "observability_link_targets_file_commits": {
     "release-engineering/crash-rate-gating.md": "fb8354edb079e901edf18710ca9388a124712a5b",
     "milestones.md": "7666569cf77db7616d43f05cf041c438cb947035"
+  },
+  "principles_sha256": {
+    "principles.md": "b208466b0bfa1283511b00fc1250dca44e788fee53d4f8a881c2a2a84e5fbe02",
+    "principles/simplicity.md": "f48816ba22a051817320a93ebc30044a6891232a2ba3d6bdb8f139d449a4ae5b",
+    "principles/single-responsibility.md": "9287edcaffdec570e3169a933267a3134f8cf69ef0b4cd61bd41667ee17aa1ec",
+    "principles/least-knowledge.md": "3f843c3cec54d62e36e919bb824ba31c73988f09ac79697bcbde070b2b6b252e",
+    "principles/composition-over-inheritance.md": "9e3d820320d3312ec2df1df08bfaeb383cdef22dce68bd205e096ca88dd11d8d",
+    "principles/make-invalid-states-impossible.md": "b39bc7c2cb0fdb30414ba094020052d8d00b757b3799d08c1a4e3a3619d71cb9",
+    "principles/locality-of-reference.md": "2386e545df01b4f55da398074325bbcaf4312147f4816dc5af70db376de762bf",
+    "principles/progressive-disclosure.md": "fcba545218954785f9a9ddf36b7913690ea0a4b52dc530d80d75187cac996dcd",
+    "principles/prefer-deletion.md": "eff8e947123d0ca17631c3f2918c52e0e848b91d1402fd42666376d30dcec064",
+    "principles/design-for-failure.md": "ae53ec99328cdaa6417a2fd5bddb3e8b68be9cedbba15142431c7172e2df0f48",
+    "principles/determinism.md": "e8badb6249fb0b2503a12dc50ddba34f41d5e5b93d6e9e3274a5d3810b850da6",
+    "principles/optimize-for-change.md": "95c27c123eca1e7f7fa190178695be0d8825e3804e3c5713343965d70222c246"
+  },
+  "principles_provenance": {
+    "repository": "https://github.com/swarnsingh/android-staff-engineer-playbook",
+    "commit": "45201470a80d644a12eac0d9ff787e34f09062a2",
+    "source_pr": 81,
+    "scope": "Exact approved Principles index and all 11 chapters.",
+    "method": "Exact git show bytes from merged main; SHA-256 over raw bytes."
   }
 }

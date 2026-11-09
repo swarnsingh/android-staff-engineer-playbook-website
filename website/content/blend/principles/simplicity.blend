@@ -1,0 +1,8 @@
+<!-- Teaching layer over the approved Principles source 4520147. -->
+<!-- @opening -->
+<p class="story-lead">A checkout bug affects one screen, but the reviewer has to trace a generic interactor and a proxy before finding the price rule. Follow the path an engineer would debug before deciding which layer earns its place.</p>
+
+<!-- @before Staff Engineer Thinking :: staff -->
+### Trace the next change
+
+Pick a realistic change, such as adding a new discount rule. Mark the files that would change, the invariants each layer protects and where you would put the regression test. Keep a layer that owns a real boundary. Remove a layer whose only job is to pass this call through. [Google’s code review guidance](https://google.github.io/eng-practices/review/reviewer/looking-for.html#complexity).

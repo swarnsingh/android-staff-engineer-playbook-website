@@ -13,7 +13,7 @@ In mature Android projects, codebases easily swell to over 1 million lines of co
 
 ## Historical Context
 
-Often summarized by the quote (attributed to Bill Gates or sometimes Elon Musk): *"The best part is no part. The best process is no process. It weighs nothing. Costs nothing. Can't go wrong."* In software, the XP (Extreme Programming) movement heavily emphasized YAGNI (You Aren't Gonna Need It) and aggressive refactoring to keep codebases lean.
+YAGNI in Extreme Programming discourages speculative capability. Removing obsolete implementation is a related maintenance practice, but deletion must preserve compatibility, recovery, security and retention obligations. Prefer that rationale to an uncertain attribution of a slogan.
 
 ## First Principles
 
@@ -61,7 +61,7 @@ if (remoteConfig.getBoolean("use_new_checkout")) {
 }
 ```
 
-If the "new checkout" has been live for 100% of users for 6 months, the `launchLegacyCheckout()` path is Dead Code. It is a massive liability. A Staff engineer schedules dedicated "cleanup sprints" to rip out the dead flags and the thousands of lines of legacy code tied to them.
+A completed rollout makes a flag a cleanup candidate, not proof that its fallback is unreachable. Check rollback requirements, targeting rules, offline/default values, supported old clients and operational ownership before deleting either path. Assign an expiry review and remove it when those contracts permit.
 
 ## Architecture
 
@@ -92,7 +92,7 @@ Adding a library to an Android app is an architectural decision. It increases th
 
 If your app uses the massive `Guava` library simply because one developer wanted to use `Lists.partition()`, you have taken on massive liability. 
 
-**The Deletion Move:** A Staff engineer deletes the `Guava` dependency from Gradle, copies the specific 10-line partition algorithm into a local `CollectionsExt.kt` file, and saves 2MB of APK size and 5 seconds of build time.
+**The Deletion Move:** Check whether Kotlin `chunked` meets the required semantics, then remove the dependency if no other use remains. Guava partition views and copied chunk lists differ under mutation. Do not copy third-party implementation without its license obligations. Compare optimized release artifacts and measured builds: R8 can already remove unreachable library code, so no fixed size or time saving follows.
 
 ## Tradeoffs
 
@@ -121,7 +121,7 @@ When reviewing PRs or planning the roadmap, a Staff engineer asks:
 
 ## Common Misconceptions
 
-- **"More code means more value."** False. Code is the cost of delivering value. If you can deliver the exact same value with half the code, you have doubled your efficiency.
+- **"More code means more value."** False. Code is the cost of delivering value. Delivering the same behavior with less code can reduce maintenance, but line count is not an efficiency measure; verify correctness and total cost.
 - **"We need to keep this code for reference."** That is literally what Git is for. If you need to see how the old Bluetooth parser worked in 2019, look at the git history. Do not leave it commented out in `BluetoothParser.kt`.
 
 ## Probing Questions
@@ -142,9 +142,9 @@ When reviewing PRs or planning the roadmap, a Staff engineer asks:
 1. **Why is "commented-out" code considered a major anti-pattern in modern software development?**
    It clutters the codebase, confuses developers about its relevance, and provides no value since version control systems like Git already maintain a complete history of all changes.
 2. **Explain the relationship between Feature Flags (Remote Config) and Dead Code. How do you manage the lifecycle of a flag?**
-   Feature flags create multiple execution paths; once a flag is fully rolled out, the fallback path becomes dead code. The lifecycle must be managed by enforcing strict cleanup policies (e.g., Jira tickets) to remove the flag and legacy paths shortly after a 100% rollout.
+   Feature flags create multiple execution paths; a completed rollout makes its fallback a removal candidate after rollback, targeting and default/offline behavior are checked. The lifecycle must be managed by enforcing strict cleanup policies (e.g., Jira tickets) to remove the flag and legacy paths.
 3. **How does the principle of "Prefer Deletion" impact Android APK size and user acquisition?**
-   Deleting unused code and third-party dependencies reduces the APK size, which is critical for user acquisition in emerging markets where users have limited bandwidth or device storage.
+   Deleting reachable assets or dependencies can reduce the APK size; release shrinkers may already remove unreachable code, so measure the artifact. Smaller downloads can help installations, which is critical for user acquisition in emerging markets where users have limited bandwidth or device storage.
 4. **Describe a scenario where deleting a feature is a better business decision than fixing its bugs.**
    When telemetry shows a feature has near-zero usage but costs significant engineering effort to maintain or update for new OS versions, the ROI of deleting it far outweighs the cost of fixing it.
 5. **Why is a comprehensive automated testing suite a prerequisite for aggressive code deletion?**
@@ -164,3 +164,7 @@ When reviewing PRs or planning the roadmap, a Staff engineer asks:
 
 - [`simplicity.md`](simplicity.md) — Deletion is the ultimate mechanism for achieving simplicity.
 - [YAGNI (Martin Fowler)](https://martinfowler.com/bliki/Yagni.html)
+- [Android R8 optimization](https://developer.android.com/topic/performance/app-optimization/enable-app-optimization)
+- [Kotlin chunked](https://kotlinlang.org/api/core/kotlin-stdlib/kotlin.collections/chunked.html)
+- [Guava Lists.partition contract](https://guava.dev/releases/33.4.8-jre/api/docs/com/google/common/collect/Lists.html#partition(java.util.List,int))
+- [Firebase Remote Config loading and defaults](https://firebase.google.com/docs/remote-config/loading)

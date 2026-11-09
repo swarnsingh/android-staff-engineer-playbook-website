@@ -4,7 +4,7 @@
 
 **Progressive disclosure** is the principle that an interface — whether a screen, an API, a CLI tool, or a configuration file — should reveal complexity in layers. The first layer must be easy enough that a beginner can succeed without reading documentation. Each subsequent layer reveals more power, but only on demand. Users who never need the advanced layer never see it.
 
-The principle started in UX: Nielsen's classic example is a single "More options" button hiding 20 fields that 90% of users never need. In software engineering, the same shape applies to API design (a one-line happy path with optional configuration for the 10% who need it), to library design (sensible defaults with extension points for power users), to documentation (a quickstart in five minutes and a reference for the rest), and to architecture (a high-level facade for typical work, with access to internal subsystems for special cases).
+The principle started in UX: a primary interface emphasizes common tasks while secondary controls expose less frequently needed options. The appropriate split depends on user research. In software engineering, the same shape applies to API design (a one-line happy path with optional configuration for the 10% who need it), to library design (sensible defaults with extension points for power users), to documentation (a quickstart in five minutes and a reference for the rest), and to architecture (a high-level facade for typical work, with access to internal subsystems for special cases).
 
 The win is **simultaneous accessibility for beginners and depth for experts**. A novice can use Retrofit by writing `interface UserApi { @GET("/user") suspend fun get(): User }`. An expert can use it with custom call adapters, interceptor chains, mock servers, custom converters, and connection pools — same library, dramatically different mental loads. Both paths work, neither paths the other. That's the principle in action.
 
@@ -16,7 +16,7 @@ The cost when done badly: hidden complexity surprises users when they reach for 
 
 Two empirical observations:
 
-1. **Most users don't need most features most of the time.** Pareto distributions are everywhere. A logging library has 50 configuration options; the average user touches three. An IDE has 2000 commands; the average user uses 30. An API has hundreds of parameters; the average call passes two.
+1. **Different tasks need different capability.** Identify common and advanced workflows from actual users; invented option-use averages are not evidence for which controls to hide.
 2. **Cognitive overhead scales with surface area, not depth.** Reading a 5-parameter function call takes a moment; reading a 25-parameter call takes a long time and most readers give up understanding it. The total power of the system is irrelevant to the cost of reading any given line; what matters is *how much you need to absorb to use this line*.
 
 Progressive disclosure addresses both: keep the easy path narrow (small surface area for the common case) while preserving full power (depth available when needed). Without it, you face the false binary: either every user pays the cost of the full system upfront ("here are the 50 options, configure them"), or the system caps at a low ceiling of capability ("we only support what fits into 3 options"). With progressive disclosure, both novices and experts win.
@@ -29,17 +29,19 @@ The cost the principle pays is **design effort**. Layering an interface so the l
 
 1. **Nielsen Norman Group (1990s).** Jakob Nielsen and Don Norman popularized "progressive disclosure" as a UX design principle. The original framing was screen design: hide advanced controls behind an "Advanced" toggle.
 2. **Larry Tesler's "no modes" maxim (1970s–80s) and modeless editing.** Influenced by his work on the Xerox Alto and Smalltalk; argued that interfaces shouldn't require users to remember "what mode they're in."
-3. **Effective Java (2001, Bloch).** Item 39: "Use enums instead of int constants" and Item 1: "Consider static factory methods" — both apply progressive disclosure to API design (simple defaults, advanced configuration when needed).
+3. **Java API design.** Named factories and builders can offer understandable entry points and optional configuration. These are mechanisms for layering an API, rather than evidence for a particular history or edition-specific item number.
 4. **Don Norman, *The Design of Everyday Things* (1988, rev. 2013).** Codified the broader principle: complexity should be tucked away until the user knows they need it.
 5. **Kotlin DSLs (2016+).** Type-safe builders make complex configuration accessible: simple cases stay one-line, complex cases nest cleanly without unreadable parameter lists. The Gradle Kotlin DSL is the largest-scale example.
 6. **Jetpack Compose Modifier API (2020).** Each Modifier wraps another, allowing simple cases (`Modifier.padding(8.dp)`) and arbitrarily complex chains (`Modifier.padding().background().clickable().clip()`) without growing the function signature.
-7. **API design patterns at major tech orgs (2010s+).** Stripe, Twilio, AWS — all built reputations on progressive-disclosure API design. Their public guidelines (e.g., AWS API Design Standards) explicitly call out the principle.
+7. **API design patterns at major tech orgs (2010s+).** Stripe, Twilio, AWS — all built reputations on progressive-disclosure API design. Use their documented request contracts as examples; this does not establish a shared formal standard.
 
 The arc: from UX (hide screens) to API (hide parameters) to DSL (hide structure) to architecture (hide subsystems). The shape is the same; the layers change.
 
 ---
 
 ## First Principles
+
+The `HttpClient` and builder examples below illustrate API shapes, not a published networking SDK. They omit transport, validation and ownership details. Production retries need an operation-specific replay/idempotency policy, deadline and bounded attempts.
 
 ### 1. Defaults that work for the common case
 
@@ -50,7 +52,7 @@ The first layer is "no configuration." A user who reads the function name should
 fun connect(): HttpClient = HttpClient(
     baseUrl = "https://api.example.com",
     timeout = 30.seconds,
-    retries = 3
+    retries = 0
 )
 ```
 
@@ -164,7 +166,7 @@ fun showSnackbar(
 ) { ... }
 ```
 
-Existing callers continue calling `showSnackbar("Saved")`. New callers can pass duration or action when needed. No breakage; no flood of overloads.
+Recompiled Kotlin callers can often keep calling `showSnackbar("Saved")`. Adding parameters can still break precompiled binaries, Java consumers, callable references or behavioral assumptions. Test the supported consumer modes and preserve compatible overloads where needed.
 
 ### Builder pattern (traditional)
 
@@ -179,7 +181,7 @@ class HttpClientBuilder {
     fun baseUrl(url: String): HttpClientBuilder { baseUrl = url; return this }
     fun timeout(d: Duration): HttpClientBuilder { timeout = d; return this }
     fun addInterceptor(i: Interceptor): HttpClientBuilder { interceptors.add(i); return this }
-    fun build(): HttpClient = HttpClient(baseUrl, timeout, interceptors)
+    fun build(): HttpClient = HttpClient(baseUrl, timeout, interceptors.toList())
 }
 
 // Usage:
@@ -202,14 +204,15 @@ class HttpClientBuilder {
     val interceptors = mutableListOf<Interceptor>()
 
     fun retryPolicy(block: RetryPolicyBuilder.() -> Unit) {
-        // nested DSL
+        // API-shape placeholder: a real implementation must retain validated
+        // retry settings and pass them to the transport policy.
     }
 }
 
 fun httpClient(block: HttpClientBuilder.() -> Unit = {}): HttpClient {
     val builder = HttpClientBuilder()
     builder.block()
-    return HttpClient(builder.baseUrl, builder.timeout, builder.interceptors)
+    return HttpClient(builder.baseUrl, builder.timeout, builder.interceptors.toList())
 }
 
 // Usage:
@@ -240,7 +243,7 @@ internal class GattClient(...) { ... }
 internal class CharacteristicReader(...) { ... }
 ```
 
-Most callers use only `BluetoothService`. Power users who need direct GATT access can promote one internal type to `public` with a comment, or the API can expose advanced operations via:
+These Bluetooth declarations are interface sketches. `internal` types are unavailable to consumers in another module; only the library owner can publish a supported public contract. An explicit advanced namespace can expose selected operations:
 
 ```kotlin
 class BluetoothService {
@@ -308,25 +311,17 @@ Each layer is reachable from the previous one. Reading more depth doesn't requir
 
 ### Stripe's API
 
-Stripe's API is the gold standard for progressive disclosure. Charging a customer for a simple subscription is one HTTP call with two required parameters. Charging a customer with a multi-currency, multi-tax-jurisdiction, payment-method-fallback, savings-card-on-file, idempotency-key-protected subscription — same endpoint, with optional parameters. The simple case is genuinely simple; the complex case is achievable without rewriting the integration.
+Stripe's PaymentIntent creation endpoint illustrates required parameters plus optional customization. Creation requires an amount and currency; confirmation and any further authentication/payment status handling remain separate lifecycle concerns. This is a backend request shape, not an Android SDK call or a subscription:
 
-```kotlin
-// Simple:
-stripe.charges.create(amount = 1000, currency = "usd", customerId = "cus_X")
+```text
+POST /v1/payment_intents
+amount=1000&currency=usd
 
-// Advanced (still the same method):
-stripe.charges.create(
-    amount = 1000,
-    currency = "usd",
-    customerId = "cus_X",
-    paymentMethod = "pm_card_visa",
-    confirmationMethod = "manual",
-    captureMethod = "manual",
-    setupFutureUsage = "off_session",
-    idempotencyKey = "req-${UUID.randomUUID()}",
-    metadata = mapOf("order_id" to orderId)
-)
+# Optional fields for an appropriate integration:
+# description=Order+123&metadata[order_id]=123
 ```
+
+Secret API keys stay on the backend. A subscription uses the Billing subscription lifecycle, not a Charges call with PaymentIntent-only parameters. Persist a logical-operation key before a mutating request and reuse it only according to the endpoint's idempotency contract; generating a new UUID on each retry does not deduplicate the operation.
 
 ### Retrofit interface declarations
 
@@ -339,7 +334,7 @@ interface UserApi {
 }
 ```
 
-Zero config. Add OkHttp client, base URL, and you have a working API client.
+A Retrofit builder still needs a base URL and a converter for this `User` body type; an OkHttp client may be supplied or defaulted. The interface is one part of the integration.
 
 Advanced features (multipart uploads, custom call adapters, dynamic URL, query maps, custom converters) appear in the same annotations:
 
@@ -355,7 +350,7 @@ interface UserApi {
 }
 ```
 
-The annotations layer additional capability; nothing changes in how the call is made.
+This variant also changes the return type to `Response<User>` and adds a required `traceId`, so callers must adapt. Additive capabilities are not automatically source-compatible.
 
 ### Gradle DSL
 
@@ -390,16 +385,18 @@ android {
         release {
             isMinifyEnabled = true
             proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
-            signingConfig = signingConfigs.getByName("release")
+            // Wire a separately declared release signing config securely.
         }
     }
 
     flavorDimensions += "tier"
     productFlavors {
         create("free") {
+            dimension = "tier"
             applicationIdSuffix = ".free"
         }
         create("paid") {
+            dimension = "tier"
             applicationIdSuffix = ".paid"
         }
     }
@@ -431,7 +428,7 @@ Text(
 )
 
 // Layer 4: custom modifier (extension point)
-@Composable
+// ShimmerModifier is an application-defined element with its own lifecycle.
 fun Modifier.shimmer(): Modifier = this then ShimmerModifier()
 
 Text("Hello", modifier = Modifier.padding(8.dp).shimmer())
@@ -453,8 +450,16 @@ val client = OkHttpClient.Builder()
 // Layer 3: custom interceptor
 val client = OkHttpClient.Builder()
     .addInterceptor { chain ->
-        val req = chain.request().newBuilder()
-            .header("X-API-Key", apiKey)
+        val original = chain.request()
+        val url = original.url
+        val req = original.newBuilder()
+            .apply {
+                if (url.scheme == "https" && url.host == "api.example.com" && url.port == 443) {
+                    header("X-API-Key", apiKey)
+                } else {
+                    removeHeader("X-API-Key")
+                }
+            }
             .build()
         chain.proceed(req)
     }
@@ -509,7 +514,7 @@ interface UserDao {
 abstract class AppDatabase : RoomDatabase() { ... }
 ```
 
-A team can start with simple entities and grow into FTS and migrations without rewriting the early code.
+These are separate schema sketches, not one compilable file. `UserFts`, database members and exported schema history are omitted. Auto-migration requires the relevant schemas and explicit specs for ambiguous changes; expanding capabilities still requires a tested migration path.
 
 ---
 
@@ -519,7 +524,7 @@ A team can start with simple entities and grow into FTS and migrations without r
 
 - **Lower barrier to entry.** Beginners are productive in minutes.
 - **No artificial ceiling.** Advanced users have access to full capability.
-- **API growth without breakage.** Adding a parameter as an option doesn't break callers.
+- **API growth with compatibility work.** Optional parameters can preserve some source calls; binary, Java and behavioral compatibility need separate checks.
 - **Better documentation.** Quickstart and reference can split cleanly along disclosure layers.
 
 **Disadvantages**
@@ -557,12 +562,10 @@ A team can start with simple entities and grow into FTS and migrations without r
 
 ## Performance Considerations
 
-- **DSL builders allocate.** A configuration block with a receiver lambda allocates the builder and the lambda. For startup-time or hot-path APIs, prefer plain functions with defaults.
-- **Nested DSLs cost stack frames.** Deep nesting is fine for code readability but adds frames to stack traces. Watch for `StackOverflowError` in pathological cases (e.g., recursive DSLs).
-- **Default-argument synthetic methods.** Kotlin's default-argument lowering generates a helper that the JVM has to lookup; usually negligible, occasionally visible in profilers for hot APIs.
-- **Modifier chains in Compose.** Each `Modifier` adds one node to the chain; long chains have a measurable composition cost. The Compose team has optimized this aggressively, but a 50-element chain is still slower than a 3-element one.
-
----
+- **Measure construction and hot-path costs separately.** A builder may allocate, while noncapturing or inlined lambdas may avoid allocation. DSL syntax alone determines neither allocation count nor speed.
+- **Nesting is not recursion.** A nested configuration block does not imply unbounded stack growth; recursive runtime behavior needs its own bounds.
+- **Defaults are lowered by the compiler.** Synthetic helpers and overload behavior depend on the backend and declaration; they do not imply a special runtime lookup bottleneck.
+- **Modifiers differ in cost.** Elements can provide one or several behaviors and may use nodes; chain length alone is not a frame-time measurement. Inspect the affected composition, layout and draw work.
 
 ## Reliability Considerations
 
@@ -592,7 +595,7 @@ A team can start with simple entities and grow into FTS and migrations without r
 
 **Design two example call sites: a beginner's and an expert's.** The beginner's should be 1-3 lines. The expert's should compose without surprise. If you can't write both cleanly, the API isn't layered correctly.
 
-**Default for the common case, not the safe case.** If 90% of users want behavior X, default to X. The other 10% can opt out. The opposite — default to the safe/restrictive behavior — forces every user to opt in to the common case.
+**Make the common path safe.** Convenience does not justify disabling verification, accepting destructive defaults or retrying arbitrary mutations. Offer useful defaults within the security and correctness contract, then expose deliberate configuration for legitimate variations.
 
 **Promote internals on demand, not preemptively.** Defaulting types to `internal` keeps your library's evolution flexibility intact. Promote to `public` when a concrete user case requires it.
 
@@ -675,10 +678,16 @@ In this repository:
 
 External:
 
-- Jakob Nielsen, *"Progressive Disclosure"* (1995, nngroup.com) — the original UX framing.
+- Jakob Nielsen, *"Progressive Disclosure"* (2006, nngroup.com) — the original UX framing.
 - Don Norman, *The Design of Everyday Things* (1988, rev. 2013) — broader principle.
 - Joshua Bloch, *Effective Java* — Items 49–55 on parameter and signature design.
 - Alan Kay, *"The Computer Revolution Hasn't Happened Yet"* (1997 OOPSLA keynote) — origin of "simple things simple, complex things possible."
 - Stripe API Reference (stripe.com/docs/api) — exemplary progressive-disclosure API.
 - Romain Guy, *"API Design at Google"* (Android Dev Summit talks) — internal heuristics for layered APIs.
 - *The Design of Web APIs* by Arnaud Lauret — practical guide to layered API design.
+- [Nielsen: Progressive Disclosure](https://www.nngroup.com/articles/progressive-disclosure/)
+- [Kotlin compatibility guidance](https://kotlinlang.org/docs/api-guidelines-backward-compatibility.html)
+- [Stripe PaymentIntent creation](https://docs.stripe.com/api/payment_intents/create)
+- [Stripe subscription lifecycle](https://docs.stripe.com/billing/subscriptions/overview)
+- [Compose modifiers](https://developer.android.com/develop/ui/compose/modifiers)
+- [Room migration requirements](https://developer.android.com/training/data-storage/room/migrating-db-versions)

@@ -19,7 +19,7 @@ This file covers locality at three layers: **CPU caches** (where the term origin
 
 Two costs drive the principle:
 
-1. **Hardware: accessing distant memory is slow.** A CPU register access is ~1 cycle; L1 cache is ~4 cycles; L2 is ~12; L3 is ~40; main memory is ~200; SSD is ~100,000; HDD is ~10,000,000. Each step is an order of magnitude slower than the last. Spatial and temporal locality let the hardware prefetch and cache aggressively, keeping the active working set close.
+1. **Hardware: memory access has a hierarchy of costs.** Cache and memory latency depend on the processor, frequency, access pattern and contention. Storage is a separate I/O path. Spatial and temporal locality can keep a useful working set near the CPU, but there is no universal cycle table or speedup.
 2. **Cognition: navigating a distant codebase is expensive.** When you change a feature, you should be able to read and modify the relevant code in one place. If the "feature" is spread across `ui/login/`, `viewmodels/auth/`, `data/repositories/`, and `network/auth_api/`, every change requires four cognitive jumps. The literature calls this *closeness* or *cohesion*; the practical effect is identical to cache locality — the closer your working set, the cheaper the work.
 
 The principle exists because both costs are universal. Hardware can never eliminate latency to distant memory; humans can never eliminate friction navigating distant code. The best response is to colocate what's accessed together.
@@ -28,13 +28,13 @@ The principle exists because both costs are universal. Hardware can never elimin
 
 ## Historical Context
 
-1. **Belady's MIN algorithm (1966).** László Bélády, while working at IBM, showed that the optimal page-replacement strategy assumed temporal locality — keep what's used most recently. This proved that real programs have temporal locality and that caches reduce traffic to main memory significantly.
+1. **Belady's MIN algorithm (1966).** Bélády studied replacement policies; the ideal MIN policy evicts the page whose next use is farthest in the future. That is not LRU (evict least recently used), nor a proof that every workload has locality. MIN is a comparison bound that needs future knowledge.
 2. **Denning's working set model (1968).** Peter Denning formalized the *working set* as the set of pages a process accesses in a recent time window. Programs that respect spatial and temporal locality have small working sets and run efficiently in limited memory; those that don't thrash.
 3. **CPU cache hierarchies (1970s+).** Hardware engineers built increasingly deep cache hierarchies (L1, L2, L3) specifically to exploit locality. Modern x86 processors have ~64-byte cache lines — read one byte and you get 63 neighbors for free.
 4. **Mike Acton, *Data-Oriented Design* (2014).** A C++ game-engine talk arguing that for performance-critical code, the *layout of data* matters more than object-oriented modeling. Cache misses are the dominant cost in modern CPUs.
 5. **Robert C. Martin, *Common Closure Principle* (1990s).** The architectural side: classes that change for the same reason belong in the same package. Functional cohesion is the human analog of cache locality.
 6. **Android modularization (2018+).** Google formally endorsed package-by-feature and gradle module-per-feature as the path to scalable Android codebases. The driving rationale was build performance (only changed modules recompile) and cognitive locality (everything for one feature is in one folder).
-7. **Jetpack Compose state hoisting (2021+).** Compose's reactive recomposition makes the state-locality cost visible: state that lives far from where it's read forces broader recomposition than necessary.
+7. **Jetpack Compose state hoisting (2021+).** Compose tracks state reads in composition, layout and drawing. Read placement, restart scopes and skipping determine work; the declaration's distance alone does not.
 
 The arc: from hardware (caches) to systems (working sets) to code organization (cohesion, modularization), with each layer recognizing the same underlying truth that locality reduces cost.
 
@@ -90,14 +90,14 @@ A useful analogy: a **toolbox vs a categorized shelving system**. If you're a pl
 
 ### CPU cache lines and how they reward spatial locality
 
-Modern x86 and ARM CPUs read memory in **cache lines** of 64 bytes (some ARM chips: 32 or 128 bytes). When your program reads one byte, the hardware brings the entire cache line into L1 cache. If your next read is within that 64-byte window, it's a cache hit (~4 cycles). If it's far away, the hardware must fetch another cache line from L2, L3, or main memory.
+Caches transfer data in lines; 64 bytes is a useful illustrative size, not a universal device contract. Nearby reads may reuse a resident line, while eviction, contention, prefetching and the cache hierarchy determine actual hits and latency.
 
 For sequential access, this is essentially free:
 
 ```kotlin
 val xs = IntArray(1_000_000)
 for (i in xs.indices) {
-    sum += xs[i]   // sequential access: 1 cache miss every 16 ints
+    sum += xs[i]   // sequential primitive reads; actual misses depend on caches and prefetching
 }
 ```
 
@@ -107,11 +107,11 @@ For random access, it's expensive:
 val xs = IntArray(1_000_000)
 val indices = (0 until 1_000_000).shuffled()
 for (i in indices) {
-    sum += xs[i]   // random access: ~1 cache miss per read
+    sum += xs[i]   // indirect access; measure this separately from shuffling/boxing costs
 }
 ```
 
-The shuffled version can run 5-20x slower despite doing the same arithmetic. This is locality cost at its rawest.
+This sketch contrasts access patterns, not measured results. The shuffled index list also adds boxing, allocations and indirection; isolate those effects in a representative benchmark.
 
 ### Array of structs vs struct of arrays
 
@@ -131,7 +131,7 @@ class PointCollection(
 )
 ```
 
-If you only need the x-coordinates for a computation, AoS forces the CPU to load every Point's full memory layout into cache (including `y`, `z`, and the `label` reference). SoA lets you stream just `xs`, fitting 16x more elements per cache line. For numerical workloads, the SoA layout can be 5-10x faster.
+If a loop needs only x-coordinates, a `FloatArray` avoids following a reference for each `Point` and avoids loading unrelated fields from those objects' cache lines. On Kotlin/JVM, `Array<Point>` is an array of object references, not packed C structs. SoA may help this access pattern; actual density and speed depend on object layout, runtime and hardware.
 
 For mobile, this matters in: image processing, video decoding, ML inference, physics simulation. For UI/business logic, AoS is fine.
 
@@ -183,7 +183,7 @@ The layer view has its place — `core/`, `common/`, `theme/`, `network/` shared
 
 ### Compose state locality
 
-In Compose, state must be read inside a composable to trigger recomposition. Where the state lives affects which composables recompose when it changes:
+Compose tracks snapshot-state reads by the scope and phase in which they execute. A changed value can invalidate composition, layout or draw work; the declaration location alone does not determine recomposition:
 
 ```kotlin
 // Low locality: state hoisted too high
@@ -198,7 +198,7 @@ fun App() {
 }
 ```
 
-Every keystroke recomposes `App`, `Header`, `ContentArea`, and `TextField` — even though only `TextField` actually depends on `textInput`.
+A keystroke invalidates the restart scope that read `textInput` during composition. Unchanged child calls can be skipped; declaring the state in `App` does not force every descendant to execute.
 
 ```kotlin
 // High locality: state co-located with consumer
@@ -218,7 +218,7 @@ fun LocalInput() {
 }
 ```
 
-Now keystrokes recompose only `LocalInput`. The Compose recomposer's locality optimization rewards keeping state near its readers.
+The read is now inside `LocalInput`'s scope. This can narrow work while preserving local ownership, but state read phase, parameters and skipping still govern execution.
 
 ---
 
@@ -227,10 +227,10 @@ Now keystrokes recompose only `LocalInput`. The Compose recomposer's locality op
 ```mermaid
 flowchart TB
     subgraph CPU["CPU layer: spatial + temporal locality"]
-        L1["L1 cache ~4 cycles"]
-        L2["L2 cache ~12 cycles"]
-        L3["L3 cache ~40 cycles"]
-        Main["Main memory ~200 cycles"]
+        L1["L1 cache"]
+        L2["L2 cache"]
+        L3["L3 cache"]
+        Main["Main memory"]
         L1 --> L2 --> L3 --> Main
     end
 
@@ -244,8 +244,8 @@ flowchart TB
     subgraph Code["Code layer: common closure"]
         Layer["Package by layer: scattered feature"]
         Feature["Package by feature: cohesive feature"]
-        Hoisted["State hoisted high: broad recomposition"]
-        Local["State co-located: narrow recomposition"]
+        Hoisted["Broad composition reads"]
+        Local["Narrower read scopes"]
     end
 
     CPU -. enables .-> Data
@@ -256,9 +256,9 @@ flowchart TB
 
 ## Production Example
 
-### Image processing: SoA for cache efficiency
+### Image processing: Packed pixel buffer for cache efficiency
 
-Bitmap pixel processing in image-loading libraries (Coil, Glide, native ML pipelines) uses `IntArray` for ARGB pixels rather than an array of `Color` objects:
+An Android `Bitmap.getPixels` processing path can use a packed ARGB `IntArray`; this does not describe every Coil, Glide or native decoding implementation:
 
 ```kotlin
 val pixels = IntArray(width * height)
@@ -271,7 +271,7 @@ for (i in pixels.indices) {
 }
 ```
 
-The pixel buffer is contiguous; each iteration touches 4 bytes; cache lines hold 16 pixels. Sequential access hits L1 cache constantly. Switching to `Array<Pixel>` with `class Pixel(val r, val g, val b, val a)` would be 10x+ slower.
+The pixel buffer is contiguous; each iteration touches 4 bytes. With the illustrative 64-byte cache lines used earlier, sequential access can reuse each fetched line. An object-per-pixel layout adds reference and object overhead; measure the difference rather than assuming a multiplier.
 
 ### Compose recomposition: hoisting to the right level
 
@@ -293,7 +293,7 @@ fun CheckoutScreen(vm: CheckoutViewModel) {
 }
 ```
 
-`state` is read at `CheckoutScreen` and passed down. Compose's recomposer tracks the read and recomposes the screen when state changes. Each child reads only its relevant slice of state and gets re-composed only when that slice changes (thanks to stable parameter passing). This is high-locality state passing.
+`state` is read at `CheckoutScreen` and passed down. Compose's recomposer tracks the read and recomposes the screen when state changes. Children receive parameter slices and may be skipped when eligible and unchanged. They do not independently subscribe to slices of the parent state merely because parameters were passed. This is high-locality state passing.
 
 ### Gradle modules per feature for build locality
 
@@ -307,7 +307,7 @@ fun CheckoutScreen(vm: CheckoutViewModel) {
 :core:design-system
 ```
 
-A change inside `:feature:checkout` triggers a recompile of `:feature:checkout` and `:app` only — `:feature:login` and `:feature:profile` are untouched. Build time stays bounded as the codebase grows. A monolithic single-module project recompiles everything on every change.
+A contained implementation change can avoid downstream compilation when ABI and dependency rules allow. Task inputs, generated code, variants, API exposure and caches determine actual invalidation. Kotlin incremental compilation also works inside a single module; neither layout guarantees bounded build time.
 
 ---
 
@@ -318,7 +318,9 @@ A change inside `:feature:checkout` triggers a recompile of `:feature:checkout` 
 A common Android pattern is high-frequency sensor data (accelerometer, gyroscope, audio):
 
 ```kotlin
+// Single-owner, fixed-capacity buffer: reject overflow rather than corrupting indices.
 class AccelerometerBuffer(capacity: Int) {
+    init { require(capacity > 0) }
     private val xs = FloatArray(capacity)
     private val ys = FloatArray(capacity)
     private val zs = FloatArray(capacity)
@@ -326,6 +328,7 @@ class AccelerometerBuffer(capacity: Int) {
     private var size = 0
 
     fun add(x: Float, y: Float, z: Float, ts: Long) {
+        check(size < xs.size) { "Buffer full; drain or reset before adding" }
         xs[size] = x
         ys[size] = y
         zs[size] = z
@@ -339,7 +342,7 @@ class AccelerometerBuffer(capacity: Int) {
 }
 ```
 
-Four contiguous primitive arrays. Iterating them is cache-friendly. A naïve `data class Sample(val x, val y, val z, val ts)` collection would be cleaner code but allocate per-sample, fragment the heap, and miss cache lines on every access. For sensor pipelines at 100Hz+, the primitive layout matters.
+Four contiguous primitive arrays. Iterating them is cache-friendly. A naïve `data class Sample(val x, val y, val z, val ts)` collection would be cleaner code but allocate per-sample, fragment the heap, and miss cache lines on every access. Choose the layout from measured allocation and processing cost; 100 Hz is not a universal crossover.
 
 ### State hoisting to a feature module
 
@@ -364,7 +367,7 @@ Other features see only `CheckoutFeature`. The state, viewmodel, repository, and
 
 ### Database row layout for query locality
 
-Room/SQLite stores rows on 4KB pages. Queries that scan a table touch one page after another. If frequently-queried columns are on the same page (small row width, no large blob columns), scans are fast. If a single column holds a 5MB blob, every row is on its own page; even a "small" scan touches many pages.
+SQLite uses configurable pages (commonly 4 KiB); Android/runtime configurations can differ. B-tree cells store some payload locally and can use overflow pages for large records, so a large BLOB does not mean each row occupies exactly one page. Separating rarely read payloads can improve hot-query density, but covering indexes, projections and query plans also matter.
 
 ```kotlin
 // Locality-aware schema
@@ -416,9 +419,9 @@ Querying user names doesn't pull avatar bytes through the SQLite page cache. Com
 
 **`:core:` or `:common:` becomes a dumping ground.** Every feature needs "just one shared thing" and dumps it into `:core:`. Soon `:core:` depends on half the codebase and has multi-axis change reasons, defeating locality. Mitigation: partition `:core:` by axis (`:core:network`, `:core:design-system`, `:core:logging`) and review additions strictly.
 
-**Scattered Compose state forces broad recomposition.** A `val isLoading by remember { mutableStateOf(false) }` lifted to a top-level Composable invalidates every descendant on toggle. Mitigation: move state to the closest common ancestor of readers; use `remember` at the lowest level possible.
+**Scattered Compose state forces broad recomposition.** Only a changed state value invalidates its readers; restart scopes and skipping determine descendant execution. Mitigation: move state to the closest common ancestor of readers; use `remember` at the lowest level possible.
 
-**Pointer-chasing iteration over object arrays.** A hot path iterates `Array<Item>` where each `Item` is heap-allocated; cache miss per item. Mitigation: convert to primitive arrays where possible, or wrap with a `Sequence`-based pipeline that minimizes intermediate allocations.
+**Pointer-chasing iteration over object arrays.** A hot path iterates `Array<Item>` where each `Item` is heap-allocated; potential extra cache misses and reference loads. Mitigation: convert to primitive arrays where possible, and benchmark the result; `Sequence` does not fix pointer locality.
 
 **Package-by-layer in a 100-module codebase.** Every feature change touches 4 modules. Build times balloon. Mitigation: feature modules first, layer modules within (`:feature:checkout/data`, `:feature:checkout/ui`).
 
@@ -430,37 +433,28 @@ Querying user names doesn't pull avatar bytes through the SQLite page cache. Com
 
 ## Performance Considerations
 
-- **Cache misses dominate hot-path latency.** Profilers like Android Studio's CPU profiler and `perf` show stall cycles. Random-access patterns are usually the culprit; sequential access on contiguous data is usually fast.
-- **Primitive arrays beat collections for numerical work.** `IntArray` over `Array<Int>`. `FloatArray` over `Array<Float>`. The boxing of primitives into `Integer`/`Float` objects is per-element heap allocation.
-- **Build performance scales linearly with module count and inversely with dependency width.** A modular project with a tall, narrow dependency tree builds fastest; a flat module with everything-depends-on-everything builds slowest.
-- **Compose recomposition is bounded by what reads state.** Smaller state scopes mean smaller recomposition scopes.
-- **JIT compilation respects spatial locality.** Hot loops on contiguous data get vectorized aggressively. Hot loops with reference chasing don't.
-
----
+- **Profile the relevant target.** Cache misses, stalls and allocation can matter, but no single mechanism dominates every hot path. Primitive-array layout can help numerical loops; JVM boxing may reuse objects or be optimized, so it is not necessarily one fresh allocation per read.
+- **Compare layouts by access pattern.** SoA can help column-wise work; row-wise work can favor other layouts. A `Sequence` may reduce intermediate allocations but does not make referenced objects contiguous.
+- **Measure Gradle tasks and invalidation.** Module count and graph shape affect configuration, parallelism and recompilation; there is no linear formula or universal best module count.
+- **Inspect Compose read scopes and phases.** Layout or draw reads can skip composition, and unchanged children may be skipped after a parent restarts. Do not infer redraw count from where `remember` appears.
 
 ## Reliability Considerations
 
-- **Modular boundaries contain failure.** A bug in `:feature:checkout` can't directly corrupt `:feature:login`'s state because of `internal` visibility. The blast radius is the module.
-- **Locality reduces concurrent contention.** State that's local to a coroutine/scope is single-threaded; shared mutable state across modules invites races.
-- **Build locality means safer releases.** A change in `:feature:profile` doesn't require regenerating `:feature:checkout`'s baseline profile or running its tests. CI can shard on module boundaries.
-
----
+- **A module is a build/API boundary.** `internal` limits Kotlin source access within a module; it is not a runtime fault, memory or process boundary. Shared mutable objects and uncaught failures can cross features.
+- **A coroutine scope is a lifetime boundary.** It does not imply a single thread. Use confinement, immutable state or synchronization for shared mutation.
+- **Select tests from affected contracts.** Cross-feature integration and release validation can still be necessary after a local change. Baseline-profile coverage depends on affected user journeys and release artifacts, not module names alone.
 
 ## Security Considerations
 
-- **Sensitive data layout.** Storing secrets (auth tokens, keys) in the same memory region as untrusted data is a side-channel risk in extreme cases (cache-timing attacks). For mobile, the Android Keystore handles this; don't roll your own.
-- **Module boundaries as a defense layer.** A `:feature:auth` module that doesn't export its `TokenStorage` internals prevents accidental cross-feature leakage. Combined with `internal` and ProGuard rules, this is meaningful defense.
-- **Build-time secret scanning is more reliable with feature modules.** Scanning each module's resources for hardcoded keys is faster and clearer than scanning a monolith.
-
----
+- **Use an actual security boundary for secrets.** Android Keystore can protect supported cryptographic key material; it does not protect arbitrary application buffers from every side channel.
+- **Visibility helps prevent accidental misuse.** `internal`, R8 and module layout do not provide authorization or isolation against code executing in the same process. Enforce sensitive operations at the trusted boundary.
+- **Scan the release inputs.** Feature folders can aid ownership, but secret scanning must cover the whole build and its dependencies; there is no intrinsic reliability gain from module count.
 
 ## Observability
 
-- **Module-level metrics are more useful than monolithic ones.** Build time per module, test count per module, crash rate per module — locality helps the data tell you where problems live.
-- **Profilers show locality cost as cache misses.** Recognize the pattern: "lots of memory stalls, low CPI" usually means cache thrashing from bad data layout.
-- **Compose recomposition counters.** Tools like `androidx.compose.runtime.tooling.Recomposer` expose recomposition counts per node. Spikes indicate state lives too high.
-
----
+- **Build evidence.** Measure per-task configuration/execution, cache hits and critical paths before changing module boundaries.
+- **Runtime evidence.** Inspect cache/memory counters where supported and interpret them with CPU utilization and instructions/cycles. Memory stalls tend to increase cycles per instruction; low CPI alone is not proof of cache thrashing.
+- **Compose evidence.** Android Studio Layout Inspector reports recomposition and skip counts. Combine those with traces and frame timing; counts alone do not establish user-visible cost.
 
 ## Staff Engineer Thinking
 
@@ -476,7 +470,7 @@ Querying user names doesn't pull avatar bytes through the SQLite page cache. Com
 
 **Locality and Demeter reinforce each other.** Things that talk frequently should live near each other. The Law of Demeter says don't reach far; locality says don't make far reaches necessary in the first place.
 
-**Optimize build locality with caching and parallelism.** Gradle's build cache (`--build-cache`) and configuration cache (`--configuration-cache`) plus Kotlin's `-XX:+UseParallelGC` for compilation make a modular project's build time dramatically lower.
+**Optimize build locality with caching and parallelism.** Gradle build/configuration caches and suitable parallel task execution can help eligible builds. Benchmark JVM/GC settings and graph changes on representative clean and incremental workloads.
 
 ---
 
@@ -484,13 +478,13 @@ Querying user names doesn't pull avatar bytes through the SQLite page cache. Com
 
 **"Locality is only for low-level performance code."** No — code organization is also locality. Package-by-feature is locality applied to humans.
 
-**"More modules means better locality."** Past a certain point (~50 modules in most projects), Gradle's configuration overhead dominates and adding modules slows the build. Locality serves you, not the other way around.
+**"More modules means better locality."** Configuration overhead can outweigh isolation benefits; the crossover depends on the project and build tooling, not a universal 50-module threshold. Locality serves you, not the other way around.
 
 **"Hoisting all state to the top is good for testability."** It's good for *one kind* of testability (end-to-end); it's bad for locality and bad for recomposition cost. Hoist only as much as needed.
 
 **"Object-oriented design contradicts data-oriented locality."** They serve different goals. OO is for *change management*; DOD is for *performance*. Most code is OO; hot paths can be DOD; use both as fits.
 
-**"`IntArray` and `List<Int>` are interchangeable."** They are not — `List<Int>` is `ArrayList<Integer>`, with boxed integers and per-element heap allocation. For large primitive collections, the difference is huge.
+**"`IntArray` and `List<Int>` are interchangeable."** They are not — `List<Int>` is an interface with multiple implementations; JVM generic storage normally involves boxed values, which can be cached or optimized. For large primitive collections, the difference can be significant; measure it.
 
 **"Modularization is just for build time."** Build time is the *easiest-to-measure* benefit. The bigger benefit is cognitive locality and enforced boundaries.
 
@@ -498,14 +492,14 @@ Querying user names doesn't pull avatar bytes through the SQLite page cache. Com
 
 ## Probing Questions
 
-1. Explain why summing an `IntArray` is often 10x faster than summing a `List<Int>` of the same size on Android.
+1. Why can summing an `IntArray` be cheaper than summing a `List<Int>` on Android, and why must the difference be measured?
 2. What's the difference between temporal and spatial locality? Give a code example of each.
 3. Why does `data class Pixel(val r: Int, val g: Int, val b: Int)` in an `Array<Pixel>` have worse cache behavior than three `IntArray` columns?
 4. A Compose `var state by remember { mutableStateOf(0) }` lives at the top of an app. The state changes on every keystroke from a deeply-nested TextField. What happens, and how do you fix it?
 5. What's the rationale for package-by-feature over package-by-layer in a large Android codebase?
 6. When does the Common Closure Principle conflict with the Single Responsibility Principle? How do you decide?
 7. Your `:core:` module has 18 sub-packages and depends on three feature modules. What's wrong, and how do you untangle it?
-8. SQLite/Room stores rows on 4KB pages. How does row width affect query locality? Why might splitting a table into "hot fields" and "cold blob" tables help?
+8. SQLite uses configurable pages and overflow pages for large payloads. How does row width affect query locality? Why might splitting a table into "hot fields" and "cold blob" tables help?
 9. A Gradle build with 100 small modules is slower than the same code in 10 large modules. What's the failure mode, and where's the sweet spot?
 10. You profile an Android app and see L1 cache misses dominating CPU time in a render loop. What questions do you ask about data layout?
 
@@ -513,22 +507,22 @@ Querying user names doesn't pull avatar bytes through the SQLite page cache. Com
 
 ## Answer Key
 
-1. **Explain why summing an `IntArray` is often 10x faster than summing a `List<Int>` of the same size on Android.**
-   `IntArray` stores primitive ints contiguously in memory, allowing the CPU cache to fetch multiple values per read. `List<Int>` is an array of references to boxed `Integer` objects scattered across the heap, causing cache misses and pointer-chasing overhead on every iteration.
+1. **Why can summing an `IntArray` be cheaper than summing a `List<Int>` on Android, and why must the difference be measured?**
+   `IntArray` stores primitive ints contiguously in memory, allowing the CPU cache to fetch multiple values per read. `List<Int>` has multiple implementations; JVM generic collections typically use boxed values and references. Allocation reuse, runtime optimization, working-set size and access pattern determine the actual cost, so no fixed multiplier or miss per item follows.
 2. **What's the difference between temporal and spatial locality? Give a code example of each.**
    Temporal locality means accessing the same item again soon (e.g., a loop counter). Spatial locality means accessing nearby items soon (e.g., iterating sequentially through an array).
 3. **Why does `data class Pixel(val r: Int, val g: Int, val b: Int)` in an `Array<Pixel>` have worse cache behavior than three `IntArray` columns?**
    `Array<Pixel>` scatters `Pixel` objects in the heap and includes object header overhead, requiring pointer chasing. Three `IntArray`s (SoA) lay out the R, G, and B components contiguously, maximizing cache line utilization during sequential processing.
 4. **A Compose `var state by remember { mutableStateOf(0) }` lives at the top of an app. The state changes on every keystroke from a deeply-nested TextField. What happens, and how do you fix it?**
-   Every keystroke triggers recomposition of the entire app hierarchy starting from the top. To fix it, hoist the state down to the closest common ancestor of its readers, or keep it inside the `TextField` composable if it's purely local UI state.
+   A changed value invalidates the composition scopes that read it, with unchanged children potentially skipped. To fix it, hoist the state down to the closest common ancestor of its readers, or keep it inside the `TextField` composable if it's purely local UI state.
 5. **What's the rationale for package-by-feature over package-by-layer in a large Android codebase?**
    Package-by-feature co-locates related UI, data, and domain logic, reducing cognitive overhead (jumping between folders) and aligning the module structure with how business requirements actually change, unlike package-by-layer which scatters feature logic.
 6. **When does the Common Closure Principle conflict with the Single Responsibility Principle? How do you decide?**
    The Common Closure Principle groups things that change together, while the Single Responsibility Principle separates things that change for different reasons. You balance them by grouping code by business stakeholder (feature), but separating distinct technical concerns within that boundary.
 7. **Your `:core:` module has 18 sub-packages and depends on three feature modules. What's wrong, and how do you untangle it?**
-   A `:core:` module depending on features is a circular dependency violation, and 18 sub-packages indicates a "god module" lacking cohesion. It should be split into smaller, focused modules (e.g., `:core:network`, `:core:design`) based on distinct technical axes to prevent widespread rebuilds.
-8. **SQLite/Room stores rows on 4KB pages. How does row width affect query locality? Why might splitting a table into "hot fields" and "cold blob" tables help?**
-   Queries scan 4KB pages. If a large blob is in the same table, fewer rows fit on a page, causing frequent cache misses and slow scans. Splitting the blob into a separate table allows the hot fields to fit densely on fewer pages for faster querying.
+   A core-to-feature dependency may reverse the intended layering, but is a cycle only if a path leads back to core. Package count alone does not establish low cohesion. It should be split into smaller, focused modules (e.g., `:core:network`, `:core:design`) based on distinct technical axes to prevent widespread rebuilds.
+8. **SQLite uses configurable pages and overflow pages for large payloads. How does row width affect query locality? Why might splitting a table into "hot fields" and "cold blob" tables help?**
+   Page size is configurable, and large payloads can occupy overflow pages. Separating rarely accessed BLOBs can make hot records denser, but projections, covering indexes and access patterns affect what is read. Inspect the schema and query plan and benchmark the workload.
 9. **A Gradle build with 100 small modules is slower than the same code in 10 large modules. What's the failure mode, and where's the sweet spot?**
    The failure mode is Gradle configuration overhead, which grows with module count and can dominate build times. The sweet spot balances build caching/parallelism benefits against configuration cost, typically avoiding micro-modules that contain only a few classes.
 10. **You profile an Android app and see L1 cache misses dominating CPU time in a render loop. What questions do you ask about data layout?**
@@ -553,3 +547,11 @@ External:
 - Ulrich Drepper, *"What Every Programmer Should Know About Memory"* (2007) — exhaustive treatment of memory hierarchies.
 - Google Android Developers, *"Guide to App Architecture"* (developer.android.com) — package-by-feature recommendations.
 - Joaquim Verges, *"Now in Android: Multi-module architecture"* — official Google sample exemplifying feature modules.
+- [Denning: working-set model (original paper)](https://denninginstitute.com/pjd/PUBS/WSModel_1968.pdf)
+- [SQLite file format and overflow pages](https://www.sqlite.org/fileformat.html)
+- [Kotlin primitive arrays](https://kotlinlang.org/docs/arrays.html)
+- [Compose read phases](https://developer.android.com/develop/ui/compose/phases)
+- [Compose strong skipping](https://developer.android.com/develop/ui/compose/performance/stability/strongskipping)
+- [Compose Layout Inspector](https://developer.android.com/develop/ui/compose/tooling/debug)
+- [Gradle build performance](https://docs.gradle.org/current/userguide/performance.html)
+- [Android modularization patterns](https://developer.android.com/topic/modularization/patterns)

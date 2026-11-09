@@ -2,7 +2,7 @@
 
 ## Overview
 
-The Single Responsibility Principle (the 'S' in SOLID) states that a module, class, or function should have **only one reason to change**.
+Robert C. Martin's Single Responsibility Principle (the 'S' in SOLID) states that a module, class, or function should have **only one reason to change**.
 
 It does *not* mean a class should only do one thing. It means the class should be responsible to only one actor or stakeholder. A class with three methods answering to one stakeholder is healthier than a class with one method answering to three.
 
@@ -51,13 +51,13 @@ Staff engineers apply SRP to entire Gradle modules, because modules are the unit
 - **`domain`** changes when business rules change ("users must now be 18+ to register") — owned by the feature team.
 - **`ui`** changes when design changes — owned by the feature/design-system collaboration.
 
-The payoff compounds: migrate REST → GraphQL and only `data` modules change; the `domain` and `ui` trees don't even rebuild. See [modularization-strategies](../android/architecture/modularization-strategies.md).
+A stable boundary can contain a REST → GraphQL migration within `data`, but changed product semantics or public APIs may require changes elsewhere. Downstream compilation depends on ABI changes and Gradle dependency exposure, not SRP alone; the app still needs packaging and integration tests. See [modularization-strategies](../android/architecture/modularization-strategies.md).
 
 ### 3. The Danger of "Reusability"
 
 Engineers often violate SRP in pursuit of DRY.
 
-- **The scenario:** `UserDTO` from the `/login` endpoint has `email` and `passwordHash`. The profile UI also needs a user model showing `email`.
+- **The scenario:** `UserDTO` from the `/login` endpoint has `email` and a wire-specific `account_status`. The profile UI also needs a user model showing `email`.
 - **The violation:** reusing `UserDTO` for both the network layer and the UI layer to save typing.
 - **The consequence:** six months later the UI team adds `firstName` to `UserDTO` for display. The deserializer now expects `firstName` in the `/login` response. When the backend doesn't send it, parsing behavior changes underneath a login flow nobody meant to touch.
 - **The Staff pattern:** network models and UI models have *different reasons to change* — they belong to different stakeholders. Even when the classes look identical today, keep `NetworkUser` and `UiUser` separate and map between them. **Duplication is cheaper than the wrong abstraction.**
@@ -72,15 +72,15 @@ The same principle, new syntax:
 
 ## Production Example
 
-A payments team owns `CheckoutViewModel`. Over a year it accretes: price formatting (locale team files bugs against it), retry policy for the payment API (infra team tunes it), and an A/B flag branch (growth team edits it). Three teams now edit one file; merge conflicts and "unrelated" regressions follow — the growth team's flag change once broke retry behavior in a way none of their tests could catch.
+Consider this illustrative scenario: a payments team owns `CheckoutViewModel`. Over a year it accretes: price formatting (locale team files bugs against it), retry policy for the payment API (infra team tunes it), and an A/B flag branch (growth team edits it). Three teams now edit one file; merge conflicts and "unrelated" regressions follow — the growth team's flag change once broke retry behavior in a way none of their tests could catch.
 
-The Staff-level fix wasn't cleverer code — it was redrawing ownership: `PriceFormatter` (locale team), `PaymentRetryPolicy` (infra, in a shared module with its own tests), and an experimentation wrapper at the DI layer (growth). Each unit gained a single manager; cross-team regressions stopped being possible by construction.
+The Staff-level fix wasn't cleverer code — it was redrawing ownership: `PriceFormatter` (locale team), `PaymentRetryPolicy` (infra, in a shared module with its own tests), and an experimentation wrapper at the DI layer (growth). Each unit gained a single manager; the change reduced coupling, while integration tests still covered interactions between the components.
 
 ## Tradeoffs
 
 - **SRP vs. locality.** Every split adds a file hop. For code with one stakeholder and stable behavior, inlining is fine — SRP is a response to *divergent change pressure*, not a mandate to pre-shatter everything.
 - **SRP vs. speed of first draft.** The god object is genuinely faster to write on day one. The principle pays off from the second divergent change onward — which is why prototypes may skip it, and products must not.
-- **When to split: on the second stakeholder, not the fifth.** Waiting until the file is unmanageable means untangling a year of interleaved changes; splitting speculatively means abstractions with one caller. The second *divergent* change request is the calibrated trigger.
+- **When to split: on the second stakeholder, not the fifth.** Waiting until the file is unmanageable means untangling a year of interleaved changes; splitting speculatively means abstractions with one caller. A second divergent request is a review prompt, not a universal threshold. Compare actual change coupling with the indirection the split adds.
 
 ## Failure Modes
 
@@ -106,9 +106,9 @@ The Staff-level fix wasn't cleverer code — it was redrawing ownership: `PriceF
 3. **When is duplicating a data class the *right* call, and what future change makes the duplication pay for itself?**
    Duplicating network DTOs into UI models is correct. It pays off when the backend schema changes or the UI needs new formatting fields; you can modify one layer without breaking the other, isolating the stakeholders.
 4. **How does SRP at the Gradle-module level affect build times, code ownership, and API review?**
-   Splitting modules by stakeholder (e.g., `ui`, `data`, `domain`) improves build parallelism (fewer rebuilds), enforces strict ownership (teams own specific modules), and uses compiler boundaries to prevent tight coupling across layers.
+   Module boundaries can expose explicit APIs and support ownership conventions. Build benefits depend on the dependency graph, ABI stability and `api`/`implementation` exposure; ownership requires an agreed review policy. Measure build changes rather than assuming every split improves them.
 5. **What symptoms in a git log (not the code itself) tell you a file violates SRP?**
-   A file violating SRP will show frequent commits from different teams, high churn rates, merge conflicts, and commit messages spanning multiple unrelated domains (e.g., "Fix UI padding and update network timeout").
+   Signals worth investigating include frequent commits from different teams, high churn rates, merge conflicts, and commit messages spanning multiple unrelated domains (e.g., "Fix UI padding and update network timeout").
 6. **Where is the line between SRP and micro-fragmentation, and which heuristic do you use to stop splitting?**
    The line is drawn at stakeholder boundaries. Stop splitting when the code serves only one stakeholder and changes together. Splitting a single cohesive behavior into multiple files reduces readability without improving maintainability.
 
@@ -119,3 +119,5 @@ The Staff-level fix wasn't cleverer code — it was redrawing ownership: `PriceF
 - [`optimize-for-change.md`](optimize-for-change.md) — the parent heuristic: design for the changes that are coming.
 - [`../android/architecture/modularization-strategies.md`](../android/architecture/modularization-strategies.md) — SRP applied at module scale.
 - [`../patterns/repository.md`](../patterns/repository.md) — the standard stakeholder split for data access.
+- [Robert C. Martin: the Single Responsibility Principle](https://blog.cleancoder.com/uncle-bob/2014/05/08/SingleReponsibilityPrinciple.html)
+- [Gradle API and implementation separation](https://docs.gradle.org/current/userguide/java_library_plugin.html#sec:java_library_separation)

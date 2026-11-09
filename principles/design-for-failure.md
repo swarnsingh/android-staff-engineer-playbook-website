@@ -18,13 +18,11 @@ Distributed-systems practice popularized fault injection and chaos engineering: 
 
 1.  **Model failure explicitly:** A network call, file write, or nullable input needs a declared success, failure, cancellation, and timeout contract where those outcomes affect correctness.
 2.  **Graceful Degradation:** Preserve a safe subset of functionality when product semantics allow it. Cached search results may be useful; a stale account balance may require a blocking freshness warning instead.
-3.  **Blast Radius Containment:** If the Analytics module crashes, it should not bring down the Checkout module. Isolate components so failures don't cascade.
+3.  **Blast Radius Containment:** Define which analytics failures can be contained at the call boundary. A Gradle module is not process isolation: an uncaught exception or fatal failure can still terminate the shared process.
 
 ## Mental Model
 
-Think of an airplane with four engines.
-- **Not Designed for Failure (A cheap drone):** If one propeller stops, the drone flips upside down and smashes into the ground. A single point of failure destroys the entire system.
-- **Designed for Failure (A Boeing 747):** If one engine explodes, the plane detects the failure, shuts off the fuel line to that engine to prevent a fire (Blast Radius Containment), adjusts the rudder to compensate, and continues flying on the remaining three engines (Graceful Degradation). It lands safely, and the mechanics fix it later.
+Think of a checkout flow whose optional recommendations service is unavailable. A designed fallback omits recommendations and records the dependency failure while preserving the checkout contract. A failure in payment authorization requires a different outcome: stop or reconcile rather than inventing success. Containment depends on the failure and trust boundary.
 
 ## Internal Mechanics
 
@@ -63,7 +61,10 @@ val response = api.fetchData()
 
 **Bounded example:**
 ```kotlin
+// Conceptual policy fragment: ReadOperation and retryPolicy are app-defined.
+// Configure the actual API transport with this client.
 val client = OkHttpClient.Builder()
+    .callTimeout(15, TimeUnit.SECONDS)
     .readTimeout(10, TimeUnit.SECONDS)
     .build()
 
@@ -129,7 +130,7 @@ See [`../reference-architectures/offline-first-app.md`](../reference-architectur
 When reviewing a new feature, a Staff engineer's first instinct is to ask: "How does this break?"
 
 1.  **What if the network drops halfway through?** If this is a multi-step purchase flow, do we charge them twice? (If yes, we need Idempotency). Do we leave them in a state where they paid but didn't get the item? (If yes, we need a Saga).
-2.  **What if the OS kills us?** If the user backgrounds the app to check a text message, and the OS kills our process to reclaim memory, what happens when they come back? Is the `ViewModel` state saved in `SavedStateHandle`?
+2.  **What if the OS kills us?** If the user backgrounds the app to check a text message, and the OS kills our process to reclaim memory, what happens when they come back? Are small reconstruction inputs in saved state, and accepted work in durable storage? `SavedStateHandle` does not persist the whole ViewModel or guarantee recovery after every form of dismissal or data removal.
 3.  **What is the failure outcome?** Each remote operation needs an intentional outcome at its owning boundary: cached data with freshness, a typed error, a retryable state, an error surface, or a deliberate no-op whose observability and product semantics are documented.
 4.  **How do we build evidence that this fails safely? (Chaos Engineering)** A Staff engineer doesn't just assume the retry logic works; they introduce fault injection in testing or staging—simulating dropped packets, 500 errors, or high latency—to verify that the app degrades gracefully rather than crashing.
 
@@ -183,3 +184,5 @@ When reviewing a new feature, a Staff engineer's first instinct is to ask: "How 
 - [WorkManager retry and backoff](https://developer.android.com/develop/background-work/background-tasks/persistent/getting-started/define-work#retries_backoff) — Explicit `Result.retry()` behavior.
 - [Kotlin cancellation](https://kotlinlang.org/docs/cancellation-and-timeouts.html) — Why cancellation exceptions should be rethrown.
 - [`../observability/telemetry-taxonomy.md`](../observability/telemetry-taxonomy.md) — Selecting metrics, diagnostics, exception reports, traces, and product events.
+- [Android saved-state boundaries](https://developer.android.com/topic/libraries/architecture/saving-states)
+- [OkHttp timeouts](https://raw.githubusercontent.com/square/okhttp/master/okhttp/src/commonJvmAndroid/kotlin/okhttp3/OkHttpClient.kt)

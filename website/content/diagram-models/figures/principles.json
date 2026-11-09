@@ -1,0 +1,1236 @@
+[
+  {
+    "path": "principles/simplicity",
+    "diagram": "bcdeb3b15668d2ce",
+    "kind": "map",
+    "number": 1,
+    "title": "Trace the same database access through two designs",
+    "caption": "The two paths keep the screen and database. The specific use case and repository leave fewer indirections to trace when changing the business rule in this example.",
+    "nodes": [
+      {
+        "id": "a",
+        "title": "Screen",
+        "role": "client",
+        "detail": "Requests data"
+      },
+      {
+        "id": "b",
+        "title": "Generic interactor",
+        "role": "runtime",
+        "detail": "Shared base behavior"
+      },
+      {
+        "id": "c",
+        "title": "Dynamic proxy",
+        "role": "runtime",
+        "detail": "Maps the call"
+      },
+      {
+        "id": "d",
+        "title": "Abstract repository",
+        "role": "runtime",
+        "detail": "Resolves data access"
+      },
+      {
+        "id": "e",
+        "title": "Database",
+        "role": "storage",
+        "detail": "Stored rows"
+      },
+      {
+        "id": "f",
+        "title": "Screen",
+        "role": "client",
+        "detail": "Requests data"
+      },
+      {
+        "id": "g",
+        "title": "Specific use case",
+        "role": "runtime",
+        "detail": "Owns the rule"
+      },
+      {
+        "id": "h",
+        "title": "Specific repository",
+        "role": "runtime",
+        "detail": "Owns data access"
+      },
+      {
+        "id": "i",
+        "title": "Database",
+        "role": "storage",
+        "detail": "Stored rows"
+      }
+    ],
+    "edges": [
+      {
+        "from": "a",
+        "to": "b",
+        "label": "invoke"
+      },
+      {
+        "from": "b",
+        "to": "c",
+        "label": "forward"
+      },
+      {
+        "from": "c",
+        "to": "d",
+        "label": "map to"
+      },
+      {
+        "from": "d",
+        "to": "e",
+        "label": "query"
+      },
+      {
+        "from": "f",
+        "to": "g",
+        "label": "invoke"
+      },
+      {
+        "from": "g",
+        "to": "h",
+        "label": "request data"
+      },
+      {
+        "from": "h",
+        "to": "i",
+        "label": "query"
+      }
+    ],
+    "groups": [
+      {
+        "id": "generic",
+        "label": "Generic layers",
+        "nodes": [
+          "a",
+          "b",
+          "c",
+          "d",
+          "e"
+        ]
+      },
+      {
+        "id": "specific",
+        "label": "Specific layers",
+        "nodes": [
+          "f",
+          "g",
+          "h",
+          "i"
+        ]
+      }
+    ],
+    "sources": [
+      "https://google.github.io/eng-practices/review/reviewer/looking-for.html#complexity"
+    ]
+  },
+  {
+    "path": "principles/least-knowledge",
+    "diagram": "6274c1a816122bd1",
+    "kind": "map",
+    "number": 1,
+    "title": "Call the direct collaborator and keep its graph private",
+    "caption": "The direct collaborator can use its own implementation graph. The caller depends on the collaborator’s method and avoids two separate reach-through paths.",
+    "nodes": [
+      {
+        "id": "caller",
+        "title": "Caller",
+        "role": "client",
+        "detail": "Needs a result"
+      },
+      {
+        "id": "friend",
+        "title": "Direct collaborator",
+        "role": "runtime",
+        "detail": "Parameter, field or local"
+      },
+      {
+        "id": "nested",
+        "title": "A.b",
+        "role": "neutral",
+        "detail": "Nested collaborator"
+      },
+      {
+        "id": "deep",
+        "title": "A.b.c",
+        "role": "neutral",
+        "detail": "Deeper collaborator"
+      }
+    ],
+    "edges": [
+      {
+        "from": "caller",
+        "to": "friend",
+        "label": "call a method"
+      },
+      {
+        "from": "caller",
+        "to": "nested",
+        "label": "avoid reaching through A",
+        "style": "dashed"
+      },
+      {
+        "from": "caller",
+        "to": "deep",
+        "label": "avoid reaching through A.b",
+        "style": "dashed"
+      },
+      {
+        "from": "friend",
+        "to": "nested",
+        "label": "mediate access"
+      },
+      {
+        "from": "friend",
+        "to": "deep",
+        "label": "hide internal graph"
+      }
+    ],
+    "groups": [
+      {
+        "id": "call",
+        "label": "Caller scope",
+        "nodes": [
+          "caller"
+        ]
+      },
+      {
+        "id": "internal",
+        "label": "Collaborator scope",
+        "nodes": [
+          "friend",
+          "nested",
+          "deep"
+        ]
+      }
+    ],
+    "sources": [
+      "https://khoury.northeastern.edu/home/lieber/LoD.html"
+    ]
+  },
+  {
+    "path": "principles/composition-over-inheritance",
+    "diagram": "dfb95052551051b9",
+    "kind": "map",
+    "number": 1,
+    "title": "Combine two behaviors without a new subclass for each combination",
+    "caption": "Follow the extends relationships on the left. AuthNetworkActivity inherits the network branch, while the activity on the right can hold both an authenticator and a network client.",
+    "nodes": [
+      {
+        "id": "auth",
+        "title": "AuthActivity",
+        "role": "runtime",
+        "detail": "Authentication subclass"
+      },
+      {
+        "id": "both",
+        "title": "AuthNetworkActivity",
+        "role": "runtime",
+        "detail": "Needs both behaviors"
+      },
+      {
+        "id": "network",
+        "title": "NetworkActivity",
+        "role": "runtime",
+        "detail": "Networking subclass"
+      },
+      {
+        "id": "base",
+        "title": "BaseActivity",
+        "role": "neutral",
+        "detail": "Shared parent"
+      },
+      {
+        "id": "activity",
+        "title": "Activity",
+        "role": "client",
+        "detail": "Coordinates the call"
+      },
+      {
+        "id": "authenticator",
+        "title": "Authenticator",
+        "role": "runtime",
+        "detail": "Owns authentication"
+      },
+      {
+        "id": "client",
+        "title": "NetworkClient",
+        "role": "runtime",
+        "detail": "Owns networking"
+      }
+    ],
+    "edges": [
+      {
+        "from": "auth",
+        "to": "base",
+        "label": "extends"
+      },
+      {
+        "from": "both",
+        "to": "network",
+        "label": "extends"
+      },
+      {
+        "from": "network",
+        "to": "base",
+        "label": "extends"
+      },
+      {
+        "from": "activity",
+        "to": "authenticator",
+        "label": "holds"
+      },
+      {
+        "from": "activity",
+        "to": "client",
+        "label": "holds"
+      }
+    ],
+    "groups": [
+      {
+        "id": "inherit",
+        "label": "Inheritance hierarchy",
+        "nodes": [
+          "auth",
+          "both",
+          "network",
+          "base"
+        ]
+      },
+      {
+        "id": "compose",
+        "label": "Composed activity",
+        "nodes": [
+          "activity",
+          "authenticator",
+          "client"
+        ]
+      }
+    ],
+    "sources": [
+      "https://kotlinlang.org/docs/inheritance.html",
+      "https://kotlinlang.org/docs/interfaces.html"
+    ]
+  },
+  {
+    "path": "principles/make-invalid-states-impossible",
+    "diagram": "3a5eab6a3f11c280",
+    "kind": "map",
+    "number": 1,
+    "title": "Put validation where raw input becomes a domain value",
+    "caption": "The left path performs a check while continuing to work with raw input. On the right, a validated value makes the checked invariant available to domain code. Rejected input leaves through a separate path.",
+    "nodes": [
+      {
+        "id": "r1",
+        "title": "Raw input",
+        "role": "neutral",
+        "detail": "Untrusted input"
+      },
+      {
+        "id": "check",
+        "title": "Validation logic",
+        "role": "runtime",
+        "detail": "Check the raw value"
+      },
+      {
+        "id": "pass",
+        "title": "Business logic",
+        "role": "runtime",
+        "detail": "Still receives a raw value"
+      },
+      {
+        "id": "throw",
+        "title": "Runtime exception",
+        "role": "runtime",
+        "detail": "Example failure path"
+      },
+      {
+        "id": "r2",
+        "title": "Raw input",
+        "role": "neutral",
+        "detail": "Untrusted input"
+      },
+      {
+        "id": "parse",
+        "title": "Factory or constructor",
+        "role": "runtime",
+        "detail": "Check at the boundary"
+      },
+      {
+        "id": "reject",
+        "title": "Error or null",
+        "role": "runtime",
+        "detail": "Rejected input"
+      },
+      {
+        "id": "valid",
+        "title": "Validated domain value",
+        "role": "storage",
+        "detail": "Checked invariant"
+      },
+      {
+        "id": "domain",
+        "title": "Domain logic",
+        "role": "runtime",
+        "detail": "Consumes the domain value"
+      }
+    ],
+    "edges": [
+      {
+        "from": "r1",
+        "to": "check",
+        "label": "validate"
+      },
+      {
+        "from": "check",
+        "to": "pass",
+        "label": "pass"
+      },
+      {
+        "from": "check",
+        "to": "throw",
+        "label": "fail"
+      },
+      {
+        "from": "r2",
+        "to": "parse",
+        "label": "parse"
+      },
+      {
+        "from": "parse",
+        "to": "reject",
+        "label": "reject invalid input"
+      },
+      {
+        "from": "parse",
+        "to": "valid",
+        "label": "accept valid input"
+      },
+      {
+        "from": "valid",
+        "to": "domain",
+        "label": "pass checked value"
+      }
+    ],
+    "groups": [
+      {
+        "id": "raw",
+        "label": "Raw-value path",
+        "nodes": [
+          "r1",
+          "check",
+          "pass",
+          "throw"
+        ]
+      },
+      {
+        "id": "typed",
+        "label": "Typed path",
+        "nodes": [
+          "r2",
+          "parse",
+          "reject",
+          "valid",
+          "domain"
+        ]
+      }
+    ],
+    "sources": [
+      "https://kotlinlang.org/docs/inline-classes.html"
+    ]
+  },
+  {
+    "path": "principles/locality-of-reference",
+    "diagram": "0ec82617f2aa8572",
+    "kind": "map",
+    "number": 1,
+    "title": "Package by layer spreads a feature across folders",
+    "caption": "Trace the checkout files through UI, ViewModel, repository and network packages. This arrangement groups files that perform similar technical roles.",
+    "nodes": [
+      {
+        "id": "app",
+        "title": "App package",
+        "role": "neutral",
+        "detail": "com.example.app"
+      },
+      {
+        "id": "ui",
+        "title": "ui/",
+        "role": "client",
+        "detail": [
+          "LoginScreen.kt",
+          "CheckoutScreen.kt",
+          "ProfileScreen.kt"
+        ]
+      },
+      {
+        "id": "vm",
+        "title": "viewmodel/",
+        "role": "runtime",
+        "detail": [
+          "LoginViewModel.kt",
+          "CheckoutViewModel.kt",
+          "ProfileViewModel.kt"
+        ]
+      },
+      {
+        "id": "repo",
+        "title": "repository/",
+        "role": "storage",
+        "detail": [
+          "LoginRepository.kt",
+          "CheckoutRepository.kt",
+          "ProfileRepository.kt"
+        ]
+      },
+      {
+        "id": "net",
+        "title": "network/",
+        "role": "runtime",
+        "detail": [
+          "LoginApi.kt",
+          "CheckoutApi.kt",
+          "ProfileApi.kt"
+        ]
+      }
+    ],
+    "edges": [
+      {
+        "from": "app",
+        "to": "ui",
+        "label": "contains UI"
+      },
+      {
+        "from": "app",
+        "to": "vm",
+        "label": "contains state"
+      },
+      {
+        "from": "app",
+        "to": "repo",
+        "label": "contains data access"
+      },
+      {
+        "from": "app",
+        "to": "net",
+        "label": "contains API"
+      }
+    ],
+    "groups": [
+      {
+        "id": "layout",
+        "label": "Layer packages",
+        "nodes": [
+          "app",
+          "ui",
+          "vm",
+          "repo",
+          "net"
+        ]
+      }
+    ],
+    "sources": [
+      "https://developer.android.com/topic/modularization/patterns"
+    ]
+  },
+  {
+    "path": "principles/locality-of-reference",
+    "diagram": "85530ec72f51d395",
+    "kind": "map",
+    "number": 2,
+    "title": "Package by feature keeps one change near its collaborators",
+    "caption": "Login’s screen, state, repository and API live together. The checkout and profile packages use the same organization. This can shorten the path through the code for a change confined to one feature.",
+    "nodes": [
+      {
+        "id": "app",
+        "title": "App package",
+        "role": "neutral",
+        "detail": "com.example.app"
+      },
+      {
+        "id": "login",
+        "title": "login/",
+        "role": "client",
+        "detail": [
+          "LoginScreen.kt",
+          "LoginViewModel.kt",
+          "LoginRepository.kt",
+          "LoginApi.kt"
+        ]
+      },
+      {
+        "id": "checkout",
+        "title": "checkout/",
+        "role": "client",
+        "detail": [
+          "Checkout UI and state",
+          "Checkout data and API"
+        ]
+      },
+      {
+        "id": "profile",
+        "title": "profile/",
+        "role": "client",
+        "detail": [
+          "Profile UI and state",
+          "Profile data and API"
+        ]
+      }
+    ],
+    "edges": [
+      {
+        "from": "app",
+        "to": "login",
+        "label": "contains Login"
+      },
+      {
+        "from": "app",
+        "to": "checkout",
+        "label": "contains Checkout"
+      },
+      {
+        "from": "app",
+        "to": "profile",
+        "label": "contains Profile"
+      }
+    ],
+    "groups": [
+      {
+        "id": "layout",
+        "label": "Feature packages",
+        "nodes": [
+          "app",
+          "login",
+          "checkout",
+          "profile"
+        ]
+      }
+    ],
+    "sources": [
+      "https://developer.android.com/topic/modularization/patterns"
+    ]
+  },
+  {
+    "path": "principles/locality-of-reference",
+    "diagram": "50e77ac59c477a83",
+    "kind": "map",
+    "number": 3,
+    "title": "Locality has different costs at different layers",
+    "caption": "The memory hierarchy and data representation affect physical accesses. Feature organization affects how people find and change related code. Compose read scopes govern which phase or scope observes a change.",
+    "nodes": [
+      {
+        "id": "l1",
+        "title": "L1 cache",
+        "role": "storage",
+        "detail": "Example CPU hierarchy"
+      },
+      {
+        "id": "l2",
+        "title": "L2 cache",
+        "role": "storage",
+        "detail": "Next cache level"
+      },
+      {
+        "id": "l3",
+        "title": "L3 cache",
+        "role": "storage",
+        "detail": "Example last-level cache"
+      },
+      {
+        "id": "ram",
+        "title": "Main memory",
+        "role": "storage",
+        "detail": "Backs cached data"
+      },
+      {
+        "id": "aos",
+        "title": "Array of structs",
+        "role": "storage",
+        "detail": "Fields grouped per item"
+      },
+      {
+        "id": "soa",
+        "title": "Struct of arrays",
+        "role": "storage",
+        "detail": "One array per field"
+      },
+      {
+        "id": "refs",
+        "title": "Reference graph",
+        "role": "storage",
+        "detail": "Objects reached by reference"
+      },
+      {
+        "id": "primitive",
+        "title": "Primitive array",
+        "role": "storage",
+        "detail": "Primitive elements together"
+      },
+      {
+        "id": "layer",
+        "title": "Package by layer",
+        "role": "neutral",
+        "detail": "Feature spread by role"
+      },
+      {
+        "id": "feature",
+        "title": "Package by feature",
+        "role": "neutral",
+        "detail": "Feature files together"
+      },
+      {
+        "id": "broad",
+        "title": "Broad state read",
+        "role": "runtime",
+        "detail": "Read in a wider scope"
+      },
+      {
+        "id": "local",
+        "title": "Narrow state read",
+        "role": "runtime",
+        "detail": "Read where needed"
+      }
+    ],
+    "edges": [
+      {
+        "from": "l1",
+        "to": "l2",
+        "label": "next level"
+      },
+      {
+        "from": "l2",
+        "to": "l3",
+        "label": "next level"
+      },
+      {
+        "from": "l3",
+        "to": "ram",
+        "label": "next level"
+      }
+    ],
+    "groups": [
+      {
+        "id": "cpu",
+        "label": "CPU memory hierarchy",
+        "nodes": [
+          "l1",
+          "l2",
+          "l3",
+          "ram"
+        ]
+      },
+      {
+        "id": "data",
+        "label": "Data representation",
+        "nodes": [
+          "aos",
+          "soa",
+          "refs",
+          "primitive"
+        ]
+      },
+      {
+        "id": "code",
+        "label": "Code organization and UI",
+        "nodes": [
+          "layer",
+          "feature",
+          "broad",
+          "local"
+        ]
+      }
+    ],
+    "sources": [
+      "https://developer.android.com/topic/modularization/patterns",
+      "https://developer.android.com/develop/ui/compose/phases",
+      "https://kotlinlang.org/docs/arrays.html#primitive-type-arrays"
+    ]
+  },
+  {
+    "path": "principles/progressive-disclosure",
+    "diagram": "ab42c316391f7aeb",
+    "kind": "map",
+    "number": 1,
+    "title": "Open the next layer when the caller needs another choice",
+    "caption": "The caller starts with defaults, then can choose a named override, a configuration block or a supported extension point. The arrows show choices available to the caller.",
+    "nodes": [
+      {
+        "id": "default",
+        "title": "Defaults",
+        "role": "client",
+        "detail": "connect()"
+      },
+      {
+        "id": "option",
+        "title": "Named option",
+        "role": "runtime",
+        "detail": "Override the timeout"
+      },
+      {
+        "id": "config",
+        "title": "Configuration block",
+        "role": "runtime",
+        "detail": "Set timeout and retry policy"
+      },
+      {
+        "id": "engine",
+        "title": "Extension point",
+        "role": "runtime",
+        "detail": "Supply an HTTP engine"
+      }
+    ],
+    "edges": [
+      {
+        "from": "default",
+        "to": "option",
+        "label": "one override"
+      },
+      {
+        "from": "option",
+        "to": "config",
+        "label": "related settings"
+      },
+      {
+        "from": "config",
+        "to": "engine",
+        "label": "replace behavior"
+      }
+    ],
+    "groups": [
+      {
+        "id": "api",
+        "label": "Example connection API",
+        "nodes": [
+          "default",
+          "option",
+          "config",
+          "engine"
+        ]
+      }
+    ],
+    "sources": [
+      "https://kotlinlang.org/docs/functions.html#default-arguments"
+    ]
+  },
+  {
+    "path": "principles/prefer-deletion",
+    "diagram": "70b967490580cc58",
+    "kind": "map",
+    "number": 1,
+    "title": "Remove the dependency surface that no longer serves the feature",
+    "caption": "The example app starts with three feature branches tied to a library. After checking who still needs the old paths, it retains Feature A and the narrow operation it needs.",
+    "nodes": [
+      {
+        "id": "a",
+        "title": "Feature A",
+        "role": "client",
+        "detail": "Used feature"
+      },
+      {
+        "id": "b",
+        "title": "Feature B",
+        "role": "client",
+        "detail": "Unused in this example"
+      },
+      {
+        "id": "c",
+        "title": "Feature C",
+        "role": "client",
+        "detail": "Low use in this example"
+      },
+      {
+        "id": "lib",
+        "title": "Third-party library",
+        "role": "runtime",
+        "detail": "Supplies one needed operation"
+      },
+      {
+        "id": "retained",
+        "title": "Feature A",
+        "role": "client",
+        "detail": "Retained feature"
+      },
+      {
+        "id": "helper",
+        "title": "Small utility",
+        "role": "runtime",
+        "detail": "Implements the operation"
+      }
+    ],
+    "edges": [
+      {
+        "from": "a",
+        "to": "lib",
+        "label": "depends on"
+      },
+      {
+        "from": "b",
+        "to": "lib",
+        "label": "depends on"
+      },
+      {
+        "from": "c",
+        "to": "lib",
+        "label": "depends on"
+      },
+      {
+        "from": "retained",
+        "to": "helper",
+        "label": "calls"
+      }
+    ],
+    "groups": [
+      {
+        "id": "before",
+        "label": "Before cleanup",
+        "nodes": [
+          "a",
+          "b",
+          "c",
+          "lib"
+        ]
+      },
+      {
+        "id": "after",
+        "label": "After cleanup",
+        "nodes": [
+          "retained",
+          "helper"
+        ]
+      }
+    ],
+    "sources": [
+      "https://martinfowler.com/bliki/Yagni.html",
+      "https://firebase.google.com/docs/remote-config/loading"
+    ]
+  },
+  {
+    "path": "principles/design-for-failure",
+    "diagram": "16d4d07868daf6a7",
+    "kind": "map",
+    "number": 1,
+    "title": "Handle the timeout and make stale data visible",
+    "caption": "An unhandled timeout can end the happy-path flow in failure. The alternative handles the timeout and can use cached data if present. The UI makes the stale state visible.",
+    "nodes": [
+      {
+        "id": "one",
+        "title": "UI",
+        "role": "client",
+        "detail": "Requests fresh data"
+      },
+      {
+        "id": "call",
+        "title": "Network call",
+        "role": "runtime",
+        "detail": "Fetch data"
+      },
+      {
+        "id": "unhandled",
+        "title": "Unhandled timeout",
+        "role": "runtime",
+        "detail": "Can terminate the flow"
+      },
+      {
+        "id": "two",
+        "title": "UI",
+        "role": "client",
+        "detail": "Requests a refresh"
+      },
+      {
+        "id": "repo",
+        "title": "Repository",
+        "role": "runtime",
+        "detail": "Owns fallback policy"
+      },
+      {
+        "id": "fetch",
+        "title": "Network call",
+        "role": "runtime",
+        "detail": "Try to refresh"
+      },
+      {
+        "id": "catch",
+        "title": "Timeout handler",
+        "role": "runtime",
+        "detail": "Choose cached fallback"
+      },
+      {
+        "id": "cache",
+        "title": "Local cache",
+        "role": "storage",
+        "detail": "Last saved snapshot"
+      },
+      {
+        "id": "stale",
+        "title": "Stale-data status",
+        "role": "client",
+        "detail": "Show data with a warning"
+      }
+    ],
+    "edges": [
+      {
+        "from": "one",
+        "to": "call",
+        "label": "fetch"
+      },
+      {
+        "from": "call",
+        "to": "unhandled",
+        "label": "timeout escapes"
+      },
+      {
+        "from": "two",
+        "to": "repo",
+        "label": "refresh"
+      },
+      {
+        "from": "repo",
+        "to": "fetch",
+        "label": "fetch"
+      },
+      {
+        "from": "fetch",
+        "to": "catch",
+        "label": "timeout handled"
+      },
+      {
+        "from": "catch",
+        "to": "cache",
+        "label": "read snapshot"
+      },
+      {
+        "from": "cache",
+        "to": "stale",
+        "label": "show if present"
+      }
+    ],
+    "groups": [
+      {
+        "id": "happy",
+        "label": "Happy path only",
+        "nodes": [
+          "one",
+          "call",
+          "unhandled"
+        ]
+      },
+      {
+        "id": "recover",
+        "label": "Designed fallback",
+        "nodes": [
+          "two",
+          "repo",
+          "fetch",
+          "catch",
+          "cache",
+          "stale"
+        ]
+      }
+    ],
+    "sources": [
+      "https://developer.android.com/topic/architecture/data-layer/offline-first"
+    ]
+  },
+  {
+    "path": "principles/determinism",
+    "diagram": "3e1dd1573044ef98",
+    "kind": "map",
+    "number": 1,
+    "title": "Reveal the inputs needed to reproduce a result",
+    "caption": "The pure function produces the same output for the same input. The other function can vary because it also reads the clock. Its database write is a separate effect to track.",
+    "nodes": [
+      {
+        "id": "in1",
+        "title": "Input data",
+        "role": "neutral",
+        "detail": "Explicit arguments"
+      },
+      {
+        "id": "f1",
+        "title": "Pure function",
+        "role": "runtime",
+        "detail": "Uses those inputs"
+      },
+      {
+        "id": "out1",
+        "title": "Predictable output",
+        "role": "neutral",
+        "detail": "Same input, same result"
+      },
+      {
+        "id": "in2",
+        "title": "Input data",
+        "role": "neutral",
+        "detail": "Explicit arguments"
+      },
+      {
+        "id": "time",
+        "title": "System clock",
+        "role": "neutral",
+        "detail": "Hidden time input"
+      },
+      {
+        "id": "f2",
+        "title": "Function",
+        "role": "runtime",
+        "detail": "Reads data and the clock"
+      },
+      {
+        "id": "out2",
+        "title": "Result",
+        "role": "neutral",
+        "detail": "Can vary with time"
+      },
+      {
+        "id": "db",
+        "title": "Database",
+        "role": "storage",
+        "detail": "Separate write effect"
+      }
+    ],
+    "edges": [
+      {
+        "from": "in1",
+        "to": "f1",
+        "label": "supply data"
+      },
+      {
+        "from": "f1",
+        "to": "out1",
+        "label": "return result"
+      },
+      {
+        "from": "in2",
+        "to": "f2",
+        "label": "supply data"
+      },
+      {
+        "from": "time",
+        "to": "f2",
+        "label": "read current time"
+      },
+      {
+        "from": "f2",
+        "to": "out2",
+        "label": "return result"
+      },
+      {
+        "from": "f2",
+        "to": "db",
+        "label": "write"
+      }
+    ],
+    "groups": [
+      {
+        "id": "pure",
+        "label": "Explicit inputs",
+        "nodes": [
+          "in1",
+          "f1",
+          "out1"
+        ]
+      },
+      {
+        "id": "hidden",
+        "label": "Hidden input and effect",
+        "nodes": [
+          "in2",
+          "time",
+          "f2",
+          "out2",
+          "db"
+        ]
+      }
+    ],
+    "sources": [
+      "https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/time/Clock.html"
+    ]
+  },
+  {
+    "path": "principles/optimize-for-change",
+    "diagram": "f4449d3fde618a8c",
+    "kind": "map",
+    "number": 1,
+    "title": "Match design effort to the cost of reversing a decision",
+    "caption": "Public contracts and stored data usually need a recovery plan. Internal decisions with few callers can often be revisited as evidence arrives. Both paths should account for the cost of unused flexibility.",
+    "nodes": [
+      {
+        "id": "hard",
+        "title": "Hard to reverse",
+        "role": "neutral",
+        "detail": "Public API, schema or vendor"
+      },
+      {
+        "id": "easy",
+        "title": "Easier to reverse",
+        "role": "neutral",
+        "detail": "Internal name or default"
+      },
+      {
+        "id": "plan",
+        "title": "Plan the reversal",
+        "role": "runtime",
+        "detail": "Compatibility and recovery"
+      },
+      {
+        "id": "iterate",
+        "title": "Iterate on evidence",
+        "role": "runtime",
+        "detail": "Refactor when needed"
+      },
+      {
+        "id": "need",
+        "title": "Check actual demand",
+        "role": "neutral",
+        "detail": "Cost of speculative options"
+      }
+    ],
+    "edges": [
+      {
+        "from": "hard",
+        "to": "plan",
+        "label": "test recovery"
+      },
+      {
+        "from": "easy",
+        "to": "iterate",
+        "label": "keep change cheap"
+      },
+      {
+        "from": "plan",
+        "to": "need",
+        "label": "justify optionality"
+      },
+      {
+        "from": "iterate",
+        "to": "need",
+        "label": "check for lock-in"
+      }
+    ],
+    "groups": [
+      {
+        "id": "decisions",
+        "label": "Decision types",
+        "nodes": [
+          "hard",
+          "easy"
+        ]
+      },
+      {
+        "id": "response",
+        "label": "Design response",
+        "nodes": [
+          "plan",
+          "iterate",
+          "need"
+        ]
+      }
+    ],
+    "sources": [
+      "https://martinfowler.com/bliki/Yagni.html",
+      "https://www.cs.lafayette.edu/~gexia/cs301/resources/parnas.html"
+    ]
+  }
+]

@@ -1,0 +1,8 @@
+<!-- Teaching layer over the approved Principles source 4520147. -->
+<!-- @opening -->
+<p class="story-lead">A receipt screen receives a success flag with an empty order ID. Every renderer now has to decide what that combination means. Move that decision to the point where untrusted input becomes a domain value.</p>
+
+<!-- @before Staff Engineer Thinking :: staff -->
+### Name the invariant and its boundary
+
+A successful receipt state can require a validated order ID. Check the ID’s format when creating that value. Whether the ID names an existing order still depends on the data source. Keep an error path at the boundary so callers can tell malformed input from an order they cannot find. [Kotlin value classes](https://kotlinlang.org/docs/inline-classes.html).

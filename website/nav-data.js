@@ -122,8 +122,36 @@ window.PLAYBOOK_CATALOG = [
     "icon": "△",
     "chapters": [
       {
+        "title": "Simplicity",
+        "path": "principles/simplicity.md"
+      },
+      {
+        "title": "Single Responsibility Principle (SRP)",
+        "path": "principles/single-responsibility.md"
+      },
+      {
+        "title": "Least Knowledge (Law of Demeter)",
+        "path": "principles/least-knowledge.md"
+      },
+      {
         "title": "Composition Over Inheritance",
         "path": "principles/composition-over-inheritance.md"
+      },
+      {
+        "title": "Make Invalid States Impossible",
+        "path": "principles/make-invalid-states-impossible.md"
+      },
+      {
+        "title": "Locality of Reference",
+        "path": "principles/locality-of-reference.md"
+      },
+      {
+        "title": "Progressive Disclosure",
+        "path": "principles/progressive-disclosure.md"
+      },
+      {
+        "title": "Prefer Deletion",
+        "path": "principles/prefer-deletion.md"
       },
       {
         "title": "Design for Failure",
@@ -134,36 +162,8 @@ window.PLAYBOOK_CATALOG = [
         "path": "principles/determinism.md"
       },
       {
-        "title": "Least Knowledge (Law of Demeter)",
-        "path": "principles/least-knowledge.md"
-      },
-      {
-        "title": "Locality of Reference",
-        "path": "principles/locality-of-reference.md"
-      },
-      {
-        "title": "Make Invalid States Impossible",
-        "path": "principles/make-invalid-states-impossible.md"
-      },
-      {
         "title": "Optimize for Change",
         "path": "principles/optimize-for-change.md"
-      },
-      {
-        "title": "Prefer Deletion",
-        "path": "principles/prefer-deletion.md"
-      },
-      {
-        "title": "Progressive Disclosure",
-        "path": "principles/progressive-disclosure.md"
-      },
-      {
-        "title": "Simplicity",
-        "path": "principles/simplicity.md"
-      },
-      {
-        "title": "Single Responsibility Principle (SRP)",
-        "path": "principles/single-responsibility.md"
       }
     ]
   },

@@ -1,0 +1,8 @@
+<!-- Teaching layer over the approved Principles source 4520147. -->
+<!-- @opening -->
+<p class="story-lead">A checkout change touches four distant packages. A profiler also points to scattered reads in the image pipeline. Both suggest looking at what belongs together, but each has a different cost to measure.</p>
+
+<!-- @before Staff Engineer Thinking :: staff -->
+### Measure locality at the affected layer
+
+For feature organization, trace a real change across files and owners. For a hot loop, measure the workload before changing the data layout. For Compose, locate the state read before moving it and verify the affected phase. A package move alone tells you nothing about CPU cache misses. [Compose read phases](https://developer.android.com/develop/ui/compose/phases).

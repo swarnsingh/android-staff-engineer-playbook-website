@@ -43,8 +43,8 @@ The win is **refactor blast radius**. When the only callers of a method are insi
 
 ## Historical Context
 
-1. **Demeter Project at Northwestern University (1987).** Karl Lieberherr's team studied object-oriented design and observed that programs with shorter "communication paths" between objects were easier to maintain. They formalized the observation as the *Law of Demeter*, named for the Greek goddess (Demeter being the agriculture deity associated with the Demeter Project, which focused on adaptive software).
-2. **"Object-Oriented Programming: An Objective Sense of Style" (1988).** The original paper from Lieberherr and Holland, stating the law in formal terms: a method `M` of object `O` should call only methods of `O` itself, methods of its parameters, methods of objects it created, and methods of its direct components.
+1. **Demeter Project at Northeastern University (1987).** Ian Holland proposed the style rule in the Demeter project; Karl Lieberherr and collaborators developed and publicized it. They formalized the observation as the *Law of Demeter*, named for the Greek goddess (Demeter being the agriculture deity associated with the Demeter Project, which focused on adaptive software).
+2. **"Object-Oriented Programming: An Objective Sense of Style" (1988).** The original paper from Lieberherr, Holland and Arthur Riel, stating the law in formal terms: a method `M` of object `O` should call only methods of `O` itself, methods of its parameters, methods of objects it created, and methods of its direct components.
 3. ***The Pragmatic Programmer* (1999).** Hunt and Thomas popularized the law for a general audience, coining the memorable phrase "Don't talk to strangers."
 4. **Tell, Don't Ask (early 2000s).** A related principle: instead of asking an object for its state and then computing on it (the caller "asks"), tell the object what to do and let it decide (the caller "tells"). Same root idea.
 5. **DDD aggregate roots (Evans, 2003).** Domain-Driven Design's *aggregate* pattern is a structured way to enforce Demeter — the aggregate root is the only object outside callers can talk to; it mediates access to its internal entities.
@@ -154,6 +154,8 @@ class Order(
 
 External callers can't write `order.customer.something` because `customer` isn't visible.
 
+The following domain examples are outlines: `Money`, repositories and payment operations need application contracts. Ellipses omit implementation. Sealing controls subclassing; it does not itself enforce Demeter, thread safety or payment correctness.
+
 ### 2. Sealed hierarchies for behavior
 
 When an object's behavior depends on its type, exposing the type for external inspection often violates Demeter. Sealed classes let you keep the behavior in the type itself:
@@ -198,8 +200,8 @@ flowchart TB
     C["Friend of friend of friend: A.b.c"]
 
     Caller -->|allowed| A
-    A -->|forbidden by Demeter| B
-    B -->|forbidden by Demeter| C
+    Caller -.->|reach-through avoided| B
+    Caller -.->|reach-through avoided| C
 
     A -.->|mediates via methods| B
     A -.->|mediates via methods| C
@@ -231,15 +233,16 @@ After (Demeter compliance):
 
 ```kotlin
 class Customer(private val addresses: List<Address>) {
-    fun primaryZipCode(): String = addresses.first().zipCode
+    fun primaryZipCode(): String? = addresses.firstOrNull()?.zipCode
     // ...
 }
 
 fun calculateShipping(customer: Customer, weight: Weight): Money =
-    shippingRates.lookup(customer.primaryZipCode()).times(weight)
+    customer.primaryZipCode()?.let { shippingRates.lookup(it).times(weight) }
+        ?: error("No primary shipping address selected")
 ```
 
-The 47 callers continue to work. The internal restructuring is contained.
+Callers already using the mediated shipping API can remain unchanged if its contract stays stable. Existing direct `customer.address.zipCode` callers still need migration, and missing-address handling is an intentional behavior change. The number 47 is an illustrative case, not measured project evidence.
 
 ### Aggregate root in a domain model
 
@@ -364,7 +367,7 @@ Each parameter is the *only* thing the ViewModel knows about. Mocking is trivial
 
 - **Wrapper explosion.** Strict adherence demands a getter on Customer for every Address field: `customerZipCode()`, `customerStreet()`, `customerCity()`, etc.
 - **Loss of expressiveness.** Sometimes `order.customer.email` is genuinely the clearest way to say it.
-- **Performance overhead at deep mediation.** Adding three layers of method calls to avoid `a.b.c` costs JIT optimization headroom (negligible in 99% of cases, occasionally measurable).
+- **Performance depends on implementation.** Extra calls may be inlined or remain as dispatch; use a profile before trading clarity for a presumed cost.
 - **Hides the model.** Disallowing chained access can obscure the actual structure of the data, making the domain harder to understand for new readers.
 
 **When not to apply**
@@ -401,7 +404,7 @@ Each parameter is the *only* thing the ViewModel knows about. Mocking is trivial
 ## Reliability Considerations
 
 - **Mediation lets you add validation in one place.** `order.submit()` can check invariants once; `order.items.add(x); order.markSubmitted()` invites callers to skip the check.
-- **Encapsulated state survives concurrent modification.** A wrapped collection can use a thread-safe implementation internally; an exposed mutable list lets callers race.
+- **Encapsulation supports a concurrency protocol.** A wrapper can own confinement or synchronization, but private fields and an aggregate root do not make operations atomic or thread-safe by themselves.
 - **Failure handling localizes.** If `customer.charge()` can throw, putting the logic inside Customer means the error path is in one place. Spreading the call across two reach-throughs spreads the error handling.
 
 ---
@@ -416,7 +419,7 @@ Each parameter is the *only* thing the ViewModel knows about. Mocking is trivial
 
 ## Observability
 
-- **Method names trace better than field chains.** A profiler sees `Order.shippingCost()` as a named frame; a chain like `customer.address.country.shippingRate.times(weight)` shows as primitive arithmetic with no semantic name.
+- **Operation names support explicit tracing.** An instrumented `Order.shippingCost()` can be a useful boundary, but inlining and sampling mean a profiler need not retain every method as a frame.
 - **Logging is easier inside mediated methods.** Centralizing the computation in `order.shippingCost()` lets you add a `log("Computed shipping for order={}: {}", id, result)` in one place.
 - **Tracing spans wrap meaningful operations.** A trace span around `order.submit()` covers the whole behavior; wrapping individual reaches-through (`getCustomer()`, `getAddress()`) produces noise.
 
@@ -426,7 +429,7 @@ Each parameter is the *only* thing the ViewModel knows about. Mocking is trivial
 
 **Treat the principle as a design lens, not a lint rule.** The question isn't "how many dots?" but "what would change in my caller's code if the callee's internals changed?" Apply the principle where the answer is "a lot."
 
-**Distinguish value chaining from behavior chaining.** `instant.toLocalDate().year` is fine — `Instant` and `LocalDate` are stable value types. `viewModel.repository.cache.get(key)` is a smell — every type is behavioral and likely to evolve.
+**Distinguish value chaining from behavior chaining.** `instant.atZone(zone).toLocalDate().year` is fine — `Instant` and `LocalDate` are stable value types. `viewModel.repository.cache.get(key)` is a smell — every type is behavioral and likely to evolve.
 
 **Use aggregate roots in non-trivial domains.** When a cluster of related objects (Order, OrderItem, Payment, Receipt) has invariants spanning multiple types, designate one entry point (the aggregate root) and route all external mutations through it.
 
@@ -434,7 +437,7 @@ Each parameter is the *only* thing the ViewModel knows about. Mocking is trivial
 
 **Watch for state hoisting that violates Demeter in the opposite direction.** Hoisting all state to the top of the Compose tree exposes child structure to grandparent components. Hoist to the *closest* ancestor that needs the state, not the top.
 
-**Add the wrapper method when the same chain appears in three or more places.** Three repeated chains is a strong signal that the chain represents a real concept the type should expose as behavior. Below three, leave it.
+**Use repetition as evidence, not a threshold.** Repeated reach-through can reveal a missing domain operation, but one security-sensitive call can justify a boundary and many stable value accesses may need none.
 
 **Don't refactor working code purely for Demeter purity.** If the code works, tests pass, and refactor risk is non-trivial, leave it. Apply the principle in new code and in code you're already touching for other reasons.
 
@@ -507,9 +510,14 @@ In this repository:
 
 External:
 
-- Karl Lieberherr & Ian Holland, *"Object-Oriented Programming: An Objective Sense of Style"* (1988) — the original Law of Demeter paper.
+- Karl Lieberherr, Ian Holland & Arthur Riel, *"Object-Oriented Programming: An Objective Sense of Style"* (1988) — the original Law of Demeter paper.
 - Hunt & Thomas, *The Pragmatic Programmer* (1999) — the "Don't talk to strangers" framing.
 - Martin Fowler, *"GetterEradicator"* and *"TellDontAsk"* (martinfowler.com) — concise modern essays.
 - Eric Evans, *Domain-Driven Design* (2003) — aggregates as enforced Demeter.
 - *Growing Object-Oriented Software, Guided by Tests* by Freeman & Pryce — Demeter in practice, especially in test design.
 - Misko Hevery, *"Demeter: It's not just a good idea, it's the Law"* — practical examples from Google's testing guidelines.
+- [Law of Demeter project history and statement](https://www.ccs.neu.edu/home/lieber/LoD.html)
+- [Tell, Don’t Ask](https://martinfowler.com/bliki/TellDontAsk.html)
+- [Aggregate boundaries](https://martinfowler.com/bliki/DDD_Aggregate.html)
+- [Compose state ownership](https://developer.android.com/develop/ui/compose/state-hoisting)
+- [Detekt style rules](https://detekt.dev/docs/rules/style/)
