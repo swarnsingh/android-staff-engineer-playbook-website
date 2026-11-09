@@ -9,7 +9,7 @@ Separate acceptance, execution and acknowledgment. A persisted row answers wheth
 
 Keep one stable operation ID across attempts. A worker claims pending work, performs it under the server's deduplication contract, and acknowledges only a confirmed outcome. A timeout can mean the request never arrived, the server is still working, or the reply was lost. Blindly assigning a new ID on each attempt can turn one user action into multiple mutations.
 
-[Source: durable intent, duplicate messages and idempotent consumers](https://docs.aws.amazon.com/prescriptive-guidance/latest/cloud-design-patterns/transactional-outbox.html).
+[Source: durable intent, duplicate messages and idempotent consumers](https://github.com/aws-samples/transactional-outbox-pattern).
 
 <!-- @after Architecture :: animation -->
 ### Follow U42 through a lost reply

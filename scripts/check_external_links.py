@@ -5,6 +5,9 @@ Run from the repository root. The scheduled GitHub Actions job fails only for
 definitive missing-resource responses (404 and 410). Authentication, bot
 protection, rate limits, server errors, and transport failures are printed as
 warnings because they do not prove that a reader-facing link is broken.
+
+Links to the private source playbook repository are skipped: they return 404
+to anonymous requests even though they are valid for the owner.
 """
 
 from __future__ import annotations
@@ -22,6 +25,11 @@ WORKERS = 16
 MISSING = {404, 410}
 USER_AGENT = "android-staff-engineer-playbook-link-check/1.0"
 LINK_RE = re.compile(r"\[[^\]]*\]\((https?://[^)\s]+)\)")
+PRIVATE_REPOSITORIES = ("https://github.com/swarnsingh/android-staff-engineer-playbook",)
+
+
+def is_private(url: str) -> bool:
+    return any(url == repo or url.startswith(repo + "/") for repo in PRIVATE_REPOSITORIES)
 
 
 def markdown_files():
@@ -63,6 +71,9 @@ def check(url: str) -> tuple[str, int | None, str | None]:
 
 def main() -> int:
     links = collect_links()
+    skipped = sorted(url for url in links if is_private(url))
+    for url in skipped:
+        del links[url]
     missing: list[tuple[str, int, list[str]]] = []
     warnings: list[tuple[str, int | None, str, list[str]]] = []
 
@@ -74,6 +85,7 @@ def main() -> int:
                 warnings.append((url, status, error, links[url]))
 
     print(f"Checked {len(links)} unique external resources")
+    print(f"Skipped {len(skipped)} links to the private source repository")
     for url, status, paths in missing:
         print(f"MISSING {status}: {url}")
         for path in sorted(set(paths)):

@@ -38,7 +38,7 @@ flowchart TB
 
 The UI follows payment state rather than guessing from publication. Subscribers own their processing outcomes. If delivery can repeat, deduplicate using stable event IDs; a broker acknowledgment alone does not prove that a receipt was sent.
 
-[Source: atomic outbox intent and idempotent consumers](https://docs.aws.amazon.com/prescriptive-guidance/latest/cloud-design-patterns/transactional-outbox.html).
+[Source: atomic outbox intent and idempotent consumers](https://github.com/aws-samples/transactional-outbox-pattern).
 
 <!-- @after Failure Modes :: staff -->
 ### Make the missing subscriber an explicit test case

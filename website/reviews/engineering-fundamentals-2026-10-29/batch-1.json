@@ -63,7 +63,7 @@
         "https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines.flow/-state-flow/",
         "https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines.flow/callback-flow.html",
         "https://kotlinlang.org/docs/visibility-modifiers.html",
-        "https://square.github.io/retrofit/"
+        "https://lysine.dev/retrofit/"
       ]
     },
     {
@@ -445,7 +445,7 @@
       "new": "A Retrofit service interface annotated with @GET and @Path is useful: it declares the HTTP contract and Retrofit generates its implementation. It is intentionally transport-specific. Add a separate application-facing abstraction when callers should not depend on Retrofit types or HTTP details.",
       "reason": "Retrofit service interfaces are its required declarative API, not useless boilerplate.",
       "sources": [
-        "https://square.github.io/retrofit/"
+        "https://lysine.dev/retrofit/"
       ],
       "status": "approved",
       "validation": "Verified against official API documentation, specifications or the named original paper; exact replacement occurs once in the source snapshot."

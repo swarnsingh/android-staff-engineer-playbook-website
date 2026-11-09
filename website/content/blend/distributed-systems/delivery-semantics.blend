@@ -496,7 +496,7 @@ The picture's database boundary matters: the consumer's external API calls would
 
 The Kotlin blocks below are application-shaped fragments: they assume the shown app APIs, a transport adapter and, where used, coroutine/time imports. They are not standalone programs. The consumer requires a real database implementation. Its database adapter must serialize duplicate scoped keys and retry serialization conflicts as appropriate. Only writes through that same transaction are captured. A pre-transaction lookup is an optimization, not the concurrency guard ([PostgreSQL isolation](https://www.postgresql.org/docs/current/transaction-iso.html)).
 
-For an external payment or email, commit an outbox intent locally, then use downstream idempotency and reconciliation. The outbox relay can deliver twice; a local commit does not atomically charge a provider ([transactional outbox](https://docs.aws.amazon.com/prescriptive-guidance/latest/cloud-design-patterns/transactional-outbox.html)).
+For an external payment or email, commit an outbox intent locally, then use downstream idempotency and reconciliation. The outbox relay can deliver twice; a local commit does not atomically charge a provider ([transactional outbox](https://github.com/aws-samples/transactional-outbox-pattern)).
 
 <!-- @before Tradeoffs :: guide -->
 ### Read the comparison under its failure assumptions
