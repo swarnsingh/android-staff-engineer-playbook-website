@@ -126,9 +126,11 @@ Every collection of a cold `callbackFlow` registers a new callback.
 ```kotlin
 val locations = locationClient.locations()
 
-// Two collectors means two callback registrations.
-locations.collect { renderMap(it) }
-locations.collect { logDebug(it) }
+// Two concurrent collectors mean two callback registrations.
+coroutineScope {
+    launch { locations.collect { renderMap(it) } }
+    launch { locations.collect { logDebug(it) } }
+}
 ```
 
 If the source should be shared, convert it once at the correct owner boundary.
@@ -160,7 +162,7 @@ Use `appScope` only when app-wide sharing is intentional. Screen-specific stream
 | `channelFlow` | You need to launch multiple child coroutines and send concurrently | Merge network polling plus local invalidation |
 | `flow` | Sequential suspend code is enough | Load cache, then network |
 
-`channelFlow` is colder and structured like Flow, but it permits concurrent sends from child coroutines.
+Like callbackFlow, channelFlow is cold: each collector runs its builder. It also permits concurrent sends from child coroutines.
 
 ```kotlin
 fun mergedUpdates(): Flow<Update> = channelFlow {
@@ -262,7 +264,10 @@ data class AccelerometerReading(
 )
 
 fun SensorManager.accelerometer(): Flow<AccelerometerReading> = callbackFlow {
-    val sensor = getDefaultSensor(Sensor.TYPE_ACCELEROMETER)
+    val sensor = getDefaultSensor(Sensor.TYPE_ACCELEROMETER) ?: run {
+        close(IllegalStateException("Accelerometer unavailable"))
+        return@callbackFlow
+    }
     val listener = object : SensorEventListener {
         override fun onSensorChanged(event: SensorEvent) {
             trySend(
@@ -277,7 +282,10 @@ fun SensorManager.accelerometer(): Flow<AccelerometerReading> = callbackFlow {
         override fun onAccuracyChanged(sensor: Sensor?, accuracy: Int) = Unit
     }
 
-    registerListener(listener, sensor, SensorManager.SENSOR_DELAY_GAME)
+    if (!registerListener(listener, sensor, SensorManager.SENSOR_DELAY_GAME)) {
+        close(IllegalStateException("Accelerometer registration failed"))
+        return@callbackFlow
+    }
 
     awaitClose {
         unregisterListener(listener)
@@ -323,12 +331,14 @@ fun listenerIsRemovedWhenCollectionIsCancelled() = runTest {
         source.locations().collect { values += it }
     }
 
-    source.emit(Location("test"))
-    advanceUntilIdle()
-
+    runCurrent() // Start collection and callback registration first.
     assertEquals(1, source.listenerCount)
-    job.cancel()
-    advanceUntilIdle()
+
+    source.emit(Location("test"))
+    runCurrent() // Process immediate backgroundScope work.
+    assertEquals("test", values.single().provider)
+
+    job.cancelAndJoin() // Wait for awaitClose cleanup.
     assertEquals(0, source.listenerCount)
 }
 ```
@@ -368,3 +378,10 @@ fun emitsCallbacks() = runTest {
 - [`../android/concurrency/shared-flow-and-state-flow.md`](../../android/concurrency/shared-flow-and-state-flow.md) - hot-flow selection.
 - [Kotlin API: callbackFlow](https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines.flow/callback-flow.html)
 - [Android Developers: Kotlin flows on Android](https://developer.android.com/kotlin/flow)
+
+### Official verification references
+
+- [Primary documentation or owning implementation](https://developer.android.com/reference/android/hardware/SensorManager#getDefaultSensor(int))
+- [Primary documentation or owning implementation](https://developer.android.com/reference/android/hardware/SensorManager#registerListener(android.hardware.SensorEventListener,%20android.hardware.Sensor,%20int))
+- [Primary documentation or owning implementation](https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines.flow/channel-flow.html)
+- [Primary documentation or owning implementation](https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-test/kotlinx.coroutines.test/-test-scope/background-scope.html)

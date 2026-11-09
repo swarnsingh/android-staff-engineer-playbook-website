@@ -6,7 +6,7 @@
 
 ## What KSP Is
 
-KSP (Kotlin Symbol Processing) is a Kotlin compiler plugin API for inspecting and generating code from Kotlin source at compile time.
+KSP (Kotlin Symbol Processing) exposes APIs for source-symbol inspection and code generation. KSP1 used a Kotlin compiler plugin; KSP2 runs independently of that compiler-plugin architecture.
 
 The model:
 1. Your code is parsed.
@@ -344,7 +344,7 @@ class FooModule
 // object ModuleRegistry { val all = listOf(FooModule, BarModule, ...) }
 ```
 
-Aggregating processor that scans all `@RegisterIntoMap` classes across modules and generates a single registry file in the `:app` module.
+An aggregating processor can inspect annotated source symbols in its current compilation unit. Cross-module discovery needs an explicit mechanism, such as generated dependency markers read through getDeclarationsFromPackage; getSymbolsWithAnnotation alone does not scan every dependency module.
 
 ### Pattern 2: Per-class generator (Room-style)
 
@@ -390,7 +390,7 @@ interface Api {
 // }
 ```
 
-KSP preserves the `suspend` modifier — Retrofit's older KAPT version had to do additional work to detect this from Java stubs.
+KSP exposes the suspend modifier for processors. Retrofit itself uses runtime proxy/method inspection rather than KAPT or KSP service generation; use Room/Hilt as processor migration examples.
 
 ---
 
@@ -464,7 +464,7 @@ Expected savings: 20–40% on cold builds in a large project. Sometimes more if 
 | Generated files not visible in IDE | Indexing didn't pick them up | Build → Sync Project; sometimes Invalidate Caches |
 | Custom processor works locally, fails in CI | Stale plugin cache | Add `--no-build-cache --rerun-tasks` to test |
 | KSP claims symbol invalid every round | Bug in `validate()` logic | Audit the symbol graph manually; log what fails |
-| Multi-module project: one module fails to find generated code | KSP-generated source not on consumer's classpath | The processor's `Dependencies` must include the right sources |
+| Consumer cannot resolve generated declarations | Output was not generated, compiled/exported or placed on the correct variant dependency | Inspect processor output, compilation wiring, visibility and the resolved consumer classpath. Dependencies describes incremental input/output relationships; it is not a classpath export fix |
 | App startup crashes after migration: NoClassDefFoundError | R8 stripped a generated class | Add `consumerProguardFiles` rules for the processor's outputs |
 | Generated code uses experimental Kotlin features | Opt-in not propagated | Add `@OptIn(...)` or `freeCompilerArgs += "-Xopt-in=..."` |
 | Multiple KSP versions in resolved graph | Different libs pull different KSP versions | Force a single version via Gradle `resolutionStrategy` |
@@ -474,9 +474,9 @@ Expected savings: 20–40% on cold builds in a large project. Sometimes more if 
 
 ## Common Pitfalls
 
-- **Migrating without testing.** Hilt + Room migrations are mostly seamless; specialty libraries (Moshi with sealed types, Retrofit codegen) sometimes have edge cases. Run the full test suite.
+- **Processor migrations:** Verify generated behavior for actual processors such as Hilt, Room and model adapters. Retrofit service interfaces use runtime proxies and are not a KAPT-to-KSP codegen migration.
 - **Aggregating when isolating works.** Aggregating is the "safe default" but it kills incremental builds. Tune per processor.
-- **Custom processor with bad `validate()` logic.** Returns invalid symbols every round → KSP loops forever (build hangs).
+- **Deferral:** Returning invalid symbols defers them. Processing ends when a round generates no new files; unresolved deferred symbols then produce errors. A processor generating fresh files forever is a different bug.
 - **Forgetting `Dependencies`.** Every generated file must declare its dependencies so KSP knows when to re-run.
 - **Hand-rolling string concatenation.** Use KotlinPoet. The generated code will be clean, formatted, and won't break on edge cases.
 - **No `consumerProguardFiles` for generated code.** Reflection-using generated code (rare) might be stripped by R8.
@@ -534,3 +534,11 @@ Expected savings: 20–40% on cold builds in a large project. Sometimes more if 
 - [KSP migration guide](https://kotlinlang.org/docs/ksp-kapt-migration.html) — current standalone plugin example.
 - [KotlinPoet](https://square.github.io/kotlinpoet/) — code generation library.
 - [Migrating from KAPT to KSP](https://developer.android.com/build/migrate-to-ksp) — Android Developers guide.
+
+### Official verification references
+
+- [Primary documentation or owning implementation](https://github.com/google/ksp/blob/main/api/src/main/kotlin/com/google/devtools/ksp/processing/Resolver.kt)
+- [Primary documentation or owning implementation](https://github.com/google/ksp/blob/main/docs/ksp2.md)
+- [Primary documentation or owning implementation](https://github.com/square/retrofit/blob/trunk/retrofit/src/main/java/retrofit2/Retrofit.java)
+- [Primary documentation or owning implementation](https://kotlinlang.org/docs/ksp-incremental.html)
+- [Primary documentation or owning implementation](https://kotlinlang.org/docs/ksp-multi-round.html)

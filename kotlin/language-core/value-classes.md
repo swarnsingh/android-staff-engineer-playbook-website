@@ -27,7 +27,7 @@ A type alias is documentation only — it provides zero type safety, and using i
 
 ## 2. Boxing: the Rule That Decides Whether You Got the Performance
 
-The doc-level rule is exact: **a value class is boxed whenever it is used as another type.** Inlined as itself; boxed as anything more abstract:
+The documentation gives a rule of thumb: using a value class through another type often requires boxing. Actual representation depends on the underlying type and use site; for example, a nullable wrapper around a non-null String can use a nullable String representation:
 
 ```kotlin
 @JvmInline value class Meters(val v: Double)
@@ -43,8 +43,8 @@ val list = listOf(Meters(1.0))      // boxed: List<T> is generic
 
 Consequences that matter at staff level:
 
-- **Collections box.** `List<UserId>` allocates one wrapper per element. For a hot path holding millions of wrapped longs, that's the same cost as not using primitives — use primitive arrays or rethink the type at the boundary.
-- **Equality across representations is safe** (boxing preserves `equals`), but *identity* is not — two boxes of the same value are different references. `===` on value classes is a bug pattern.
+- **Collections store boxes.** A List<UserId> stores boxed references rather than primitive longs. Boxing occurs where a value enters generic or nullable representation; it is not necessarily a fresh allocation per list slot. Generic code can put the same already-boxed reference into several slots. Measure allocations for the actual call path; use primitive arrays when their representation fits.
+- **Use value equality.** Referential equality (`===`) on value-class operands is prohibited by the compiler because representation can vary.
 - Nullable wrapped types and generic-heavy code erode the benefit silently; the type safety remains, the zero-cost claim doesn't. Profile before assuming.
 
 ## 3. Mangling and Java Interop
@@ -56,7 +56,7 @@ Because `fun compute(x: UInt)` and `fun compute(x: Int)` would collide in byteco
 fun compute(x: Millis) { }
 ```
 
-Public API of libraries with Java consumers should either avoid value classes at the surface or `@JvmName` every entry point — and that choice is permanent per [binary-compatibility rules](../../android/kotlin-multiplatform/binary-compatibility-api-evolution.md), because switching between a value class and a regular class changes signatures and mangling.
+For Java-facing APIs, choose deliberate @JvmName bridges or supported boxed exposure via experimental @JvmExposeBoxed / -Xjvm-expose-boxed (with the required opt-in) — and that choice is permanent per [binary-compatibility rules](../../android/kotlin-multiplatform/binary-compatibility-api-evolution.md), because switching between a value class and a regular class changes signatures and mangling.
 
 The standard library's `UInt`, `ULong`, `Duration` are value classes — which is why they interop awkwardly with Java and why `Duration` in a public Java-facing API is a review flag.
 
@@ -81,3 +81,7 @@ They support interfaces (with boxing at that seam), delegation, secondary constr
 - [Kotlin docs — Inline value classes](https://kotlinlang.org/docs/inline-classes.html) — boxing rules, mangling, restrictions
 - [Data Classes](data-classes.md) — the multi-field alternative
 - [Compose Stability](../../android/compose/stability.md) — how wrappers interact with skipping
+
+### Official verification references
+
+- [Primary documentation or owning implementation](https://kotlinlang.org/docs/java-to-kotlin-interop.html#inline-value-classes)

@@ -15,7 +15,7 @@ Every coroutine has:
 
 - A `Job` that defines lifecycle and parent/child cancellation.
 - A `CoroutineContext` with dispatcher, name, exception handler, and other elements.
-- A state: active, suspended, cancelling, cancelled, or completed.
+- A Job lifecycle state such as active, cancelling, cancelled, or completed. Suspension is an execution condition: a suspended coroutine can still have an active Job.
 - A continuation stack that may not look like a normal blocking stack trace.
 
 When production behavior is confusing, ask:
@@ -82,7 +82,7 @@ val result = runCatching {
 }
 ```
 
-If cancellation is swallowed, parent scopes believe work completed normally while child work may have skipped cleanup or hidden an aborted operation.
+Swallowing a cancellation exception does not reactivate a Job that was cancelled by its owner. It can still let later ordinary statements execute or turn an operation-local cancellation into an apparent success value. `finally` still runs; preserve cancellation so callers can observe the intended outcome.
 
 ## Understand Coroutine Stack Traces
 
@@ -126,7 +126,7 @@ DebugProbes.dumpCoroutines()
 
 Use this in local debug tooling, test diagnostics, or internal debug screens. Do not leave unrestricted coroutine dumps in production because coroutine names and stacks can contain sensitive business context.
 
-The JVM debug agent can also enrich thread names with coroutine ids and names:
+The JVM coroutine debug mode can enrich thread names with coroutine ids/names; enable it with this system property (separate from installing DebugProbes instrumentation):
 
 ```text
 -Dkotlinx.coroutines.debug
@@ -271,20 +271,27 @@ When emitting structured logs, use `MDCContext` (from `kotlinx-coroutines-slf4j`
 Tests should prove cancellation and ownership, not only happy-path values.
 
 ```kotlin
+@OptIn(ExperimentalCoroutinesApi::class)
 @Test
 fun refreshCancelsWhenViewModelClears() = runTest {
-    val repository = FakeRepository(
-        refreshBlock = { awaitCancellation() }
-    )
-    val viewModel = InboxViewModel(repository, dispatcher = testDispatcher)
+    val testDispatcher = StandardTestDispatcher(testScheduler)
+    Dispatchers.setMain(testDispatcher)
+    try {
+        val repository = FakeRepository(
+            refreshBlock = { awaitCancellation() }
+        )
+        val viewModel = InboxViewModel(repository, dispatcher = testDispatcher)
 
-    viewModel.refresh()
-    assertTrue(repository.refreshStarted)
+        viewModel.refresh()
+        runCurrent() // Start queued viewModelScope work before asserting.
+        assertTrue(repository.refreshStarted)
 
-    viewModel.clearForTest()
-    advanceUntilIdle()
-
-    assertTrue(repository.refreshCancelled)
+        viewModel.clearForTest()
+        runCurrent() // Observe cancellation and finally cleanup.
+        assertTrue(repository.refreshCancelled)
+    } finally {
+        Dispatchers.resetMain()
+    }
 }
 ```
 
@@ -310,3 +317,9 @@ If a coroutine is important enough to debug in production, it is important enoug
 - [`test-dispatchers-virtual-time.md`](test-dispatchers-virtual-time.md) - deterministic tests.
 - [Kotlin coroutine debugging docs](https://kotlinlang.org/docs/coroutine-context-and-dispatchers.html#debugging-coroutines-and-threads)
 - [kotlinx-coroutines-debug API](https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-debug/)
+
+### Official verification references
+
+- [Primary documentation or owning implementation](https://developer.android.com/kotlin/coroutines/test)
+- [Primary documentation or owning implementation](https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines/-job/)
+- [Primary documentation or owning implementation](https://kotlinlang.org/docs/cancellation-and-timeouts.html)

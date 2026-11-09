@@ -60,7 +60,7 @@ Alternatively, you write rules in your `proguard-rules.pro` file:
 
 ### Resource Shrinking
 
-Code is only half the battle. Images and XML layouts are huge. If you enable `shrinkResources true` in your `build.gradle`, the Android Gradle Plugin will scan your code. If it finds a `.png` file in your `res/drawable` folder that is never referenced by an XML file or Kotlin code, it replaces that image with a tiny 1x1 pixel dummy file, saving megabytes of space.
+Resource shrinking removes resources identified as unused. Dynamic name lookup needs explicit analysis and possibly tools:keep; default string-name heuristics differ from strict mode. Do not rely on an older 1x1 replacement implementation as the current contract.
 
 ## Architecture
 
@@ -100,9 +100,9 @@ You **must** upload this `mapping.txt` file to Google Play Console and Firebase 
 
 **Aggressive Optimization vs Build Times**
 
-- **Tradeoff:** R8 optimization can be turned up to maximum using `android.enableR8.fullMode=true` in your `gradle.properties`. Full mode enables extremely aggressive inlining and class merging. 
+- **Full mode:** Default since AGP 8.0; it was opt-in starting in AGP 7.0. Inspect the actual AGP configuration rather than treating fullMode=true as a new maximum setting.
 - **The Catch:** Full mode will break poorly written 3rd party SDKs that rely on reflection without providing their own Consumer ProGuard rules. It also drastically increases the release build time on your CI server.
-- **The Staff Decision:** A Staff Engineer enables `fullMode` and spends the 3 days required to hunt down and write the custom `-keep` rules for every broken SDK. The 10% reduction in APK size and 5% boost to execution speed is permanently worth the one-time integration pain.
+- **Decision:** Validate optimized release paths and narrowly scoped consumer rules. Integration time, artifact reduction and runtime gain depend on the project; no fixed three-day/10%/5% result is established here.
 
 ## Failure Modes
 
@@ -110,9 +110,9 @@ You **must** upload this `mapping.txt` file to Google Play Console and Firebase 
   `minifyEnabled` is strictly disabled on `Debug` builds because R8 takes minutes to run. If a developer uses reflection (like `Gson`) but forgets the `@Keep` annotation, the app works perfectly on their emulator. The moment it builds for Release, R8 destroys the class, and the app crashes on the first network call.
   *(Fix: Require all QA testing to be done on a `Release` variant, or a `Staging` variant with `minifyEnabled true`).*
 - **The `shrinkResources` Dynamic Trap:**
-  If you write code that loads an image dynamically by name using reflection:
+  getIdentifier is a dynamic resource lookup, not Java reflection. For example:
   `resources.getIdentifier("icon_$name", "drawable", packageName)`
-  The Resource Shrinker cannot "see" this dynamic string. It assumes `icon_cat.png` is never used and deletes it.
+  Default shrinking can retain names inferred from string constants; strict mode changes that behavior. Test the dynamic naming contract and add narrow tools:keep rules where necessary rather than assuming every dynamic lookup is deleted.
   *(Fix: You must create a `res/raw/keep.xml` file and explicitly use `tools:keep="@drawable/icon_*"` to protect dynamic resources).*
 
 ## Staff Engineer Thinking
@@ -120,7 +120,7 @@ You **must** upload this `mapping.txt` file to Google Play Console and Firebase 
 When reviewing App Size, a Staff engineer looks holistically at the App Bundle:
 
 1.  **Android App Bundles (AAB):** We never ship `.apk` files to the Play Store anymore. We ship `.aab`. An AAB contains all resources for all device densities (xxhdpi, hdpi) and languages. Google Play looks at the specific user's phone (e.g., a Spanish user with an xxhdpi screen) and generates a custom, tiny APK just for them. I verify that we are heavily utilizing AABs and not bypassing them.
-2.  **Vector Drawables:** I actively reject PRs that contain large `.png` or `.jpg` illustrations if they can be recreated as `.xml` VectorDrawables. Vectors scale infinitely with zero pixelation and take kilobytes instead of megabytes.
+2. **Asset choice:** Vectors suit appropriately sized, simple icons; Android recommends limiting them to about 200x200dp because large/complex paths may be expensive. Compare rendering and size before replacing raster illustrations.
 3.  **ProGuard Rule Scoping:** I ensure that library modules (like a custom UI library built by another team) ship their own `-consumer-proguard-rules.pro` files inside their `.aar`. The main app module should not be responsible for writing keep rules for a library's internal reflection needs.
 
 ### App size governance
@@ -168,13 +168,13 @@ Run size checks on release-like, minified AABs. Debug APK size is noise.
 4. **Describe how R8 "Shrinking" (Tree Shaking) differs from R8 "Optimization".**
    Shrinking statically analyzes the execution path and deletes completely unused classes and methods. Optimization actively alters the surviving code (e.g., removing dead `if` branches, inlining functions) to make it execute faster.
 5. **What is the `shrinkResources` flag, and how can dynamically loading drawables by their String name cause it to break your app?**
-   `shrinkResources` removes unused XML and image files. If you load an image dynamically via reflection (`getIdentifier`), the shrinker doesn't see a hardcoded reference and assumes the image is unused, replacing it with a dummy 1x1 pixel.
+   getIdentifier is resource lookup. Default shrinker name heuristics and strict mode differ; preserve required dynamic resources through tested, scoped keep declarations rather than assuming all dynamic names are removed.
 6. **Explain the architectural difference between shipping a legacy `.apk` and a modern Android App Bundle (`.aab`) to the Google Play Store.**
    An `.apk` contains all resources for all possible devices. An `.aab` is a publishing format containing everything, allowing Google Play to dynamically generate a custom, stripped-down `.apk` containing only the specific densities and languages the downloading user needs.
 7. **Why is it extremely dangerous to rely solely on `Debug` builds when verifying the functionality of a new feature?**
    Debug builds run with `minifyEnabled false`. Code that breaks under R8 (e.g., missing ProGuard rules for reflection) will work perfectly in Debug but crash instantly in a Release build.
 8. **How does replacing multiple `.png` files for different screen densities with a single XML `VectorDrawable` impact the final application size?**
-   It drastically reduces the APK size, as a `VectorDrawable` uses a tiny XML math-based representation instead of storing multiple large pixel grids (megabytes) for mdpi, hdpi, and xxhdpi screens.
+   A compact vector can replace density-specific raster icons, but complex/large illustrations may render more slowly or be larger than a compressed raster. Measure both artifact size and drawing cost for the intended dimensions.
 9. **If you enable `android.enableR8.fullMode=true`, what specific types of 3rd party libraries are most likely to crash on startup?**
    Libraries that rely heavily on Reflection but fail to bundle their own `-consumer-proguard-rules.pro` file, as `fullMode` performs extremely aggressive inlining and class merging.
 10. **Describe the business impact (User Acquisition Cost) of failing to implement R8 in a consumer-facing application.**
@@ -184,4 +184,10 @@ Run size checks on release-like, minified AABs. Debug APK size is noise.
 
 - [`jank.md`](jank.md) — How smaller, optimized code paths from R8 prevent UI stuttering.
 - [`baseline-profiles.md`](baseline-profiles.md) — The AOT compilation step that occurs *after* R8 generates the final DEX file.
-- [Android Developers: Shrink, obfuscate, and optimize your app](https://developer.android.com/studio/build/shrink-code)
+- [Android Developers: Enable app optimization with R8](https://developer.android.com/topic/performance/app-optimization/enable-app-optimization)
+
+### Official verification references
+
+- [Primary documentation or owning implementation](https://developer.android.com/studio/write/vector-asset-studio)
+- [Primary documentation or owning implementation](https://developer.android.com/topic/performance/app-optimization/customize-which-resources-to-keep)
+- [Primary documentation or owning implementation](https://developer.android.com/topic/performance/app-optimization/enable-app-optimization)

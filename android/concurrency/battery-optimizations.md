@@ -50,7 +50,7 @@ The OS uses Machine Learning to place your app into one of five buckets:
 2.  **Working Set:** App runs often (e.g., a social media app checked daily). Mild restrictions. Jobs run every few hours.
 3.  **Frequent:** App used regularly, but not every day (e.g., a workout tracking app). Jobs deferred for 8+ hours.
 4.  **Rare:** App rarely used (e.g., a hotel booking app). Strict restrictions. No internet access allowed in the background. Jobs deferred for 24+ hours.
-5.  **Restricted:** App consumes too much battery or user explicitly restricted it in settings. App is completely dead in the background.
+5. **Restricted:** Background jobs and alarms are tightly limited under documented conditions and exemptions, rather than completely prohibited.
 
 ## Architecture
 
@@ -100,7 +100,7 @@ The only way to pierce through Doze Mode is to send an FCM message from your bac
 When the Android OS receives a High Priority FCM message during Doze:
 1. It temporarily grants your app network access.
 2. It grants your app a partial wakelock.
-3. You have exactly **10 to 30 seconds** to process the message (e.g., download the text) and post a local Notification.
+3. Firebase describes several seconds for message processing, not a guaranteed 10–30-second window. Render the notification promptly; enqueue appropriate WorkManager work when more processing is required.
 4. *Critical Staff Knowledge:* If you send High Priority messages but do *not* display a user-visible Notification, Google will detect this via heuristics and automatically "de-prioritize" your future messages to "Normal" priority, plunging your app back into Doze mode.
 
 ## Tradeoffs
@@ -112,23 +112,19 @@ If you are building an Alarm Clock or a Calendar reminder app, you need an alarm
 - **Standard (`setExact`):** Will be deferred until 9:30 AM when the maintenance window opens.
 - **While Idle (`setExactAndAllowWhileIdle`):** Will pierce Doze mode and wake the device at exactly 8:00 AM. 
 
-**Tradeoff:** `setExactAndAllowWhileIdle` is incredibly heavy on the battery. Google restricts you to firing this a maximum of **once every 9 minutes**. Furthermore, starting in Android 14, you must explicitly declare the `SCHEDULE_EXACT_ALARM` permission in your manifest, and Google Play will reject your app if you are not a legitimate Alarm Clock or Calendar app.
+**Tradeoff:** Exact alarms consume scarce power and scheduling resources. `SCHEDULE_EXACT_ALARM` was introduced in Android 12. On Android 14, it is denied by default for most newly installed apps targeting Android 13 or higher. Check capability before scheduling and handle denial. Do not confuse this user-granted special access with `USE_EXACT_ALARM`, whose Play eligibility is restricted to qualifying alarm/calendar use cases.
 
 ## Failure Modes
 
 - **The Wakelock Leak:**
   ```kotlin
   val wakeLock = powerManager.newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, "MyApp::MyWakelockTag")
-  wakeLock.acquire(10 * 60 * 1000L /*10 minutes*/)
-  
+  wakeLock.acquire(10 * 60 * 1000L /* safety timeout, not a work budget */)
   try {
       doWork()
-  } catch(e: Exception) {
-      // DISASTER: An exception is thrown, wakeLock.release() is never called!
-      // The CPU is forced to stay awake for 10 straight minutes, draining the battery.
-      // Google Play Console will flag your app as "Stuck Wakelock" and penalize your store ranking.
+  } finally {
+      wakeLock.release()
   }
-  wakeLock.release()
   ```
   *(Fix: Always use a `finally` block to release wakelocks, or vastly prefer `WorkManager` which handles wakelocks automatically).*
 - **Testing in a Vacuum:**
@@ -143,7 +139,7 @@ If you are building an Alarm Clock or a Calendar reminder app, you need an alarm
 
 ## Common Misconceptions
 
-- **"If I use a Foreground Service, Doze Mode doesn't apply to me."** False. While a Foreground Service prevents your app from being killed, if the device goes into Deep Doze, the OS will *still* cut off your network access. Your Foreground Service will stay alive, but it won't be able to download anything until the maintenance window.
+- **"If I use a Foreground Service, Doze Mode does not apply."** A foreground service raises process importance but does not guarantee survival or an unconditional Doze network exemption. Check applicable exemptions and device power restrictions separately.
 - **"I can request the `REQUEST_IGNORE_BATTERY_OPTIMIZATIONS` permission to bypass all this."** You can, and it will work. However, if you upload an app to the Google Play Store with this permission, and you are not an MDM (Mobile Device Management) app or an automation tool like Tasker, Google will instantly suspend your app for policy violation.
 
 ## Probing Questions
@@ -168,7 +164,7 @@ If you are building an Alarm Clock or a Calendar reminder app, you need an alarm
 3. **If your app is in the "Rare" App Standby Bucket, how does that affect the execution frequency of your `WorkManager` jobs?**
    It places severe restrictions on the app, preventing background internet access and deferring `WorkManager` jobs for 24+ hours at a time.
 4. **Why did Google restrict the use of the `SCHEDULE_EXACT_ALARM` permission in Android 14?**
-   Developers abused it to bypass Doze Mode and run exact background work, draining battery. Now, Google Play restricts it to legitimate Alarm Clock and Calendar apps.
+   Exact alarms are intended for user-facing actions needing precise timing. Android 14 changes default granting for SCHEDULE_EXACT_ALARM on most new installs targeting Android 13+. The separate USE_EXACT_ALARM permission has restricted qualifying use cases. Request only the permission appropriate to the product and handle unavailable exact-alarm capability.
 5. **If you send a High-Priority FCM message to wake up a Dozing device, what specific action must your app take to prevent being penalized by the OS?**
    The app must display a user-visible Notification within seconds. Failing to do so causes Google to silently de-prioritize future messages.
 6. **Explain the danger of a "Stuck Wakelock" and how it affects the user's device.**
@@ -178,7 +174,7 @@ If you are building an Alarm Clock or a Calendar reminder app, you need an alarm
 8. **How can you test how your app behaves in Deep Doze mode using the ADB command line?**
    By using `adb shell dumpsys deviceidle force-idle` to force the device into Deep Doze, or changing standby buckets with `adb shell am set-standby-bucket`.
 9. **If your Foreground Service is running and the user leaves their phone unplugged and stationary on a desk overnight, what will happen to the Service's network access?**
-   The device enters Deep Doze, and the OS will completely cut off the Foreground Service's network access until the next maintenance window, though the service process itself stays alive.
+   The foreground service does not guarantee process survival. For non-exempt work, Doze restricts network access and other resources; check the documented exemption and actual device state rather than assuming the notification keeps networking available.
 10. **Describe the architectural tradeoff between using standard FCM "Normal" priority versus "High" priority for a background data sync.**
     High Priority pierces Doze but burns quota and mandates a user notification. Normal Priority respects Doze Mode and is delayed to maintenance windows, which is appropriate for silent data syncs.
 
@@ -187,3 +183,12 @@ If you are building an Alarm Clock or a Calendar reminder app, you need an alarm
 - [`workmanager.md`](workmanager.md) — The system designed to play nicely with Doze.
 - [`services.md`](services.md) — How Foreground Services interact with battery limits.
 - [Android Developers: Optimize for Doze and App Standby](https://developer.android.com/training/monitoring-device-state/doze-standby)
+
+### Official verification references
+
+- [Primary documentation or owning implementation](https://developer.android.com/about/versions/14/changes/schedule-exact-alarms)
+- [Primary documentation or owning implementation](https://developer.android.com/guide/components/activities/process-lifecycle)
+- [Primary documentation or owning implementation](https://developer.android.com/reference/android/os/PowerManager.WakeLock)
+- [Primary documentation or owning implementation](https://developer.android.com/topic/performance/appstandby#restricted-bucket)
+- [Primary documentation or owning implementation](https://firebase.google.com/docs/cloud-messaging/android-message-priority#message-processing)
+- [Primary documentation or owning implementation](https://kotlinlang.org/docs/exceptions.html#the-finally-block)

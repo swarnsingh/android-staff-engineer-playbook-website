@@ -6,7 +6,7 @@
 
 ## Overview
 
-A `sealed class` or `sealed interface` is a closed type hierarchy. You declare it like a regular type, but only subclasses defined in the same module (and same package since Kotlin 1.7) can extend it. The compiler knows the exhaustive list of subclasses at compile time, which unlocks:
+A `sealed class` or `sealed interface` is a closed type hierarchy. You declare it like a regular type, but only subclasses defined in the same module and package for direct subclasses (package/module-wide subclasses have been supported since Kotlin 1.5) can extend it. The compiler knows the exhaustive list of subclasses at compile time, which unlocks:
 
 - **Exhaustive `when`** — no `else` branch required; compiler errors if you miss a case.
 - **Smart casts** — inside `is Success ->` the variable is narrowed to `Success`.
@@ -55,7 +55,7 @@ Three states. Three. No paradoxes possible. Compiler enforces handling each bran
 1. **Closed hierarchy.** Compiler knows every subclass. No surprises at runtime.
 2. **Exhaustiveness.** `when` over a sealed type is checked for completeness.
 3. **Smart casts.** No need for `?.` or `as` inside type-narrowed branches.
-4. **Module-local.** Subclasses must live in the same module (Kotlin 1.5+) and same package (Kotlin 1.7+) as the parent.
+4. **Direct-subclass boundary.** Direct subclasses must be in the same module and package; an open indirect branch can permit outside extensions.
 
 ---
 
@@ -130,7 +130,7 @@ fun render(state: HomeState) = when (state) {
 
 ### `when` as expression vs statement
 
-Exhaustiveness is enforced only when `when` is used as an **expression** (its result is used) — or when the language flag for "exhaustive when statements" is enabled.
+For sealed, enum, and Boolean subjects, Kotlin 1.7+ checks exhaustiveness for both expressions and statements. Older language versions had different statement rules.
 
 ```kotlin
 // Expression — compiler enforces exhaustiveness
@@ -158,7 +158,7 @@ when (state) {
 }.let { }   // forces expression context
 ```
 
-Kotlin 1.7+ added the `-Xenable-exhaustive-when-statements` opt-in to enforce on statements too. Worth turning on.
+In Kotlin 1.7+ these sealed-subject statements are exhaustive by default; the historical expression-context workaround is unnecessary.
 
 ### Smart casts inside branches
 
@@ -205,7 +205,7 @@ Two important details:
 ```kotlin
 suspend fun loadUser(id: String): Result<User> = runCatching {
     api.getUser(id)
-}
+}.onFailure { if (it is kotlinx.coroutines.CancellationException) throw it }
 
 loadUser(id)
     .onSuccess { showProfile(it) }
@@ -419,7 +419,7 @@ public sealed interface PaymentMethod {
 }
 ```
 
-Now adding a new method type in the next minor version downgrades to `Unknown` for old clients, instead of crashing or breaking their build.
+Now, when the server starts sending a new payment type, old clients whose parser maps unrecognised values to `Unknown` show a fallback instead of crashing. Adding the new subclass to the SDK still breaks exhaustive `when`s when consumers upgrade, so it remains a source-breaking change.
 
 ---
 
@@ -428,15 +428,15 @@ Now adding a new method type in the next minor version downgrades to `Unknown` f
 | Symptom | Cause | Fix |
 |---|---|---|
 | New subclass added; build still passes | `else ->` in a `when` | Remove `else`; use expression context |
-| `when` not enforced exhaustive | Used as statement, Kotlin < 1.7 default | Use as expression; or `.let { }`; or enable exhaustive-statement flag |
+| Sealed-subject statement is not exhaustive | Older Kotlin language mode | Use expression context there; Kotlin 1.7+ checks these statements by default |
 | `IllegalStateException: Polymorphic` on JSON parse | Sealed without polymorphic adapter | kotlinx `@SerialName` discriminator or Moshi `PolymorphicJsonAdapterFactory` |
 | Refactor breaks 50 files | Added a case to a widely-used sealed | Often intentional; otherwise carve a narrower hierarchy |
 | Sealed leaks DB entity to UI | Same sealed type used across layers | Split: domain `Result` + UI `UiState`, mapped between layers |
 | `data class Loading()` allocates per state | Should be `data object` | Convert to `data object` |
 | Subclass not found at runtime | Subclass in different module | Move to the same module as the parent (Kotlin 1.5+ requires this) |
-| Cannot inherit data class from another sealed | Data class restrictions | Use regular class, or restructure |
+| Cannot inherit from a data class | Data classes are final | Use an eligible ordinary/sealed superclass; data classes may extend it |
 | `when` over a generic sealed loses type info | Generic `Result<Nothing>` for terminal cases | Use `Result<Nothing>` + `out T` covariance |
-| SDK consumers' code breaks on minor version | Added a sealed case in a public API | Either MAJOR bump or include `Unknown` escape hatch |
+| SDK consumers' code breaks on minor version | Added a sealed subclass | Treat exhaustiveness as a source-compatibility promise; Unknown only helps with explicit wire fallback mapping |
 
 ---
 
@@ -445,11 +445,11 @@ Now adding a new method type in the next minor version downgrades to `Unknown` f
 When reviewing sealed-type usage, I look for:
 
 1. **Boolean-and-nullable state.** `data class State(val isLoading: Boolean, val data: X?, val error: String?)` is always wrong — paradoxes are representable. Push to sealed.
-2. **`else` in `when` over sealed.** Auto-flag. The whole point of sealed is exhaustiveness. Removing it bypasses the safety net.
+2. **`else` in `when` over sealed.** Auto-flag. Explicit branches preserve exhaustiveness feedback. Adding an else bypasses that feedback.
 3. **Enum with mismatched fields.** `enum class Status { OK, ERR }` paired with `errorMsg: String?` — sealed instead.
 4. **Sealed leaking across layers.** A `sealed interface CartResult` returned from the data layer reused as the UI state is a coupling smell. Map between layers.
 5. **`data class` instead of `data object` for stateless cases.** Wasteful allocation per state emission. Convert to object.
-6. **Public SDK sealed without escape hatch.** Adding a case is a MAJOR break; include `Unknown` or document the cadence.
+6. **Public SDK sealed evolution.** Adding a direct case affects exhaustive callers; plan compatibility. An Unknown wire-value fallback does not make arbitrary new subclasses compatible.
 7. **Polymorphic JSON without explicit discriminator.** Reflection libs guess wrong. Set the discriminator yourself.
 8. **Missing `key = { it.id() }` on `LazyColumn`** with a sealed `FeedItem`. Compose can't diff items by type alone; needs stable keys.
 
@@ -458,9 +458,9 @@ When reviewing sealed-type usage, I look for:
 ## Common Misconceptions
 
 - **"Sealed classes are just enums."** False. Enum cases are singletons of the *same* class. Sealed subclasses are *different* classes, each with their own fields and behavior.
-- **"Sealed types make `when` exhaustive everywhere."** Only as expressions (or with the explicit `-Xenable-exhaustive-when-statements` flag). Statements aren't enforced by default.
-- **"All subclasses must be nested inside the sealed type."** False. They must be in the same package (Kotlin 1.7+) and same module (1.5+). Top-level subclasses are fine.
-- **"Sealed = bad for SDKs."** Not always — but adding a case is a major-version event. Plan accordingly or include `Unknown`.
+- **"Sealed types make every branch safe."** Kotlin 1.7+ enforces exhaustiveness for sealed-subject statements and expressions, but an `else` still hides omitted specific cases.
+- **"All subclasses must be nested inside the sealed type."** False. Direct subclasses can be top-level in the same package/module. Indirect subclasses follow the openness of their direct parent.
+- **"Sealed = bad for SDKs."** Not always, but adding a subclass can break exhaustive consumers. Plan the compatibility contract; Unknown only handles data that a parser explicitly maps to it.
 - **"You can extend a sealed type if you really need to."** False. The compiler refuses. That's the point.
 - **"Sealed types are slower because of all the `is` checks."** Negligible. The JIT compiles each `is` check to a single instanceof; far cheaper than the bugs it prevents.
 
@@ -487,7 +487,7 @@ When reviewing sealed-type usage, I look for:
 1. **Walk through three real-world signals that an `enum class` should be a `sealed interface`.**
    1) The cases need to hold different types of data (e.g., a `Success` case holds a payload, while an `Error` case holds an exception). 2) The cases need different shapes or fields entirely. 3) You need multiple instances of the same case with different state (enums are singletons).
 2. **When does Kotlin enforce exhaustiveness on a `when` over a sealed type, and when doesn't it?**
-   Kotlin enforces exhaustiveness when the `when` block is used as an *expression* (its return value is assigned to a variable or returned). Before Kotlin 1.7, it did not enforce exhaustiveness when used as a *statement*, unless the `-Xenable-exhaustive-when-statements` compiler flag was enabled.
+   Kotlin 1.7+ enforces exhaustiveness for sealed-subject expressions and statements. Before 1.7, non-exhaustive statements could compile (with migration warnings in 1.6); expressions already required coverage.
 3. **Why is `else ->` in a `when` over a sealed type considered an anti-pattern? Walk through what it costs.**
    `else ->` bypasses the compiler's exhaustiveness check. If a new subclass is added to the sealed hierarchy later, the compiler will not flag the missing case in the `when` block. It will silently fall into the `else` branch, hiding potential bugs and making refactoring brittle.
 4. **Compare `sealed class` vs `sealed interface`. Why is `sealed interface` the modern preference?**
@@ -507,9 +507,9 @@ When reviewing sealed-type usage, I look for:
 11. **You have `sealed interface Screen` for Compose navigation. What's the SDK / version concern when adding a new screen?**
     If `Screen` is exposed to external modules or an SDK, adding a new screen breaks exhaustive `when` statements in the consuming code. If it's internal app code, it's safe and desirable to get those compile errors.
 12. **Multi-module: which module must the subclasses live in relative to the sealed parent? (Kotlin 1.5+, 1.7+)**
-    Subclasses of a sealed type must reside in the exact same module as the sealed parent (enforced since Kotlin 1.5), and in the exact same package (enforced since Kotlin 1.7).
+    Direct subclasses must be in the same package and module. Kotlin 1.5 enabled this package/module-wide arrangement; older sealed-class rules were more restrictive. Multiplatform source-set rules also apply.
 13. **Compare `data object` vs `object` vs `data class()` for stateless sealed branches. Which do you pick and why?**
-    You pick `data object`. `data class()` is wasteful because it allocates a new instance every time, even though there's no state to differ between instances. `object` is a singleton but lacks the clean, readable `toString()` implementation of a data class. `data object` (introduced in Kotlin 1.8) combines the singleton efficiency of `object` with the readable `toString()` of a data class.
+    Use object for a singleton, or data object for generated readable toString/value-style object semantics. An empty `data class()` does not compile: data classes require a primary-constructor property. Data objects were experimental in Kotlin 1.7.20, previewed in 1.8.20 and became stable in 1.9.0.
 
 ---
 
@@ -524,6 +524,17 @@ When reviewing sealed-type usage, I look for:
 - [`../principles/make-invalid-states-impossible.md`](../../principles/make-invalid-states-impossible.md) — design principle sealed types deliver.
 - [`../android/architecture/viewmodel.md`](../../android/architecture/viewmodel.md) — sealed `UiState` flowing from ViewModel.
 - [Kotlin Docs — Sealed classes](https://kotlinlang.org/docs/sealed-classes.html) — official reference.
-- [Roman Elizarov — "Sealed classes"](https://elizarov.medium.com/) — design notes from the language team.
-- [Jake Wharton — "Modeling Retrofit responses with sealed classes and coroutines"](https://github.com/JakeWharton) — practical patterns.
+- [Kotlin docs — Sealed classes and interfaces](https://kotlinlang.org/docs/sealed-classes.html) — official language reference.
+- [Jaewoong Eum — "Modeling Retrofit Responses With Sealed Classes and Coroutines"](https://getstream.io/blog/modeling-retrofit-responses/) — practical patterns.
 - [Arrow — `Either<L, R>`](https://arrow-kt.io/) — functional alternative for typed errors.
+
+### Official verification references
+
+- [Primary documentation or owning implementation](https://developer.android.com/kotlin/coroutines/coroutines-best-practices#exceptions)
+- [Primary documentation or owning implementation](https://kotlinlang.org/api/core/kotlin-stdlib/kotlin/run-catching.html)
+- [Primary documentation or owning implementation](https://kotlinlang.org/docs/api-guidelines-backward-compatibility.html)
+- [Primary documentation or owning implementation](https://kotlinlang.org/docs/compatibility-guide-17.html#make-when-statements-with-enum-sealed-and-boolean-subjects-exhaustive-by-default)
+- [Primary documentation or owning implementation](https://kotlinlang.org/docs/data-classes.html)
+- [Primary documentation or owning implementation](https://kotlinlang.org/docs/sealed-classes.html#use-sealed-classes-with-when-expression)
+- [Primary documentation or owning implementation](https://kotlinlang.org/docs/whatsnew15.html#sealed-interfaces)
+- [Primary documentation or owning implementation](https://kotlinlang.org/docs/whatsnew19.html#stable-data-objects-for-symmetry-with-data-classes)

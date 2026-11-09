@@ -171,18 +171,35 @@ Six things going right:
 
 ### `runTest` and Virtual Time
 
+This fixture fetches immediately on start, then after each 30-second delay. start launches in the supplied scope; it does not fetch eagerly before the scheduler runs.
+
+```kotlin
+class Poller(private val api: PollApi, private val scope: CoroutineScope) {
+    fun start(): Job = scope.launch {
+        while (isActive) {
+            api.fetch()
+            delay(30.seconds)
+        }
+    }
+}
+interface PollApi { suspend fun fetch() }
+```
+
 ```kotlin
 @Test
 fun `polling happens every 30 seconds`() = runTest {
     val poller = Poller(api, scope = backgroundScope)
     poller.start()
+    runCurrent() // Start work queued by StandardTestDispatcher.
     
     coVerify(exactly = 1) { api.fetch() }
     
     advanceTimeBy(30.seconds)
+    runCurrent() // Execute work scheduled exactly at the new deadline.
     coVerify(exactly = 2) { api.fetch() }
     
     advanceTimeBy(60.seconds)
+    runCurrent()
     coVerify(exactly = 4) { api.fetch() }
 }
 ```
@@ -193,7 +210,7 @@ fun `polling happens every 30 seconds`() = runTest {
 - `advanceUntilIdle()` to run all pending coroutines.
 - `backgroundScope` for "fire and forget" work that doesn't block test completion.
 
-A `delay(30_000)` in production code becomes instant in tests. A 60-minute test scenario runs in milliseconds.
+Delays are skipped only on dispatchers sharing the test scheduler. Inject a TestDispatcher(testScheduler) into owned work; real IO/Default work does not gain virtual time merely because the caller uses runTest.
 
 ### `StandardTestDispatcher` vs `UnconfinedTestDispatcher`
 
@@ -202,11 +219,11 @@ A `delay(30_000)` in production code becomes instant in tests. A 60-minute test 
 | `StandardTestDispatcher` | Coroutines are queued; require `advanceUntilIdle()` or `advanceTimeBy()` to run | Tests that need to verify exact ordering of dispatches |
 | `UnconfinedTestDispatcher` | Coroutines run eagerly on the test thread | Most tests where you just want to check the final state |
 
-A common pattern: use `UnconfinedTestDispatcher` everywhere unless you're testing dispatch timing.
+Choose the dispatcher for the ordering under test. UnconfinedTestDispatcher enters eagerly until suspension; it does not guarantee completion or reproduce production scheduling.
 
 ```kotlin
-val dispatcher = UnconfinedTestDispatcher()
-// Now `viewModel.addItem(...)` synchronously updates state — no `advanceUntilIdle()` needed.
+val dispatcher = UnconfinedTestDispatcher(testScheduler) // inside runTest; share its scheduler
+// Eager entry runs until the first suspension; await the required outcome explicitly.
 ```
 
 ### Injecting `Dispatcher` for Testability
@@ -249,7 +266,7 @@ Key APIs:
 
 | API | What it does |
 |---|---|
-| `flow.test { ... }` | Subscribes; runs the block; cancels on block exit |
+| `flow.test { ... }` | Subscribes, runs assertions, then cancels and verifies all events were consumed (including completion/error) |
 | `awaitItem()` | Suspends until next emission; returns it |
 | `awaitComplete()` | Asserts the Flow finished normally |
 | `awaitError()` | Asserts the Flow finished exceptionally |
@@ -257,9 +274,9 @@ Key APIs:
 | `cancelAndConsumeRemainingEvents()` | Drain remaining; useful at end |
 | `cancelAndIgnoreRemainingEvents()` | Stop without asserting |
 
-Without Turbine, Flow testing involves manual `Job` management and is brittle. Turbine has become the standard.
+Turbine is one option for asserting emissions and managing collection. Finite flows can use terminal operators such as `first()`, `take(n).toList()` or `toList()`; long-lived collectors need an explicit cancellation owner such as `backgroundScope` in `runTest`.
 
-### Pitfall: never `collect { }` without Turbine in tests
+### Pitfall: collecting a never-ending flow without a cancellation plan
 
 ```kotlin
 // BAD — collect never returns; test hangs
@@ -267,10 +284,11 @@ Without Turbine, Flow testing involves manual `Job` management and is brittle. T
     flow.collect { /* never returns */ }
 }
 
-// GOOD — Turbine handles cancellation
+// GOOD — this fixture is finite; consume its completion too.
 @Test fun ok() = runTest {
-    flow.test {
+    flowOf(item).test {
         assertEquals(item, awaitItem())
+        awaitComplete()
     }
 }
 ```
@@ -394,7 +412,7 @@ class CheckoutViewModelTest {
 
     private val repository = FakeCheckoutRepository()
     private val analytics = FakeAnalytics()
-    private val dispatcher = UnconfinedTestDispatcher()
+    private val dispatcher = StandardTestDispatcher()
     private lateinit var viewModel: CheckoutViewModel
 
     @BeforeEach
@@ -407,26 +425,23 @@ class CheckoutViewModelTest {
     fun tearDown() = Dispatchers.resetMain()
 
     @Test
-    fun `initial state is Idle`() = runTest {
+    fun `initial state is Idle`() = runTest(dispatcher) {
         assertEquals(CheckoutState.Idle, viewModel.state.value)
     }
 
     @Test
-    fun `submit transitions to Loading then Success`() = runTest {
+    fun `submit success exposes the final order`() = runTest(dispatcher) {
         repository.submitResult = CheckoutResult.Success("order123")
 
-        viewModel.state.test {
-            assertEquals(CheckoutState.Idle, awaitItem())
-            viewModel.submit(items, paymentMethod)
-            assertEquals(CheckoutState.Loading, awaitItem())
-            val final = awaitItem()
-            assertTrue(final is CheckoutState.Success)
-            assertEquals("order123", (final as CheckoutState.Success).orderId)
-        }
+        viewModel.submit(items, paymentMethod)
+        advanceUntilIdle()
+        val final = viewModel.state.value
+        assertTrue(final is CheckoutState.Success)
+        assertEquals("order123", (final as CheckoutState.Success).orderId)
     }
 
     @Test
-    fun `submit failure transitions to Error with retryable flag`() = runTest {
+    fun `submit failure transitions to Error with retryable flag`() = runTest(dispatcher) {
         repository.submitResult = CheckoutResult.Error("Network down", retryable = true)
 
         viewModel.submit(items, paymentMethod)
@@ -438,7 +453,7 @@ class CheckoutViewModelTest {
     }
 
     @Test
-    fun `submit fires analytics event`() = runTest {
+    fun `submit fires analytics event`() = runTest(dispatcher) {
         viewModel.submit(items, paymentMethod)
         advanceUntilIdle()
 
@@ -682,19 +697,19 @@ Split into multiple tests, each verifying one thing.
 
 | Symptom | Cause | Fix |
 |---|---|---|
-| Test hangs forever | `flow.collect { }` without Turbine | Always wrap in `flow.test { }` |
+| Test hangs forever | Collecting a never-ending flow in a scope the test waits for | Bound collection with a terminal operator, use backgroundScope, or use Turbine and cancel |
 | Test fails with `IllegalStateException: Module with the Main dispatcher had failed to initialize` | `Dispatchers.setMain()` not called | Set up before constructing ViewModel |
 | Tests flaky on CI but pass locally | Race condition; missing `advanceUntilIdle()` | Add explicit virtual-time advances |
 | MockK records but doesn't match | `mockk()` vs `mockk<Type>()` for generic types | Use the typed form |
-| `coEvery` returns Unit but should suspend | `mockk(relaxUnitFun = true)` not used | Use `relaxUnitFun = true` or specify `coEvery { } just runs` |
-| `runTest` swallows exception | Caught in `Job` tree | Use `runTest(StandardTestDispatcher()) { ... }` and assert |
+| Unstubbed Unit-returning suspend call fails | Strict mock has no matching answer | Use coEvery { call() } just Runs, or choose relaxUnitFun deliberately |
+| An expected failure is not observed by runTest | User code caught it, or work belongs to an external scope/dispatcher | runTest reports uncaught test/child failures; inspect ownership and assert the application error contract |
 | Tests pass but coverage dropped | New code untested | Set coverage floor in `kover` |
 | Multiple tests share state | Forgot `@BeforeEach` to reset | Re-initialize per test |
-| `@Nested` test classes don't see outer setup | JUnit 5 default lifecycle is `PER_METHOD` | Annotate `@TestInstance(Lifecycle.PER_CLASS)` |
+| Nested setup is not invoked | Wrong annotation/engine or Kotlin class nesting | Jupiter runs enclosing BeforeEach for nested tests; use an inner @Nested class and the Jupiter engine. PER_CLASS changes instance lifetime, not setup inheritance |
 | Slow test suite | Real DB / network / sleeps | Audit; switch to fakes + virtual time |
 | Compose state not updated in test | Tests don't use `ComposeTestRule` | See [`ui-testing.md`](ui-testing.md) |
 | `LiveData` value is null in tests | No `InstantTaskExecutorRule` | Use `JUnit 5 LiveData test extension`; or migrate to `StateFlow` |
-| Mock returns null for non-nullable | MockK strict mode | `every { ... } returns ...` for the call |
+| An unexpected default/null comes from a mock | Relaxed/default answer or incorrect stub | Default strict MockK mocks fail unstubbed calls; stub the required result and verify the call |
 | `kotlin.test.assertEquals` produces unhelpful diff | Plain message | Use Truth or AssertK |
 | Test order matters | Static / global state | Eliminate; use proper test isolation |
 | `MainCoroutineRule` works but causes warnings | Old-school JUnit 4 rule with JUnit 5 | Use `Dispatchers.setMain` directly |
@@ -706,7 +721,7 @@ Split into multiple tests, each verifying one thing.
 
 - **Over-mocking.** Every dep mocked means every test is brittle. Prefer fakes for stateful deps.
 - **Asserting on internal state.** Test behaviors, not field values.
-- **Test setup in `@BeforeAll` (PER_METHOD lifecycle).** Shared state between tests. Use `@BeforeEach` unless you really want shared.
+- **Shared setup without an explicit lifecycle contract.** BeforeAll runs once: use a static JVM method under PER_METHOD, or nonstatic BeforeAll with PER_CLASS. BeforeEach still resets per-test mutable state.
 - **Skipping coroutine setup.** Tests pass locally because dispatcher coincides with test thread; fail on CI. Always set up `Dispatchers.setMain`.
 - **Forgetting `Dispatchers.resetMain()`.** Test leakage across the file.
 - **Naming tests after methods.** `submitTest1`, `submitTest2` is worse than meaningless. Describe the behavior.
@@ -739,15 +754,15 @@ Split into multiple tests, each verifying one thing.
 1. **Test pyramid for Android — explain each level and the speed/realism tradeoff.**
    Unit (JVM, fastest, mocked dependencies), Integration (Robolectric, medium speed/realism), UI/Journey (Real devices/Espresso, highest realism, slowest). The base is broad for speed, the tip is narrow for confidence.
 2. **`StandardTestDispatcher` vs `UnconfinedTestDispatcher` — when to use each?**
-   Use `StandardTestDispatcher` when verifying the exact timing and order of queued coroutines. Use `UnconfinedTestDispatcher` for most UI/ViewModel tests where you just want execution to happen eagerly to check the final state.
+   StandardTestDispatcher queues work so tests can drive ordering explicitly. UnconfinedTestDispatcher enters eagerly until suspension, which can simplify a collector; neither guarantees suspended work completes without synchronization.
 3. **Walk through testing a coroutine that uses `delay(60_000)`. How do you make it run instantly?**
-   Use `runTest`, which provides virtual time. Inside the test, call `advanceTimeBy(60.seconds)` or `advanceUntilIdle()` to skip the delay instantly without actually waiting.
+   Use runTest with a shared TestCoroutineScheduler. Start queued work with runCurrent(), then advanceTimeBy(60.seconds) followed by runCurrent() for work due exactly at that deadline; advanceUntilIdle() suits bounded work. Delays on real IO/Default dispatchers are not skipped.
 4. **Mocks vs fakes — give a concrete example of each being the better choice.**
    Mock when an interface has 20 methods but the test only cares about one (e.g., a massive API interface). Fake when the dependency is stateful and reused heavily (e.g., an in-memory `FakeUserRepository` backed by a `StateFlow`).
 5. **Why does `flow.collect { }` in a test hang? What's the Turbine alternative?**
-   `collect` suspends indefinitely waiting for a continuous flow to finish, hanging the test. Use Turbine's `flow.test { }` which runs in its own scope and provides `awaitItem()` and `cancelAndIgnoreRemainingEvents()`.
+   A collection hangs when it waits for a never-ending stream in the test's completion scope. Finite flows can complete normally; use `first()`, `take(n).toList()` or an explicitly cancelled background collector. Turbine is a useful assertion tool that also supports explicit cancellation.
 6. **Inject `Dispatcher` into a class. Walk through how this makes the class testable.**
-   Instead of hardcoding `Dispatchers.IO` (which is slow or inaccessible in tests), pass a `CoroutineDispatcher` parameter. In production, inject `Dispatchers.IO`; in tests, pass `UnconfinedTestDispatcher` for instant, synchronous execution.
+   Inject the CoroutineDispatcher used by owned work. Supply a TestDispatcher(testScheduler) from runTest so virtual time and queued work share one scheduler. Eager entry with UnconfinedTestDispatcher still stops at suspension; await the required outcome.
 7. **JUnit 5 `@TestFactory` — what problem does it solve?**
    It allows generating dynamic tests at runtime without the clunky syntax of JUnit 4 `@Parameterized`. Useful for testing dozens of input/output data rows (like calculation pairs) cleanly.
 8. **Test a ViewModel that fires analytics on submit. What's mocked, what's faked?**
@@ -757,7 +772,7 @@ Split into multiple tests, each verifying one thing.
 10. **Property-based tests in Kotlin — when is the investment worth it?**
     Worth it for pure functions, parsers, mathematical calculations, and complex reducers where testing every edge case manually is impossible. Not worth it for standard UI or network glue code.
 11. **`@BeforeEach` vs `@BeforeAll` — when does each apply?**
-    `@BeforeEach` runs before every single test method, ensuring clean, isolated state (most common). `@BeforeAll` runs once per class, useful for expensive, read-only setup (requires `Lifecycle.PER_CLASS`).
+    BeforeEach runs for each test and includes enclosing setup for nested tests. BeforeAll runs once; default PER_METHOD requires a static JVM method, while PER_CLASS permits an instance method. Select lifetime independently of state isolation.
 12. **A new engineer mocks every dependency. What's the code-review pushback?**
     Explain that over-mocking couples the tests to the implementation rather than the behavior. Ask them to replace stateful mocks with shared in-memory fakes to make tests resilient to refactors.
 
@@ -776,3 +791,10 @@ Split into multiple tests, each verifying one thing.
 - [Kotlinx Coroutines Test](https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-test/) — official coroutine test library.
 - [Google Truth](https://truth.dev/) — assertions.
 - [AssertK](https://github.com/willowtreeapps/assertk) — Kotlin-native assertions.
+
+### Official verification references
+
+- [Primary documentation or owning implementation](https://developer.android.com/kotlin/coroutines/test)
+- [Primary documentation or owning implementation](https://developer.android.com/kotlin/flow/test)
+- [Primary documentation or owning implementation](https://docs.junit.org/5.11.4/user-guide/index.html#writing-tests-nested)
+- [Primary documentation or owning implementation](https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-test/kotlinx.coroutines.test/-test-coroutine-scheduler/advance-time-by.html)

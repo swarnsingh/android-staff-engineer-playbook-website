@@ -147,7 +147,7 @@ In the ViewModel, how should we hold state?
 - **`LiveData`:** Still supported and lifecycle-aware, especially in existing Android code. Its operator model is smaller than Flow's and `setValue` is main-thread-only, while `postValue` schedules from a background thread.
 - **Compose `MutableState` in ViewModel:** Some developers put `var text by mutableStateOf("")` directly in the ViewModel. 
     - *Pros:* No need to call `collectAsState()` in the UI. 
-    - *Cons:* It permanently ties your ViewModel to the Compose framework dependency (`androidx.compose.runtime`). You cannot share this ViewModel with a KMP iOS app.
+    - *Cons:* This API depends on Compose runtime. Compose runtime and AndroidX ViewModel have multiplatform artifacts, so that dependency alone does not prevent iOS sharing. Check the complete dependency graph, Swift-facing API and platform lifecycle ownership.
 - **`StateFlow`:** A common choice for screen state when the surrounding architecture already uses coroutines and Flow.
     - *Pros:* Pure Kotlin. Cross-platform. Thread-safe. Rich operators (`map`, `combine`).
     - *Cons:* You must explicitly convert it to Compose state in the UI using `collectAsStateWithLifecycle()`.
@@ -228,3 +228,7 @@ When reviewing Compose architecture, a Staff engineer focuses relentlessly on Re
 - [Android Developers: State and Jetpack Compose](https://developer.android.com/develop/ui/compose/state)
 - [Android Developers: Stability in Compose](https://developer.android.com/develop/ui/compose/performance/stability)
 - [Android Developers: Strong skipping](https://developer.android.com/develop/ui/compose/performance/stability/strongskipping)
+
+### Official verification references
+
+- [Primary documentation or owning implementation](https://kotlinlang.org/docs/multiplatform/compose-viewmodel.html)

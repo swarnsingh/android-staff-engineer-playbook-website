@@ -1,6 +1,6 @@
 # CI/CD for Kotlin Multiplatform
 
-> A standard Android CI pipeline uses a cheap Ubuntu Linux runner. KMP fundamentally changes this: Kotlin/Native *cannot compile for iOS on Linux*. It requires macOS with Xcode installed. macOS GitHub Action runners cost 10x more than Linux. A Staff engineer must architect a split CI pipeline that runs cheap JVM checks on Linux for every PR, reserves expensive macOS builds for merge-to-main, and automates the `.xcframework` publishing to Swift Package Manager.
+> Split CI by required evidence: fast host tests can run on Linux, while Apple cinterop, final framework builds and simulator/device tests require macOS/Xcode. Apple-target klib production has broader host support. Run necessary Apple checks before merge; choose cost controls from actual workload measurements.
 
 ---
 
@@ -8,9 +8,9 @@
 
 The fundamental constraint:
 
-> **The Apple toolchain (LLVM for iOS, `xcrun`, the iOS Simulator) only runs on macOS. You cannot compile Kotlin/Native iOS targets on Linux or Windows.**
+> Apple-target klibs can be produced on other supported hosts; cinterop, CocoaPods integration and final Apple binaries/tests require macOS and the matching Apple toolchain.
 
-This means any CI step that touches iOS — compiling the `.xcframework`, running `iosSimulatorArm64Test`, signing the framework — must run on a macOS runner.
+Final XCFramework linking and simulator tests require a compatible macOS/Xcode runner; distinguish those jobs from host-portable metadata/klib compilation.
 
 ---
 
@@ -48,7 +48,7 @@ jobs:
           cache-read-only: true
       
       - name: Run shared module JVM tests
-        run: ./gradlew :shared:testDebugUnitTest
+        run: ./gradlew :shared:jvmTest # this example declares a jvm() target
       
       - name: Run Android app lint
         run: ./gradlew :androidApp:lint
@@ -58,15 +58,12 @@ jobs:
 
   # ──────────────────────────────────────────
   # Job 2: iOS Native Tests (macOS — expensive)
-  # Only runs if commonMain or iosMain changed
+  # Required Apple checks run on every PR in this example.
   # ──────────────────────────────────────────
   ios-tests:
-    runs-on: macos-14  # Apple Silicon runner (M1)
+    runs-on: macos-15 # pin and verify the matching Xcode image
     timeout-minutes: 30
-    # Only run if shared code changed (save $$$)
-    if: |
-      contains(github.event.pull_request.labels.*.name, 'ios-test') ||
-      github.event.pull_request.changed_files > 0
+    # Required pre-merge Apple evidence; cancellation can discard superseded runs.
     steps:
       - uses: actions/checkout@v4
       
@@ -98,86 +95,64 @@ jobs:
           path: shared/build/reports/tests/iosSimulatorArm64Test/
 ```
 
-### Pipeline B: Release Build (Merge to Main)
+### Pipeline B: Versioned Release Build
 
-When code merges to `main`, build the XCFramework and publish it:
+After required checks pass, create an approved semantic release tag. The example publishes immutable framework bytes and tags the Swift-package manifest commit with the same semantic version; configure runner/Xcode compatibility and repository authentication for the real project.
 
 ```yaml
-# .github/workflows/release.yml
-
-name: Release
+name: Release Shared Framework
 on:
   push:
-    branches: [main]
-
+    tags: ['v*.*.*']
+permissions:
+  contents: write
 jobs:
-  publish-framework:
-    runs-on: macos-14
-    timeout-minutes: 45
+  release:
+    runs-on: macos-15
     steps:
       - uses: actions/checkout@v4
-      
-      - name: Set up JDK 17
-        uses: actions/setup-java@v4
+      - uses: actions/setup-java@v4
         with:
-          distribution: 'zulu'
+          distribution: zulu
           java-version: 17
-      
-      - name: Cache Kotlin/Native
-        uses: actions/cache@v4
-        with:
-          path: ~/.konan
-          key: konan-${{ runner.os }}-${{ hashFiles('**/*.gradle.kts', 'gradle/libs.versions.toml') }}
-      
-      - name: Setup Gradle
-        uses: gradle/actions/setup-gradle@v3
-      
-      # Step 1: Build the XCFramework
-      - name: Build XCFramework
-        run: ./gradlew :shared:assembleSharedCodeReleaseXCFramework
-      
-      # Step 2: Zip it
-      - name: Package XCFramework
+      - uses: gradle/actions/setup-gradle@v4
+      - name: Validate semantic version
+        run: '[[ "$GITHUB_REF_NAME" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]'
+      - name: Test Apple target and build release framework
+        run: ./gradlew :shared:iosSimulatorArm64Test :shared:assembleSharedCodeReleaseXCFramework
+      - name: Package framework
         run: |
-          cd shared/build/XCFrameworks/release/
+          cd shared/build/XCFrameworks/release
           zip -r SharedCode.xcframework.zip SharedCode.xcframework
-          echo "CHECKSUM=$(shasum -a 256 SharedCode.xcframework.zip | awk '{print $1}')" >> $GITHUB_ENV
-      
-      # Step 3: Create GitHub Release with the zip
-      - name: Create Release
-        uses: softprops/action-gh-release@v1
+          echo "CHECKSUM=$(shasum -a 256 SharedCode.xcframework.zip | awk '{print $1}')" >> "$GITHUB_ENV"
+      - uses: softprops/action-gh-release@v2
         with:
-          tag_name: v${{ github.run_number }}
+          tag_name: ${{ github.ref_name }}
           files: shared/build/XCFrameworks/release/SharedCode.xcframework.zip
+      - name: Version the Swift package manifest
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      
-      # Step 4: Update the Package.swift in the SPM repo
-      - name: Update SPM Package
+          GH_TOKEN: ${{ secrets.SPM_REPO_TOKEN }}
         run: |
-          git clone https://x-access-token:${{ secrets.SPM_REPO_TOKEN }}@github.com/your-org/shared-kmp-spm.git spm-repo
+          # SPM_REPO_TOKEN needs contents: write on the SPM repository.
+          gh auth setup-git # let the plain git push below use GH_TOKEN
+          gh repo clone your-org/shared-kmp-spm spm-repo
           cd spm-repo
-          
-          cat > Package.swift << EOF
+          cat > Package.swift <<EOF
           // swift-tools-version: 5.9
           import PackageDescription
           let package = Package(
-              name: "SharedCode",
-              platforms: [.iOS(.v15)],
-              products: [.library(name: "SharedCode", targets: ["SharedCode"])],
-              targets: [
-                  .binaryTarget(
-                      name: "SharedCode",
-                      url: "https://github.com/your-org/shared-kmp/releases/download/v${{ github.run_number }}/SharedCode.xcframework.zip",
-                      checksum: "${{ env.CHECKSUM }}"
-                  )
-              ]
-          )
+            name: "SharedCode", platforms: [.iOS(.v15)],
+            products: [.library(name: "SharedCode", targets: ["SharedCode"])],
+            targets: [.binaryTarget(name: "SharedCode",
+              url: "https://github.com/your-org/shared-kmp/releases/download/$GITHUB_REF_NAME/SharedCode.xcframework.zip",
+              checksum: "$CHECKSUM")])
           EOF
-          
+          git config user.name "release-bot"
+          git config user.email "release-bot@users.noreply.github.com"
           git add Package.swift
-          git commit -m "Update SharedCode to v${{ github.run_number }}"
-          git push
+          git commit -m "Release $GITHUB_REF_NAME"
+          git tag "$GITHUB_REF_NAME"
+          git push origin HEAD "$GITHUB_REF_NAME"
 ```
 
 ---
@@ -200,13 +175,13 @@ jobs:
 | **Split:** JVM on Linux + iOS only on merge | (50 × 5min × $0.008) + (5 × 15min × $0.08) = **$8/day** | **$240/month** |
 | **Smart Split:** JVM on Linux + iOS only when shared code changes | Even lower — iOS tests skip for pure Android/UI changes | **~$120/month** |
 
-> **The split pipeline saves ~$1,500/month.** This is not a premature optimization — it's a mandatory architectural decision.
+The table is an illustrative calculation using its stated historical prices and assumed workload, not a measured saving or mandatory architecture. Preserve required Apple checks before merge; measure cancellation, batching and runner choices against the team's actual workload.
 
 ---
 
 ## 3. Caching the Kotlin/Native Compiler (`.konan`)
 
-The Kotlin/Native compiler toolchain is stored in `~/.konan`. On a fresh macOS runner, the first build downloads:
+The .konan directory contains version/host-specific downloaded toolchains and caches. The following older directory layout and sizes are historical illustrations, not the layout or download time guaranteed by Kotlin 2.4.21.
 
 ```mermaid
 flowchart TD
@@ -220,8 +195,8 @@ flowchart TD
     konan --> cache["cache/<br/>incremental compilation cache"]
 ```
 
-**Without caching:** First build downloads ~2.5 GB, taking 5-10 minutes just for setup.
-**With caching:** Subsequent builds skip the download entirely, saving 5-10 minutes per run.
+**Without caching:** The build downloads the components required by its host/compiler/targets. Record actual bytes and duration; the older 2.5GB/5–10-minute example is not a universal setup cost.
+**With caching:** Compatible components can be reused. Missing/changed components still download, and exact-key versus prefix restores have different outcomes; measure the resulting build rather than promising a fixed saving.
 
 ```yaml
 - name: Cache Kotlin/Native compiler
@@ -233,7 +208,7 @@ flowchart TD
       konan-${{ runner.os }}-
 ```
 
-**Cache invalidation:** The cache key includes the hash of all `build.gradle.kts` files and `libs.versions.toml`. When you upgrade Kotlin (e.g., from 2.0.10 to 2.0.20), the key changes and a fresh download occurs.
+Cache key changes cause an exact miss, but a restore-keys prefix can restore an older entry. The toolchain then downloads any missing compatible components; not every version change means a full cold download or a fixed elapsed time.
 
 ---
 
@@ -256,13 +231,14 @@ For local development, enable the Gradle local build cache in `gradle.properties
 
 ```properties
 org.gradle.caching=true
-kotlin.incremental.compilation.enabled=true
+kotlin.incremental=true
+kotlin.incremental.native=true
 kotlin.native.cacheKind.iosX64=static
 kotlin.native.cacheKind.iosArm64=static
 kotlin.native.cacheKind.iosSimulatorArm64=static
 ```
 
-The `cacheKind=static` setting tells Kotlin/Native to cache compiled static libraries. On incremental builds, only changed source sets are recompiled.
+Compiler/library caches and incremental compilation are distinct. Use documented kotlin.incremental/kotlin.incremental.native for the supported compiler setup; cacheKind does not promise that only changed source sets compile.
 
 ### Remote caching versus Remote Build Execution (RBE)
 
@@ -290,7 +266,7 @@ kmmbridge {
     spm()
     
     // Version strategy
-    gitTagVersions()  // or: timestampVersions(), manualVersions("1.2.3")
+    // Use the selected KMMBridge release's current version configuration; project.version supplies the release version.
 }
 ```
 
@@ -312,7 +288,7 @@ To avoid running expensive macOS jobs when only Android code changed:
 
 ```yaml
 ios-tests:
-  runs-on: macos-14
+  runs-on: macos-15
   needs: detect-changes
   if: needs.detect-changes.outputs.shared-changed == 'true'
   # ...
@@ -345,11 +321,11 @@ macOS runners come with a specific Xcode version. If your `build.gradle.kts` tar
 **Fix:** Pin the Xcode version:
 ```yaml
 - name: Select Xcode version
-  run: sudo xcode-select -s /Applications/Xcode_15.4.app
+  run: xcodebuild -version # verify the runner's documented Xcode image against the pinned Kotlin/SDK requirements
 ```
 
 ### 2. iOS Simulator Not Booted
-If no simulator runtime is installed on the runner, `iosSimulatorArm64Test` fails silently:
+If no compatible simulator runtime is installed, the test task reports a failure; inspect its diagnostic and the installed runner image rather than calling it silent:
 ```
 error: Unable to find a destination matching the provided destination specifier
 ```
@@ -368,7 +344,7 @@ Kotlin/Native compilation is memory-hungry. The default Gradle daemon heap (512M
 org.gradle.jvmargs=-Xmx4g -XX:+UseParallelGC
 ```
 
-Without this, you'll see `OutOfMemoryError: Java heap space` during framework linking.
+Choose heap settings from the workload and runner memory. Insufficient heap can cause OOM, but the error is not universal without this particular setting.
 
 ---
 
@@ -381,9 +357,9 @@ Without this, you'll see `OutOfMemoryError: Java heap space` during framework li
 5.  **KMMBridge vs Manual:** What are the tradeoffs between using KMMBridge (a third-party Gradle plugin) versus writing your own CI release script? When would you choose manual over KMMBridge?
 ## Answer Key
 
-1. Kotlin/Native for Apple targets depends on the Apple LLVM toolchain, `xcrun`, and proprietary macOS SDK headers (`target-sysroot`). Apple restricts these binaries and SDKs to run only on macOS environments (Darwin kernel), so the Linux compiler toolchain literally cannot cross-compile to Apple targets without those proprietary utilities and headers.
-2. To cap macOS runs safely below the 80% reduction threshold, implement **concurrency cancellation** and a **Merge Queue**. First, cancel superseded macOS CI runs when a developer pushes a new commit (`concurrency: cancel-in-progress: true`). Second, run only the cheap Linux JVM checks during the PR review phase. Once approved, the PR enters a merge queue where the expensive macOS test suite runs exactly once per batch before merging. This structurally bounds macOS executions (e.g. to just the final merged batches) regardless of commit frequency or path-filtering ratios.
-3. Because the CI workflow uses `restore-keys: konan-${{ runner.os }}-`, it does not start from a cold cache. It restores the existing `.konan` folder containing the previously downloaded LLVM toolchains and Apple SDK sysroots. The CI will *only* download the missing version-specific Kotlin compiler binary (e.g., `kotlin-native-prebuilt-macos-aarch64` for 2.0.20, ~500MB). This incremental download typically takes 1-2 minutes instead of a full 5-10 minute cold start.
+1. Apple-target klibs can be produced on supported non-Apple hosts; final Apple binaries, cinterop/CocoaPods and simulator tests need macOS/Xcode. Gate the target evidence actually required by the change.
+2. Cancel superseded runs and use a merge queue or another required pre-merge Apple gate. Path selection must cover shared code, platform code, build logic and dependency changes. The savings depend on actual run distribution; no universal 80% bound follows from a PR count alone.
+3. Exact-key misses may restore an older compatible prefix entry. Missing version-specific components are downloaded as needed; bundle layout, sizes and duration vary by Kotlin/host version. Measure the actual cache and download path.
 4. Xcode will refuse to resolve the package dependency and display a checksum mismatch error (e.g., "checksum of downloaded artifact does not match"). Swift Package Manager strictly verifies the SHA256 in `Package.swift` against the downloaded binary to prevent supply-chain tampering and corruption.
 5. KMMBridge abstracts away SPM packaging, GitHub Releases, zipping, and versioning inside a single Gradle plugin. The tradeoff is adding a third-party dependency (from Touchlab) that dictates the publishing flow and might lag behind major Kotlin tooling bumps. Manual scripting (bash/yaml) provides absolute control over the XCFramework ZIP structure, custom hosting (e.g., private Artifactory/S3), and internal versioning policies.
 
@@ -394,3 +370,16 @@ Without this, you'll see `OutOfMemoryError: Java heap space` during framework li
 - [`testing-and-mocking.md`](testing-and-mocking.md) — The `iosSimulatorArm64Test` task that runs in Pipeline A.
 - [`build-system-and-source-sets.md`](../tooling/build-system-and-source-sets.md) — The `framework {}` block configuration that produces the XCFramework.
 - [`../../release-engineering/ci-cd-for-mobile.md`](../../../release-engineering/ci-cd-for-mobile.md) — General mobile CI/CD practices (Fastlane, code signing).
+
+### Official verification references
+
+- [Primary documentation or owning implementation](https://developer.apple.com/documentation/xcode/distributing-binary-frameworks-as-swift-packages)
+- [Primary documentation or owning implementation](https://docs.github.com/en/actions/reference/runners/github-hosted-runners)
+- [Primary documentation or owning implementation](https://docs.github.com/en/actions/reference/workflows-and-actions/events-that-trigger-workflows#pull_request)
+- [Primary documentation or owning implementation](https://docs.github.com/en/actions/using-jobs/using-concurrency)
+- [Primary documentation or owning implementation](https://docs.github.com/en/actions/writing-workflows/choosing-what-your-workflow-does/caching-dependencies-to-speed-up-workflows)
+- [Primary documentation or owning implementation](https://docs.github.com/en/billing/reference/actions-runner-pricing)
+- [Primary documentation or owning implementation](https://docs.gradle.org/current/userguide/build_environment.html)
+- [Primary documentation or owning implementation](https://kmmbridge.touchlab.co/docs/PORTING_0.3.x)
+- [Primary documentation or owning implementation](https://kotlinlang.org/docs/multiplatform/multiplatform-publish-lib-setup.html)
+- [Primary documentation or owning implementation](https://kotlinlang.org/docs/native-improving-compilation-time.html)

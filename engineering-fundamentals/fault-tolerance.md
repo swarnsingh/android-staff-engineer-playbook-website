@@ -38,7 +38,7 @@ The arc: expensive hardware → cheap hardware + smart software → cheap hardwa
 - **Failure:** when a fault produces an incorrect result. A component fails to return the right answer.
 - **Outage:** when failures are user-visible. Customers cannot use the service.
 
-The chain runs: fault → failure → outage. Fault tolerance breaks this chain. Faults should not become failures; failures should not become outages.
+A local fault can cause a component failure without causing a service outage. Fault tolerance contains or masks its effect so the service continues to meet its specified behavior for the faults the design covers.
 
 ### 2. Redundancy is the universal mechanism
 
@@ -67,24 +67,17 @@ Examples of graceful degradation:
 - Search returns results from the primary index when the personalized index is unavailable.
 - Video playback drops to a lower bitrate when bandwidth degrades.
 - A feed shows cached posts when the backend is unreachable.
-- A login flow accepts password-only when the 2FA service is down (or fails closed, depending on threat model).
+- A login flow requiring two factors fails closed or uses a pre-established recovery authenticator with the required assurance; an outage does not silently downgrade it to password-only.
 
 ---
 
 ## Mental Model
 
-An aircraft.
+A service with three application instances.
 
-Modern commercial aircraft have multiple engines. The aircraft can fly with one engine out. If both engines fail, the aircraft can still glide to a runway. Hydraulic systems are triple-redundant. Critical avionics are quadruple-redundant. The pilots can fly the aircraft manually if all the electronics fail.
+If one instance dies, a health-aware router can send new work to the remaining instances. That only preserves the service when surviving capacity, session state, shared storage and retry behavior meet the failure contract. All three instances can still fail together during a bad deployment or shared-database outage.
 
-No single failure can crash the plane.
-
-Two things to notice:
-
-1. The aircraft is not made of *more reliable* parts than a car. Jet engines fail at roughly the rate of car engines. The reliability comes from *arrangement*.
-2. The aircraft is *heavier* and *more expensive* than it would be without redundancy. This is the cost of fault tolerance.
-
-A software system designed for fault tolerance is the same. The components are normal; the *arrangement* is the technology.
+The lesson is to name which faults the arrangement covers and test the resulting service behavior. Adding copies covers some failure modes; it does not eliminate shared dependencies or create unlimited capacity.
 
 ---
 
@@ -104,16 +97,15 @@ sequenceDiagram
     Secondary-->>Client: response
 ```
 
-Cold failover: secondary boots from scratch — minutes of downtime.
-Warm failover: secondary is running but not serving — seconds of downtime.
-Hot failover: secondary serves traffic too — near-zero downtime.
+Cold recovery starts resources when needed; warm recovery keeps some capacity ready; hot/active arrangements keep serving capacity available. These labels do not guarantee a duration. Measure detection, promotion, client reconnection, state recovery and usable capacity for the chosen design.
 
 ### Replication
 
 Multiple replicas hold the same data. Reads can be served by any; writes go to one or many.
 
-```kotlin
-// Synchronous replication: write succeeds only if all replicas ack
+```text
+// Conceptual pseudocode: helpers and storage protocol are application-defined.
+// All-replica acknowledgement is one illustrative synchronous policy.
 fun write(value: V): Boolean {
     val acks = replicas.parallelMap { it.write(value) }
     return acks.all { it == OK }
@@ -127,27 +119,44 @@ fun write(value: V): Boolean {
 }
 ```
 
-Synchronous replication is more durable; asynchronous replication is faster but can lose writes during a primary failure.
+Synchronous acknowledgement waits for the configured durability/replica condition and adds that wait to the write path. It need not require every replica. Asynchronous replication can acknowledge sooner but lose recently acknowledged writes if the primary fails before they reach a surviving replica.
 
 ### Retry with backoff
 
 ```kotlin
+import java.io.IOException
+import kotlin.random.Random
+import kotlinx.coroutines.currentCoroutineContext
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.ensureActive
+
+// Caller must impose an overall deadline and classify retryable I/O failures.
+// Retry mutations only under an idempotency/reconciliation contract.
 suspend fun <T> withRetry(
     maxAttempts: Int = 3,
-    initialDelay: Duration = 100.milliseconds,
-    factor: Double = 2.0,
+    initialDelayMs: Long = 100,
+    maxDelayMs: Long = 5_000,
+    shouldRetry: (IOException) -> Boolean = { true },
     op: suspend () -> T
 ): T {
+    require(maxAttempts > 0)
+    require(initialDelayMs > 0 && maxDelayMs >= initialDelayMs)
     var attempt = 0
-    var delay = initialDelay
+    var backoffMs = initialDelayMs
     while (true) {
+        currentCoroutineContext().ensureActive()
         try {
             return op()
-        } catch (e: TransientException) {
+        } catch (e: IOException) {
+            currentCoroutineContext().ensureActive()
             attempt++
-            if (attempt >= maxAttempts) throw e
-            delay(delay + jitter(delay))
-            delay = delay * factor
+            if (attempt >= maxAttempts || !shouldRetry(e)) throw e
+            delay(Random.nextLong(backoffMs)) // full jitter: [0, backoffMs)
+            backoffMs = if (backoffMs >= maxDelayMs - backoffMs) {
+                maxDelayMs
+            } else {
+                backoffMs * 2
+            }
         }
     }
 }
@@ -158,7 +167,7 @@ Retries are the most common fault-tolerance pattern and the most commonly mis-im
 - **Bounded.** A finite number of attempts (or a finite total time budget).
 - **Backed off.** Exponentially increasing delay between attempts to avoid hammering.
 - **Jittered.** Randomized delay to avoid synchronized thundering herds.
-- **Over idempotent operations only.** See [`../distributed-systems/idempotency.md`](../distributed-systems/idempotency.md).
+- **Safe to repeat under the actual contract.** A naturally idempotent operation, server-enforced operation key, or reconciliation protocol can make retry safe. A timeout does not prove that the prior attempt had no effect. See [`../distributed-systems/idempotency.md`](../distributed-systems/idempotency.md).
 
 See [`../patterns/retry.md`](../patterns/retry.md) for the full pattern.
 
@@ -182,12 +191,13 @@ See [`../patterns/circuit-breaker.md`](../patterns/circuit-breaker.md).
 Isolate resources by purpose so that exhaustion in one path doesn't starve others.
 
 ```kotlin
-// Separate thread pools for different downstream services
+// Separate execution-parallelism limits over shared IO resources.
 val paymentsDispatcher = Dispatchers.IO.limitedParallelism(20)
 val searchDispatcher = Dispatchers.IO.limitedParallelism(50)
 
-// If search is slow and all search dispatcher threads block,
-// payments are unaffected.
+// These are dispatcher views, not dedicated thread pools or in-flight limits.
+// Bound suspending requests separately with a Semaphore/admission policy.
+// Shared CPU, memory, connections and upstream services can still couple failures.
 ```
 
 ---
@@ -220,7 +230,7 @@ The pieces:
 - **Database replication:** survives a primary failure (failover) and serves read load.
 - **Cache with fallback:** if the cache is down, the system serves from replicas (slower but functional).
 
-Notable absence: a single point of failure. The load balancer itself is often paired (active-passive or anycast).
+The diagram is a sketch, not proof that single points of failure are absent. The database primary still needs a tested promotion and fencing protocol; load-balancer, cache and shared infrastructure dependencies need their own failure analysis and capacity limits.
 
 ---
 
@@ -317,10 +327,10 @@ The right framing: fault tolerance is an *investment* — pay the cost upfront, 
 
 ## Performance Considerations
 
-- **Synchronous replication** adds latency proportional to the slowest replica.
-- **Async replication** adds no latency but loses durability under primary failure.
+- **Synchronous replication** adds the wait needed for its configured acknowledgements and durability level. A quorum need not wait for the slowest replica in the full set.
+- **Async replication** need not wait for replica acknowledgement on the commit path, but still consumes resources and can add overhead or lag. Recently acknowledged writes can be lost on failover if not yet replicated.
 - **Retries** add latency on the failure path; aggressive retries can dominate p99.
-- **Circuit breakers** add latency only when tripping; when open, they short-circuit failures with no downstream call.
+- **Circuit breakers** perform admission and outcome accounting on calls. Open breakers reject without a downstream call, but the check itself still has overhead; they do not supply a timeout or concurrency limit automatically.
 - **Health checks** are a continuous low-grade load on the system.
 
 The general rule: fault tolerance is rarely free, but the cost is usually small relative to the cost of outages.
@@ -332,7 +342,7 @@ The general rule: fault tolerance is rarely free, but the cost is usually small 
 This whole topic *is* reliability. Some additional points:
 
 - **SLOs frame the conversation.** A 99.9% SLO permits 43 minutes of outage per month. A 99.99% SLO permits 4.3 minutes. The two require very different investments.
-- **The cost of a 9 grows exponentially.** Going from 99% to 99.9% costs less than going from 99.9% to 99.99%, which costs less than going from 99.99% to 99.999%.
+- **Price the next reliability target explicitly.** Higher targets often require additional isolation, redundancy or operational work, but there is no universal exponential cost law. Estimate the specific failure modes and changes needed to meet the target.
 - **Multi-region is the big expensive step.** Single-region fault tolerance is achievable; multi-region requires solving consistency, latency, and operational complexity.
 
 See [`../observability/slos.md`](../observability/slos.md), [`../observability/error-budgets.md`](../observability/error-budgets.md).
@@ -386,7 +396,7 @@ See [`../observability/slis.md`](../observability/slis.md), [`../observability/s
 
 **"Retries make everything reliable."** Retries amplify problems for non-idempotent operations and overload signals. Retries without bounds, backoff, and idempotency make things worse.
 
-**"More 9's is always better."** Each 9 is exponentially expensive. The right question is "what does the next 9 cost, and is it worth it for our users?"
+**"More 9's is always better."** Additional reliability has a workload-specific cost. Ask what the next target requires and whether the user benefit justifies that investment.
 
 **"Fault tolerance is a framework problem."** Frameworks help (Hystrix, Resilience4j, Envoy), but the design decisions — which failures to tolerate, where to put the boundaries — are domain-specific.
 
@@ -416,15 +426,15 @@ See [`../observability/slis.md`](../observability/slis.md), [`../observability/s
 3. **Explain why retries without idempotency can amplify a partial outage into a total one.**
    If a non-idempotent operation (like a payment) is retried because the response timed out (even though the server processed it), it causes duplicate data. Additionally, hammering a struggling server with blind retries causes a retry storm, saturating resources completely.
 4. **Compare synchronous vs asynchronous replication. What does each give up?**
-   Synchronous gives up latency (waits for all acks) to guarantee durability. Asynchronous gives up strong durability (writes can be lost if the primary dies before replicating) to achieve lower latency.
+   Synchronous replication waits for its configured acknowledgements and durability level; this may be one replica or a quorum, not every replica. It adds waiting and can reduce availability if that condition is unavailable. Asynchronous acknowledgement can be faster but risks losing acknowledged writes not yet copied to a surviving replica.
 5. **A team adds three layers of fallback to a critical path. The system feels more reliable. What new failure modes have they created?**
    They have created complex, rarely tested fallback paths that can serve stale data, hide underlying deterioration, or trigger unexpected cascading failures when a fallback dependency is overwhelmed.
 6. **The system "automatically fails over" but a human engineer is required to handle the post-failover repair. What's the user-visible RTO?**
-   The user-visible Recovery Time Objective (downtime) is near zero if the failover is truly automatic. The human intervention is just background cleanup, not part of the RTO.
+   RTO is the target for restoring the agreed service, not a claim of near-zero measured downtime. Measure detection, promotion, routing changes and recovery to that service level. Human repair is outside the user-visible recovery interval only if the promised service is already restored; otherwise it is part of recovery.
 7. **Multi-region active-active sounds reliable. What are the three hardest problems it creates?**
    Data consistency (handling replication lag and conflicts), request routing (ensuring users hit the right region), and massive operational complexity.
 8. **How do you know your fault tolerance works? Stress-test it once a year? Once a quarter? Continuously?**
-   Continuously, ideally through automated Chaos Engineering (e.g., Chaos Monkey) running in production, to ensure drift hasn't invalidated your fault-tolerance assumptions.
+   Repeatedly test the specified failure modes and recovery criteria as the system changes. Start with controlled environments and bounded experiments; production fault injection needs an explicit blast radius, monitoring and abort conditions. Frequency and environment follow the risk, not a universal requirement to run chaos continuously in production.
 9. **The cache failed; the system "gracefully fell back" to the database; the database also failed. Where did the system's resilience model break down?**
    The system lacked bulkheads or load shedding. The database was likely undersized to handle the full un-cached load, meaning the "fallback" was effectively a denial-of-service attack on the primary store.
 10. **An SLO of 99.95% allows ~21 minutes of outage per month. How do you spend an error budget intentionally?**
@@ -452,3 +462,18 @@ External:
 - *Site Reliability Engineering* (Google, 2016). Chapters on incident response, postmortems, and the SLO/error-budget framework.
 - *Release It!* by Michael Nygard. Practical patterns for production-grade fault tolerance.
 - *Chaos Engineering* (Netflix). The original case for testing failure paths in production.
+
+### Official verification references
+
+The corrections in this chapter were checked against the following primary references.
+
+- [pages.nist.gov: sp800-63b.html](https://pages.nist.gov/800-63-4/sp800-63b.html)
+- [kotlinlang.org: limited-parallelism.html](https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines/-coroutine-dispatcher/limited-parallelism.html)
+- [kotlinlang.org: -i-o.html](https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines/-dispatchers/-i-o.html)
+- [www.postgresql.org: warm-standby.html](https://www.postgresql.org/docs/current/warm-standby.html)
+- [sre.google: addressing-cascading-failures](https://sre.google/sre-book/addressing-cascading-failures/)
+- [aws.amazon.com: timeouts-retries-and-backoff-with-jitter](https://aws.amazon.com/builders-library/timeouts-retries-and-backoff-with-jitter/)
+- [resilience4j.readme.io: circuitbreaker](https://resilience4j.readme.io/docs/circuitbreaker)
+- [sre.google: embracing-risk](https://sre.google/sre-book/embracing-risk/)
+- [kotlinlang.org: ensure-active.html](https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines/ensure-active.html)
+- [kotlinlang.org: delay.html](https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines/delay.html)

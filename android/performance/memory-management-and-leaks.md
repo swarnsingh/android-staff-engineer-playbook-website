@@ -6,26 +6,26 @@ In the Java/Kotlin ecosystem, memory management is handled by the Garbage Collec
 
 However, a Staff Android Engineer knows that the GC is not magic. It relies on **Reachability**. If an object in memory is no longer needed, but is still "reachable" via a chain of references leading back to a GC Root (like the Main Thread or a Static variable), the Garbage Collector is strictly forbidden from destroying it.
 
-This is a **Memory Leak**. On Android, leaking an `Activity` or a `Fragment` is an architectural disaster that will rapidly exhaust the app's memory budget, causing the OS to violently crash the app with an `OutOfMemoryError` (OOM).
+An unintended reachable object is a leak. Retained objects can increase managed, native and graphics pressure; the runtime can throw OutOfMemoryError on allocation failure, while the system may separately kill a process under memory pressure.
 
 ## Why It Matters
 
-Android devices have vastly different RAM capacities. A flagship device has 12GB of RAM. A budget device in an emerging market might have 2GB of RAM. The Android OS places a hard "Heap Limit" on every single application (e.g., your app might only be allowed to use 256MB of RAM total).
+Android devices differ in managed heap limits, native/graphics allocations and system memory pressure. A managed heap maximum is not a hard cap on all process RAM; inspect the relevant allocation category and device budget.
 
-If you leak a complex `Activity` (which holds a `Window`, a massive `View` hierarchy, and multiple high-resolution `Bitmaps`), you might lose 40MB of your 256MB budget instantly. If the user opens and closes that Activity 6 times, your app hits the 256MB limit and crashes. 
+The retained cost depends on the actual graph. For illustration, six distinct retained 40MB graphs would add roughly 240MB, but neither a 256MB managed budget nor a fixed leak-to-crash count applies to every device or bitmap allocation.
 
 An app with memory leaks is a ticking time bomb.
 
 ## Historical Context
 
 - **Dalvik (Pre-Android 5.0):** The original Android runtime. Its Garbage Collector was famously slow and "Stop-The-World" (it froze the entire app to clean up memory), leading to massive [Jank](jank.md) during fast allocations.
-- **ART (Android RunTime):** Introduced to replace Dalvik. ART has a vastly superior Concurrent Garbage Collector. It cleans up memory in the background without freezing the UI. However, ART cannot clean up what it cannot reach.
+- **ART:** Concurrent GC performs substantial work concurrently but still has pause phases. It can reclaim unreachable objects; strongly reachable objects retained by an unintended owner remain live.
 - **LeakCanary (2015):** Square released an open-source library that revolutionized Android memory debugging. It automatically detects leaked Activities/Fragments and dumps the heap, drawing a trace of exactly what is preventing the GC from deleting the object.
 
 ## First Principles
 
 1.  **The Heap:** The pool of RAM where all your objects live.
-2.  **GC Roots:** The "anchors" of the app. These are things the OS knows are currently active: The Main Thread, active Coroutines, `static` variables, and JNI (C++) references.
+2. **GC roots:** Runtime roots include thread stacks, static references and JNI roots. An active coroutine is not intrinsically a separate root; a live owner may retain its continuation and captures.
 3.  **Reachability:** If the GC can draw a continuous line from a GC Root to an Object, the Object is reachable and cannot be deleted.
 4.  **The Memory Leak:** An object that is conceptually useless to the user, but is still technically reachable from a GC Root.
 
@@ -88,6 +88,7 @@ The solution is [Structured Concurrency](../architecture/structured-concurrency.
 ```kotlin
 class ProfileActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
         // lifecycleScope is automatically CANCELLED when the Activity dies.
         // It cuts the rope!
         lifecycleScope.launch {
@@ -117,16 +118,17 @@ class UserCache {
 }
 
 class DashboardFragment : Fragment(), Listener {
-    override fun onViewCreated() {
+    override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
+        super.onViewCreated(view, savedInstanceState)
         UserCache.register(this) // The Fragment hands a rope to the Static Root
     }
     // We FORGOT to unregister in onDestroyView!
 }
 ```
 
-A `companion object` lives forever (it is a GC Root). If the Fragment registers itself but forgets to unregister, the `companion object` holds the `Fragment` in memory forever. If the user opens and closes the Fragment 50 times, there will be 50 dead Fragments trapped in the `listeners` list, resulting in an OOM crash.
+A process-lived listener list retains registered fragments until removed or the owner ends. Register/unregister at the matching lifecycle boundary; the retained graph and device pressure determine whether and when allocation fails.
 
-*(Fix: Always `unregister` in `onDestroyView`, or vastly prefer using [Dependency Injection](../data-and-di/dependency-injection.md) or `WeakReference` instead of static singletons).*
+Fix this example by pairing registration in `onViewCreated` with unregistration in `onDestroyView`. [Dependency injection](../data-and-di/dependency-injection.md) makes ownership explicit but a process-scoped injected listener list can retain the same fragment. A weak reference changes retention and delivery semantics; it does not replace a deliberate subscription lifetime.
 
 ## Tradeoffs
 
@@ -147,21 +149,21 @@ class Cache {
 ## Failure Modes
 
 - **The Inner Class Trap:**
-  In Kotlin, `inner class` (unlike standard nested classes) holds a permanent, hidden reference to the outer class. If you pass an instance of an `inner class` to a Singleton (like a network manager), you instantly leak the outer class.
+  An inner instance retains its outer instance. A long-lived owner that stores it beyond the intended lifecycle can retain that outer object; inspect the actual reference path.
   *(Fix: Avoid `inner class` unless absolutely necessary).*
 - **The Context Cast:**
   Passing an `Activity` context into a repository constructor because the repository needs to access SharedPreferences or a database. The repository outlives the Activity, leaking the Activity.
   *(Fix: When a Singleton or Repository requires a `Context`, always pass `context.applicationContext`).*
 - **Unregistered BroadcastReceivers:**
-  If an Activity calls `registerReceiver()` but crashes or finishes without calling `unregisterReceiver()`, the Android OS system service holds a hard reference to your receiver, leaking your Activity.
+  A context-registered receiver must be unregistered at its intended boundary. AOSP LoadedApk.removeContextRegistrations reports leaked registrations and unregisters them during context cleanup, so do not claim permanent retention by a system-service Java reference after every Activity finish. Registration beyond the intended lifecycle can still retain app-side context until cleanup.
 
 ## Staff Engineer Thinking
 
 When attacking an `OutOfMemoryError` spike in production, a Staff engineer focuses on the Heap:
 
-1.  **LeakCanary is Mandatory:** I enforce that `LeakCanary` is installed in the `debug` build variant of all company apps. If QA or a developer triggers a leak during testing, LeakCanary throws a giant notification with the exact stack trace. It catches 95% of leaks before they merge.
+1. **Leak diagnosis:** Use LeakCanary in debug to identify retained objects and their reference paths; coverage depends on exercised journeys and watched objects, not a fixed detection percentage.
 2.  **Heap Dumps (.hprof):** When an OOM occurs in production, Crashlytics doesn't tell you *what* leaked, it just tells you that you ran out of memory. I pull an `.hprof` heap dump from a testing device and load it into Android Studio's Memory Profiler (or Eclipse MAT) to analyze the "Dominator Tree." This tells me exactly which object is holding 40% of the RAM.
-3.  **Bitmaps:** While leaking an Activity is bad, leaking a `Bitmap` is fatal. Bitmaps are massive, uncompressed pixel grids in memory. If a backend sends a 4000x4000 pixel avatar image, and we load it into memory without down-sampling it via `Glide` or `Coil`, the app will OOM instantly, even without a "leak."
+3. **Bitmap budgets:** Pixel allocation and cache ownership can create substantial pressure. Since API 26 bitmap pixel data is in the native heap; managed heap limits are not total-process limits. Downsample and measure rather than promise immediate OOM for a given image.
 
 ## Common Misconceptions
 
@@ -194,18 +196,28 @@ When attacking an `OutOfMemoryError` spike in production, a Staff engineer focus
 5. **Explain the architectural flaw of using a Kotlin `companion object` to hold a list of callback listeners registered by Fragments.**
    A `companion object` acts as a static GC root. If Fragments add themselves to the list but fail to unregister in `onDestroyView`, the static list holds hard references to dead Fragments, leaking them permanently.
 6. **How does the `lifecycleScope` in Kotlin Coroutines natively solve the problem of leaking background tasks when an Activity is destroyed?**
-   `lifecycleScope` is automatically cancelled by the framework when the Activity is destroyed. This safely kills any running coroutines, cutting the reference rope and allowing the Activity to be garbage collected.
+   lifecycleScope cancellation is cooperative. It stops cancellable work and runs cleanup; non-cooperative work and other owners can retain references. Release listeners/resources at their actual ownership boundary rather than assuming cancellation instantly reclaims every object.
 7. **What is a `WeakReference`, and how does its behavior differ from a standard (Strong) reference during a Garbage Collection cycle?**
    A standard reference prevents garbage collection. A `WeakReference` does not. If an object is only reachable via WeakReferences, the GC will aggressively destroy the object and clear the reference to reclaim RAM.
 8. **Why does an `inner class` in Kotlin pose a significantly higher risk of causing a memory leak than a standard nested class?**
-   An `inner class` inherently holds a hidden, implicit reference to its outer class instance. A standard nested class does not. Passing an `inner class` to a long-lived component will instantly leak the outer class.
+   An inner instance retains its outer instance. If a longer-lived owner retains that inner instance beyond the outer lifecycle, it can cause a leak; merely passing it without retention does not.
 9. **Describe the tool `LeakCanary`. How does it help teams prevent `OutOfMemoryError` crashes before releasing to production?**
    LeakCanary automatically watches for destroyed Activities and Fragments. If they persist in memory, it forces a heap dump, analyzes the Dominator Tree, and displays a notification with the exact reference chain causing the leak.
 10. **If an app crashes with an `OutOfMemoryError`, but `LeakCanary` reports zero leaked Activities, what other common memory structure is likely responsible for the crash? (Hint: Think about images).**
-    The app is likely loading massive Bitmaps (pixel grids) into memory without down-sampling them. Even if there is no "leak", a single 4000x4000 uncompressed image can instantly exhaust the strict heap budget.
+     Large decoded images can create substantial native/process pressure (bitmap pixels are native-heap allocations since API 26). Actual failure depends on format, allocation, caches and device limits; distinguish this from a retained-object leak.
 
 ## Further Reading
 
 - [`jank.md`](jank.md) — How Garbage Collection events (caused by bad memory management) pause the Main Thread and drop frames.
 - [`process-death-and-state-restoration.md`](../architecture/process-death-and-state-restoration.md) — How the OS brutally kills apps that consume too much RAM.
 - [Android Developers: Memory Management](https://developer.android.com/topic/performance/memory)
+
+### Official verification references
+
+- [Primary documentation or owning implementation](https://developer.android.com/reference/android/app/Activity)
+- [Primary documentation or owning implementation](https://developer.android.com/reference/androidx/fragment/app/Fragment)
+- [Primary documentation or owning implementation](https://developer.android.com/topic/performance/graphics/manage-memory)
+- [Primary documentation or owning implementation](https://developer.android.com/topic/performance/memory-overview)
+- [Primary documentation or owning implementation](https://kotlinlang.org/docs/cancellation-and-timeouts.html)
+- [Primary documentation or owning implementation](https://raw.githubusercontent.com/aosp-mirror/platform_frameworks_base/master/core/java/android/app/LoadedApk.java)
+- [Hilt component lifetimes](https://developer.android.com/training/dependency-injection/hilt-android)

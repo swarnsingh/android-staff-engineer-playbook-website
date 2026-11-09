@@ -156,9 +156,9 @@ Kotlin function types are contravariant in their parameters and covariant in the
 
 ```kotlin
 // Function1<P, R> is actually Function1<in P, out R>
-val f: (Animal) -> Number = { a -> a.legs }
-val g: (Dog) -> Int = f                          // ✅ legal: P (Dog) <: P (Animal); R (Int) <: R (Number)
-val n: Int = g(Dog())
+val f: (Animal) -> Int = { _ -> 4 }
+val g: (Dog) -> Number = f                       // ✅ accepts every Dog, returns an Int usable as Number
+val n: Number = g(Dog())
 ```
 
 Reading rules:
@@ -199,8 +199,8 @@ val animals: MutableList<Any> = mutableListOf()
 copyAnimals(dogs, animals)   // ✅ legal
 ```
 
-- `MutableList<out Animal>` — within this function, treat the list as read-only `Animal`.
-- `MutableList<in Animal>` — within this function, treat the list as write-only with `Animal` minimum.
+- `MutableList<out Animal>` — read elements as Animal; do not insert/replace them through this reference. Element-free mutations such as `clear()` remain possible.
+- `MutableList<in Animal>` — insert Animal values; reads remain available as `Any?`, rather than as Animal.
 
 This is exactly Java's `? extends Animal` (`out`) and `? super Animal` (`in`).
 
@@ -286,7 +286,7 @@ A listener for "anything" can listen for dogs specifically. Use `in` here.
 
 ### `LiveData<T>` — invariant (a missed opportunity)
 
-`androidx.lifecycle.LiveData<T>` is invariant. This means you cannot assign `LiveData<Dog>` to `LiveData<Animal>` directly — annoying. The reason: `MutableLiveData<T>` writes; the design choice was to keep the API consistent. Use `.map { it as Animal }` or switch to `Flow<out T>` which is covariant.
+`androidx.lifecycle.LiveData<T>` is invariant, so `LiveData<Dog>` cannot be assigned directly to `LiveData<Animal>`. Its Java declaration has no Kotlin declaration-site `out`. A read-only covariant parent can still have an invariant mutable subtype, so `MutableLiveData` does not by itself prove covariance impossible. Adapt with a typed mapping or use an appropriate projected read-only API; `Flow<out T>` already declares covariance.
 
 ### Custom `Result` types
 
@@ -321,7 +321,7 @@ When Kotlin compiles to JVM bytecode, declaration-site variance becomes use-site
 
 | Kotlin | Java |
 |---|---|
-| `List<out T>` returned | `List<? extends T>` |
+| `List<T>` returned (`List` declares `out E`) | Normally `List<T>`; return wildcards are omitted unless requested |
 | `Sink<in T>` parameter | `Sink<? super T>` |
 | `(Animal) -> Int` (`Function1<in Animal, out Int>`) | `Function1<? super Animal, ? extends Integer>` |
 
@@ -356,7 +356,7 @@ This is the kind of detail you discover when your Java consumers complain about 
 | `Resource<Nothing>` assignment fails | Sealed parent is invariant | Add `out T` to the sealed parent |
 | Listener type incompatible | `OnClick<T>` invariant | Mark as `in T` |
 | Cannot assign `LiveData<Dog>` to `LiveData<Animal>` | LiveData is invariant | `Transformations.map(it) { it as Animal }` or switch to `Flow<out T>` |
-| Confusing variance inheritance | Subclass changes variance | Subclass cannot widen variance; can only narrow / preserve |
+| Confusing variance inheritance | Type arguments occur in incompatible positions in the chosen supertype | Check the declared positions: an invariant subtype can implement a covariant producer, but an `out T` subtype cannot pass T into an invariant supertype position. |
 | `Comparator<Dog>` not accepted for sorting `List<Animal>` (rare) | Contravariance direction confused | Comparator is `in T`; an `Animal` comparator works for Dogs, not the reverse |
 | Test fails because mocked Flow is wrong type | Mocking a covariant type by emitting subtypes | Cast at the mock construction or use stable type |
 | Compose Composable parameter rejects generic subtype | Compose Composables can't be inline-generic in some scenarios | Sometimes refactor to a concrete type at the surface |
@@ -374,7 +374,7 @@ When reviewing variance choices, I look for:
 5. **Function type signatures unnecessarily complex** — sometimes a custom interface is clearer than `(A) -> B` deeply nested in generics.
 6. **Java consumer complaints about wildcard noise** — `@JvmSuppressWildcards` at the SDK boundary.
 7. **`as` casts to bridge variance** — usually means the declaration site got variance wrong. Fix the declaration.
-8. **A `MutableSomething<out T>` attempt** — explain why this is structurally impossible and refactor.
+8. **Declaration-site covariance on a mutable API** — inspect the actual type positions. A type exposing both insertion of T and retrieval of T must be invariant; a use-site `MutableList<out T>` view is valid and restricts element writes.
 
 ---
 
@@ -394,7 +394,7 @@ When reviewing variance choices, I look for:
 
 1. Explain why `Dog[]` is a `Animal[]` in Java but `Box<Dog>` is *not* a `Box<Animal>` in Kotlin by default. What problem does the latter prevent?
 2. Walk through what `out T` allows and forbids in a class body. Same for `in T`.
-3. Why is `List<out E>` valid but `MutableList<out E>` impossible?
+3. Why can `List` declare `out E`, while a mutable list with public `add(E)` and `get(): E` must be invariant? How is a use-site `MutableList<out E>` still valid?
 4. Real example: you have `class Saver<T> { fun save(item: T) }`. Should it be `Saver<in T>`, `Saver<out T>`, or neither? Why?
 5. Walk through how `Resource<Nothing>` becomes assignable to `Resource<User>` via `out T` + `Nothing` being the bottom type.
 6. The function type `(Animal) -> Int` — what variance does each parameter have, and why?
@@ -412,8 +412,8 @@ When reviewing variance choices, I look for:
    Java arrays are covariant by default, allowing a `Dog[]` to be assigned to an `Animal[]`. This requires the JVM to perform a runtime check on every array write to prevent inserting a `Cat` into what is actually a `Dog[]`. Kotlin generics are invariant by default to ensure compile-time type safety; preventing `Box<Dog>` from being used as `Box<Animal>` prevents accidental insertion of incompatible types without needing runtime checks.
 2. **Walk through what `out T` allows and forbids in a class body. Same for `in T`.**
    `out T` (covariance) allows `T` to be used in output positions (return types, read-only properties) and forbids `T` in input positions (function parameters, mutable property setters). `in T` (contravariance) allows `T` in input positions and forbids it in output positions.
-3. **Why is `List<out E>` valid but `MutableList<out E>` impossible?**
-   `List` in Kotlin is a read-only interface, meaning it only produces `E` (returns it from methods like `get`). Thus, `out E` is safe. `MutableList` has methods like `add(element: E)` which consume `E` in an input position. If it were `out E`, you could assign a `MutableList<Dog>` to a `MutableList<Animal>` and add a `Cat`, breaking type safety.
+3. **Why can `List` declare `out E`, while a mutable list with public `add(E)` and `get(): E` must be invariant? How is a use-site `MutableList<out E>` still valid?**
+   A public `get(): E` produces E, while `add(E)` consumes it. One declaration cannot promise both covariance and unrestricted element insertion. A use-site `MutableList<out E>` is valid: it prevents inserting or replacing elements through that reference, while element-free mutations such as `clear()` remain possible.
 4. **Real example: you have `class Saver<T> { fun save(item: T) }`. Should it be `Saver<in T>`, `Saver<out T>`, or neither? Why?**
    It should be `Saver<in T>`. The class only consumes `T` (it appears in the input position of `save`). By making it contravariant, a `Saver<Animal>` can safely be used wherever a `Saver<Dog>` is required, increasing the reusability of generic savers.
 5. **Walk through how `Resource<Nothing>` becomes assignable to `Resource<User>` via `out T` + `Nothing` being the bottom type.**
@@ -431,9 +431,9 @@ When reviewing variance choices, I look for:
 11. **PECS mnemonic — give a concrete example of each rule using Android-relevant types.**
     Producer Extends (`out`): `Flow<out User>` only emits (produces) users, so it's safe to treat it as `Flow<Any>`. Consumer Super (`in`): `Observer<in User>` only receives (consumes) users, so an `Observer<Any>` can safely observe a user stream.
 12. **Can a subclass widen variance compared to its parent class? Tighten? Why?**
-    A subclass cannot widen variance (e.g., change an invariant parameter to covariant) because it would violate the parent's contract. It can tighten or preserve it (e.g., an `out T` parameter remains `out T`).
+    Check how the subtype uses each parameter in its supertype declaration. `class Child<T> : Producer<T>` can implement `Producer<out T>` invariantly. In contrast, declaring `Child<out T>` while passing T into an invariant parent type position is rejected. Variance belongs to each declaration; use type positions rather than a general widening/tightening slogan.
 13. **`LiveData<T>` is invariant; `Flow<out T>` is covariant. Why might that be, given they both deliver values to observers?**
-    `LiveData` is invariant because it is deeply tied to `MutableLiveData`, which allows both reading (`value`) and writing (`setValue`). Making it covariant would break `MutableLiveData`. `Flow` is a purely read-only stream of emissions (production), so it is safely covariant.
+    `LiveData<T>` exposes an invariant Java generic declaration; `Flow<out T>` explicitly declares Kotlin covariance. A mutable subtype does not inherently prevent a read-only parent from being covariant: `List`/`MutableList` illustrate that separation. Choose an adapter or projected API according to the operations the caller needs.
 
 ---
 
@@ -447,6 +447,11 @@ When reviewing variance choices, I look for:
 - [`null-safety.md`](../language-core/null-safety.md) — `Result<T>` and bounded null safety.
 - [`../platform-engineering/library-versioning.md`](../../platform-engineering/library-versioning.md) — `@JvmSuppressWildcards` for clean Java consumer APIs.
 - [Kotlin Docs — Generics: variance](https://kotlinlang.org/docs/generics.html#variance) — official reference.
-- [Roman Elizarov — "Generic variance"](https://elizarov.medium.com/) — design notes from Kotlin's language lead.
+- [Kotlin docs — Generics: variance](https://kotlinlang.org/docs/generics.html#variance) — official language reference.
 - [Java Generics FAQ — Wildcards](https://www.angelikalanger.com/GenericsFAQ/JavaGenericsFAQ.html) — the deep JVM-side reference.
 - [PECS — Joshua Bloch's Effective Java Item 31](https://www.amazon.com/Effective-Java-Joshua-Bloch/dp/0134685997) — the canonical Producer/Consumer treatment.
+
+### Official verification references
+
+- [Primary documentation or owning implementation](https://developer.android.com/reference/androidx/lifecycle/LiveData)
+- [Primary documentation or owning implementation](https://kotlinlang.org/docs/java-to-kotlin-interop.html#variant-generics)

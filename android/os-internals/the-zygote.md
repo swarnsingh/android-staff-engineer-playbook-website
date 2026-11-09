@@ -25,7 +25,7 @@ By utilizing the Zygote, Android achieves instant startup and massive RAM dedupl
 
 - **Linux `fork()`:** In standard Linux, the `fork()` command creates a new process by perfectly duplicating the calling process. The child process is an exact genetic clone of the parent, sharing the exact same memory until one of them tries to modify it.
 - **Dalvik (Pre-Android 5):** The original Android Zygote preloaded classes into the Dalvik Virtual Machine. It was incredibly effective, but the list of preloaded classes was hardcoded and static.
-- **Modern ART:** The modern Zygote is vastly more intelligent. It utilizes Ahead-Of-Time (AOT) compiled `.odex` files and even maintains a secondary `WebViewZygote` specifically for cloning Chrome rendering engines to prevent untrusted web code from compromising the main Zygote.
+- **WebView specialization:** WebView Zygote preloads libraries/resources specific to WebView renderer processes. Renderer sandboxing and IPC isolate web content; the specialized zygote is not itself the general security boundary.
 
 ## First Principles
 
@@ -53,7 +53,7 @@ Think of the Zygote as a **Master Sourdough Starter**.
 5. The Zygote spins up the Android Runtime (ART).
 6. The Zygote reads a text file (`/system/etc/preloaded-classes`) containing ~4000 framework classes and loads them into memory.
 7. The Zygote opens a Unix domain socket (`/dev/socket/zygote`) and waits.
-8. `init` then launches the `SystemServer` (which is actually the very first fork of the Zygote).
+8. init starts Zygote; ZygoteInit forks system_server when started with start-system-server.
 
 ### 2. The App Launch
 
@@ -121,7 +121,7 @@ If the Javascript exploit breaks out, it only compromises the sandboxed renderer
 When thinking about the Zygote, a Staff engineer focuses on the architectural implications of Application Initialization.
 
 1.  **`Application.onCreate()`:** Because the Zygote handles the heavy lifting of JVM boot and framework loading, the absolute biggest bottleneck in app startup is typically the code *you* write in `Application.onCreate()`. The Zygote forks in milliseconds. If your app takes 3 seconds to launch, it is almost certainly due to application-level initialization rather than OS overhead.
-2.  **Multidex Overhead:** On legacy Android versions (Dalvik), if your app exceeded 65,536 methods, you had to enable Multidex. The Dalvik Zygote was not designed for this. Loading secondary DEX files required extracting massive ZIP files on the Main Thread during the fork process, causing multi-second black screens. While ART natively supports Multidex, I still ensure our build pipelines optimize DEX layout for the Zygote.
+2. **Legacy multidex:** MultiDex.install performed secondary-DEX extraction in the app process during attachBaseContext, after the fork. Modern ART supports multidex natively; app JIT compilation also belongs to the app runtime, not Zygote.
 3.  **Process Restarts:** I design apps with the assumption that the OS will ruthlessly kill my app's process when in the background. Because the Zygote makes forking a new process so cheap, the OS uses Process Death as its primary memory management tool. We must rely on `SavedStateHandle` to restore state, because the Zygote will happily fork us a brand new, empty process when the user returns.
 
 ## Common Misconceptions
@@ -151,7 +151,7 @@ When thinking about the Zygote, a Staff engineer focuses on the architectural im
 3. **Describe the concept of Copy-On-Write (COW) memory and how it allows 20 running Android applications to share the exact same core framework classes in RAM without interfering with each other.**
    When Zygote forks, the child process points to the Zygote's existing RAM. The OS only allocates new physical memory if the child attempts to modify (write to) that shared memory, allowing all apps to safely read the same framework classes without duplicating them.
 4. **Why does the Android OS maintain a separate `WebViewZygote` instead of rendering web pages directly in the main app process?**
-   To sandbox potentially malicious web code (like exploited JavaScript). By forking the renderer from an isolated `WebViewZygote`, a compromised renderer cannot access the main app's memory, tokens, or permissions.
+   WebView Zygote preloads WebView-specific resources before forking renderer processes. The renderer sandbox and restricted IPC form the web-content isolation boundary; do not equate a specialized parent with absolute exploit prevention.
 5. **If a user modifies a static variable inside a preloaded Android framework class, why doesn't that change instantly propagate to every other app on the phone?**
    Because of Copy-On-Write. The moment App A attempts to modify the shared static variable, the kernel intercepts the write, creates a private copy of that memory page solely for App A, and leaves the original shared Zygote memory untouched.
 6. **What is the `preloaded-classes` list, and what is the architectural tradeoff Google faces when deciding how many classes to put on this list?**
@@ -169,4 +169,9 @@ When thinking about the Zygote, a Staff engineer focuses on the architectural im
 
 - [`art-and-dalvik.md`](art-and-dalvik.md) — The runtime engine that the Zygote initializes and clones.
 - [`process-death-and-state-restoration.md`](../architecture/process-death-and-state-restoration.md) — Why the Zygote's speed makes process death an acceptable OS-level memory strategy.
-- [`baseline-profiles.md`](../performance/baseline-profiles.md) — How AOT compilation bypasses the need for the Zygote to JIT compile your specific app code.
+- [`baseline-profiles.md`](../performance/baseline-profiles.md) — Profile-guided compilation of app code by ART; Zygote preloading and process creation are separate responsibilities.
+
+### Official verification references
+
+- [Primary documentation or owning implementation](https://source.android.com/docs/core/runtime/jit-compiler)
+- [Primary documentation or owning implementation](https://source.android.com/docs/core/runtime/zygote)

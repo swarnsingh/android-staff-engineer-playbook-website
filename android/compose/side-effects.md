@@ -117,9 +117,10 @@ fun SettingsScreen(viewModel: SettingsViewModel) {
     // Use a composition-scoped effect because showSnackbar()
     // is a suspend function. We cannot call suspend functions directly in a Composable!
     LaunchedEffect(key1 = errorMessage) {
-        if (errorMessage != null) {
+        val message = errorMessage // Snapshot the delegated nullable property.
+        if (message != null) {
             snackbarHostState.showSnackbar(
-                message = errorMessage,
+                message = message,
                 duration = SnackbarDuration.Short
             )
             viewModel.onErrorShown() // Clear the state!
@@ -216,3 +217,7 @@ When reviewing Compose code, a Staff engineer heavily interrogates the use of Ef
 - [`structured-concurrency.md`](../architecture/structured-concurrency.md) — The underlying Coroutine mechanics that power `LaunchedEffect` cancellation.
 - [Android Developers: Side-effects in Compose](https://developer.android.com/develop/ui/compose/side-effects)
 - [Android Developers: State and event hoisting](https://developer.android.com/develop/ui/compose/state-hoisting)
+
+### Official verification references
+
+- [Primary documentation or owning implementation](https://kotlinlang.org/docs/typecasts.html#smart-cast-prerequisites)

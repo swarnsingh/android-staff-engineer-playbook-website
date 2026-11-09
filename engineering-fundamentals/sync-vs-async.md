@@ -2,15 +2,15 @@
 
 ## Overview
 
-A **synchronous** operation blocks the caller until it produces a result. An **asynchronous** operation returns control to the caller immediately and produces its result later, by some other mechanism (callback, future, suspension point). Almost every reliability and performance problem in modern systems traces back to where this line is drawn — and where it is drawn *wrong*. The choice is not "which is faster" (a common misconception); it is "what does the calling thread do during the wait?"
+A **synchronous** API completes before the caller continues past that call. An **asynchronous** API separates initiation from completion, often using a callback, future or coroutine continuation. Whether an OS thread blocks is a separate implementation property: asynchronous work may still run blocking I/O on a worker. Almost every reliability and performance problem in modern systems traces back to where this line is drawn — and where it is drawn *wrong*. The choice is not "which is faster" (a common misconception); it includes both "how is completion delivered?" and "which thread, if any, waits?"
 
 ---
 
 ## Why It Exists
 
-Computers are fast. I/O is slow. A modern CPU can execute billions of instructions per second; a disk read takes milliseconds; a network round-trip takes tens to hundreds of milliseconds. If a thread waits synchronously for an I/O operation, it spends almost all of its life doing nothing — the CPU is parked, holding the thread's stack in memory, contributing zero useful work.
+Computers are fast. I/O is slow. A modern CPU can execute billions of instructions per second; a disk read takes milliseconds; a network round-trip takes tens to hundreds of milliseconds. If a thread waits synchronously for an I/O operation, the waiting thread may be parked while its stack and request state remain allocated. The CPU can run another runnable thread; parking the caller does not park the whole CPU.
 
-What was broken before asynchrony was treated explicitly: every server used "thread-per-request" architecture — one OS thread per incoming connection — which meant a 10,000-concurrent-user system needed 10,000 mostly-idle threads. Each thread costs memory (typically 0.5-2 MB of stack), context-switch overhead, and scheduler attention. The C10K problem (handling 10,000 simultaneous connections) was the inflection point in the early 2000s that pushed servers toward event loops, non-blocking I/O, and eventually async/await syntax.
+What was broken before asynchrony was treated explicitly: a common design used one platform thread per active request. That can consume substantial resources during blocking waits, but a connection, a user and an active request are not interchangeable counts, and thread-per-request is not the only synchronous execution model. Each thread costs memory (typically 0.5-2 MB of stack), context-switch overhead, and scheduler attention. The C10K problem (handling 10,000 simultaneous connections) was the inflection point in the early 2000s that pushed servers toward event loops, non-blocking I/O, and eventually async/await syntax.
 
 Async exists because the alternative — blocking a thread for the duration of an I/O wait — is expensive at scale.
 
@@ -38,27 +38,27 @@ Three concepts underlie the whole topic.
 
 Threads cost memory (the stack) and CPU (context switches when the scheduler switches between them). They exist *whether or not they are doing work*. A thread sleeping on `read()` consumes its stack and its slot in the scheduler.
 
-### 2. "Asynchronous" means the calling thread can do something else
+### 2. Non-blocking waits let the calling thread do something else
 
-Async does not mean "faster." It means "the calling thread is not blocked." The work itself takes the same time. The difference is what the rest of the program does during that time.
+Asynchrony does not guarantee non-blocking execution or a speedup. A non-blocking wait can release a thread for other work; offloaded blocking I/O instead occupies a worker. Overlapping independent operations can reduce end-to-end latency, while scheduling and contention can add delay.
 
 ```kotlin
 // Synchronous — thread blocks here
 fun fetchUserSync(id: String): User {
-    return httpClient.get("/users/$id")  // blocks until response
+    return blockingHttpClient.get("/users/$id")  // API contract: blocking request
 }
 
 // Asynchronous — thread is free during the wait
 suspend fun fetchUserAsync(id: String): User {
-    return httpClient.get("/users/$id")  // suspends; thread returns to pool
+    return suspendingHttpClient.get("/users/$id")  // API contract: non-blocking suspension
 }
 ```
 
-In the async version, the *function* still takes (say) 200 ms to produce a result. But the thread that called it is released back to do other work during those 200 ms. Same wall-clock time per request; vastly more concurrent requests per thread.
+In the async version, the *function* still takes (say) 200 ms to produce a result. But the thread that called it is released back to do other work during those 200 ms. This example assumes the same remote service time in both versions. The difference is thread occupancy during the wait, not a guarantee of identical measured latency or unlimited capacity.
 
-### 3. The cost of async is complexity, not throughput
+### 3. Resource use and complexity need separate evaluation
 
-You buy throughput; you pay in complexity. Async code is harder to debug (stack traces don't go where you expect), harder to reason about (control flow leaves the function and comes back), and harder to test (timing-sensitive). The complexity is the trade.
+Non-blocking waits can improve utilization when waiting threads are a bottleneck. They do not guarantee higher throughput: CPU demand, dependency limits, queueing and scheduling overhead still matter. Asynchronous control flow also requires explicit lifetime, error and cancellation handling; measure the workload rather than treating extra concurrency as a performance result.
 
 ---
 
@@ -98,7 +98,7 @@ flowchart LR
 
 ### Suspending functions (Kotlin coroutines)
 
-A `suspend` function compiles to a state machine. At each suspension point, the function captures its local state, returns control to the dispatcher, and resumes later when the awaited value is available.
+A suspending function can compile to a state machine, but calling it does not guarantee suspension. A called operation may produce its result immediately. When it actually suspends, continuation state permits the computation to resume after the awaited result becomes available.
 
 ```kotlin
 suspend fun fetchAndProcess(id: String): Result {
@@ -108,7 +108,7 @@ suspend fun fetchAndProcess(id: String): Result {
 }
 ```
 
-Internally, the compiler turns this into approximately:
+The following pseudocode sketches only an execution where both operations actually suspend. Real generated code also handles immediate completion. The custom continuation fields and `SUSPENDED` name are explanatory placeholders, not an API to paste into Kotlin:
 
 ```kotlin
 fun fetchAndProcess(id: String, continuation: Continuation<Result>): Any {
@@ -132,11 +132,11 @@ fun fetchAndProcess(id: String, continuation: Continuation<Result>): Any {
 }
 ```
 
-The function "returns" three times and "resumes" twice. Between resumes, the calling thread is free to run other coroutines.
+In that chosen execution, two waits suspend and later resume the computation. Either operation could instead complete inline in another execution. An actual non-blocking suspension releases the thread for other work; merely reaching a suspend-function call does not guarantee a dispatch or a thread change.
 
 ### Why "structured concurrency" matters
 
-Plain async lets you fire-and-forget work that outlives its caller. That is almost always a bug — orphaned work that runs after its purpose has expired (the user navigated away, the request was cancelled, the parent operation failed). Structured concurrency (Kotlin's `coroutineScope`, Java's structured task scopes) ties child coroutines to their parent's lifetime. When the parent ends, children are cancelled. See [`../android/architecture/structured-concurrency.md`](../android/architecture/structured-concurrency.md).
+Plain async lets you fire-and-forget work that outlives its caller. That is almost always a bug — orphaned work that runs after its purpose has expired (the user navigated away, the request was cancelled, the parent operation failed). Structured concurrency (Kotlin's `coroutineScope`, Java's structured task scopes) ties child coroutines to their parent's lifetime. A normal structured parent waits for its children before completing. Parent cancellation or failure cancels children; ordinary child failure propagation also depends on supervision. See [`../android/architecture/structured-concurrency.md`](../android/architecture/structured-concurrency.md).
 
 ---
 
@@ -171,25 +171,21 @@ flowchart LR
     end
 ```
 
-Coroutines are the modern default because they let you write code that *looks* sequential (like thread-per-request) but *executes* non-blocking (like an event loop).
+Coroutines let code express suspending work in a sequential style. Whether a wait releases a thread depends on the called API; a blocking call inside a coroutine still occupies its executing thread. Choose a dispatcher appropriate to the actual work.
 
 ---
 
 ## Production Example
 
-- **nginx.** A handful of worker threads, each running an epoll-based event loop. Handles 100k+ concurrent connections per worker.
-- **Node.js.** One event-loop thread per process; a worker pool for CPU-bound work. Excellent for I/O-heavy workloads; poor for CPU-heavy ones.
-- **Netflix Zuul 2.** The migration from blocking (Zuul 1, thread-per-request) to non-blocking (Zuul 2, async + Netty) is publicly documented. Same throughput, ~50% fewer machines.
-- **Stripe API.** Ruby (sync) at the edge; Go and Java (async) for internal high-fanout services. The choice of sync vs async per service is explicit.
-- **Slack mobile.** Coroutines + Flow for all async work; the old callback-based code paths were systematically migrated.
+- **nginx:** its master manages worker processes, and request handling uses an event-driven model. Worker count and achievable connection capacity depend on configuration and workload; there is no universal connections-per-worker guarantee.
+- **Node.js:** JavaScript callbacks generally run on the event-loop thread. Selected blocking native operations use the libuv worker pool; CPU-heavy JavaScript can use worker threads or another execution boundary. Blocking either the event loop or its pool harms progress.
+- **JVM virtual threads:** a synchronous-looking blocking API can run on lightweight virtual threads. Evaluate it alongside non-blocking APIs for the actual workload rather than assuming every synchronous call consumes a dedicated platform thread for its full lifetime.
 
-The shared observation: at scale, async wins on throughput per machine, and the engineering investment is justified by the hardware savings.
-
----
+These examples describe documented execution models, not an uncited company-wide stack or a promised hardware saving.
 
 ## Android Example
 
-On Android, the main thread is the UI thread — it must never block. Any blocking call on the main thread (network, disk, slow computation) produces an Application Not Responding (ANR) dialog after about 5 seconds. See [`../android/performance/anrs.md`](../android/performance/anrs.md).
+On Android, the main thread is the UI thread — it must never block. Blocking that thread can miss frame deadlines. An input-dispatch timeout is commonly 5 seconds, but ANR categories, device policies and whether input is pending matter; not every blocking call causes a dialog after one universal duration. See [`../android/performance/anrs.md`](../android/performance/anrs.md).
 
 The idiomatic pattern:
 
@@ -204,6 +200,8 @@ class UserViewModel(private val repo: UserRepository) : ViewModel() {
             try {
                 val user = repo.fetchUser(id)  // suspends; main thread free
                 _state.value = UiState.Success(user)
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 _state.value = UiState.Error(e)
             }
@@ -212,9 +210,9 @@ class UserViewModel(private val repo: UserRepository) : ViewModel() {
 }
 ```
 
-`fetchUser` is a `suspend fun` that internally uses `withContext(Dispatchers.IO) { ... }` to do its blocking I/O on a worker thread. The main thread is never blocked. The ViewModel scope ensures that if the user navigates away, the work is cancelled.
+`fetchUser` is a `suspend fun` that internally uses `withContext(Dispatchers.IO) { ... }` to do its blocking I/O on a worker thread. The main thread is never blocked. The ViewModel scope cancels when that ViewModel is cleared, which is not every navigation or background event. Choose a visible-lifecycle collection boundary when that is the required lifetime; a blocking dependency still needs its own cancellation support.
 
-The legacy alternative (callbacks, `AsyncTask`, `Thread`) is deprecated. Coroutines are the standard.
+AsyncTask is deprecated. Callbacks and Thread are still valid APIs; coroutines often provide a convenient structured interface, including wrappers around correctly cleaned-up callback registrations.
 
 ---
 
@@ -222,10 +220,10 @@ The legacy alternative (callbacks, `AsyncTask`, `Thread`) is deprecated. Corouti
 
 **Advantages of async**
 
-- Much higher throughput per machine.
-- No idle threads consuming memory.
+- Potentially better utilization for non-blocking waits when thread occupancy limits the workload; higher throughput still needs measurement.
+- Non-blocking waits can reduce platform-thread occupancy; blocking workers and retained coroutine/request state still consume resources.
 - Naturally composable with cancellation and timeouts.
-- The same code can handle 100 or 100,000 concurrent operations without re-architecture.
+- Suspending work can scale concurrency without one platform thread per wait, but memory, connection pools, queues and downstream capacity still require bounds.
 
 **Disadvantages of async**
 
@@ -236,13 +234,13 @@ The legacy alternative (callbacks, `AsyncTask`, `Thread`) is deprecated. Corouti
 
 **Hidden costs**
 
-- Async libraries propagate through your codebase. You don't get to be partially async.
+- Integration boundaries: suspending APIs can coexist with callbacks, futures and synchronous callers through explicit adapters. Document which bridges block; a blocking bridge such as runBlocking must not occupy the UI thread.
 - Debugging async deadlocks is significantly harder than sync deadlocks (the call stack doesn't tell you who is waiting on whom).
 - Performance-debugging an async system requires different tools (flight recorders, async-aware profilers).
 
 **When not to use async**
 
-- CPU-bound work. Async helps when threads are *idle waiting*. If they're busy *computing*, async adds overhead without benefit. CPU-bound work belongs on a thread pool sized to the CPU count.
+- CPU-bound work does not benefit from freeing a thread during an I/O wait, but coroutines can still manage its lifetime and dispatch it to a CPU-oriented pool such as Dispatchers.Default. Measure parallelism and scheduling overhead rather than treating suspend functions as forbidden for computation.
 - Small scripts and tools that handle one operation at a time.
 - Code where simplicity beats throughput. A daily-cron-job script does not benefit from async.
 
@@ -258,24 +256,24 @@ The legacy alternative (callbacks, `AsyncTask`, `Thread`) is deprecated. Corouti
 
 **Async deadlock.** Two coroutines each waiting on the other's result. Same as sync deadlocks but harder to detect. Mitigation: timeouts on every external await; design for non-circular dependencies.
 
-**Callback retention.** A registered callback holds a reference to its enclosing scope, leaking memory. Common in older Android code. Mitigation: use coroutines or weak references for long-lived registrations.
+**Callback retention.** A registered callback holds a reference to its enclosing scope, leaking memory. Common in older Android code. Mitigation: unregister at the matching lifetime boundary; callbackFlow with awaitClose can express this cleanup. Merely using a coroutine or weakening a reference does not remove the registration.
 
 ---
 
 ## Performance Considerations
 
-- **CPU:** Async runtime overhead is small but real — function-call indirection through dispatchers, continuation allocation. For CPU-bound code, this overhead exceeds the benefit; use threads directly.
-- **Memory:** Async drastically reduces memory pressure under high concurrency. 10,000 OS threads is 10-20 GB of stacks; 10,000 coroutines is megabytes.
+- **CPU:** coroutine scheduling and continuation handling can add overhead. CPU work can run inside structured coroutines on Dispatchers.Default; raw threads are not a required optimization, and the trade-off needs measurement.
+- **Memory:** retained coroutine state can be cheaper than one platform thread per blocked request, but neither a fixed per-coroutine size nor 10–20 GB of resident stack memory follows from these counts. Stack reservation, commitment, captured objects and runtime choices matter.
 - **Throughput:** Higher with async for I/O-bound work. Often identical for CPU-bound work.
-- **Latency:** Per-operation latency can be slightly higher with async (dispatcher hops add nanoseconds). For interactive systems, this is negligible. For high-frequency trading, it matters.
-- **Battery (mobile):** Async correctly used reduces wakelocks and unnecessary CPU spin. Misused, it can fragment work into many tiny pieces, each requiring a wake.
+- **Latency:** dispatch delay depends on queueing, contention and runtime behavior; it is not universally a nanosecond cost. Overlapping independent work can shorten end-to-end latency, while extra scheduling or saturation can increase it.
+- **Battery (mobile):** Choosing an asynchronous API does not itself reduce wake locks or device wakeups. Power use depends on the work, scheduling, batching and any API that keeps the device awake. Use the appropriate background-work API and minimize wake-lock duration where one is necessary.
 
 ---
 
 ## Reliability Considerations
 
-- **Cancellation.** Async work must support cancellation; sync work usually cannot. Kotlin coroutines propagate cancellation through suspension points. Long-running suspend functions should check `ensureActive()` periodically.
-- **Timeouts.** Sync calls can hang indefinitely if the underlying network does. Async calls should always wrap external waits in `withTimeout`.
+- **Cancellation.** Both synchronous and asynchronous APIs may support cancellation. Kotlin coroutine cancellation is cooperative: cancellable suspensions and explicit checks such as ensureActive() observe it. A CPU loop or blocking library call does not become interruptible merely because its caller is suspend.
+- **Timeouts.** Bound remote waits using the client's supported deadlines and an appropriate overall budget. withTimeout cancels cooperatively; it does not forcibly terminate an arbitrary blocking call.
 - **Retries.** See [`../patterns/retry.md`](../patterns/retry.md). Retries are simpler over async than sync — the await is the natural retry boundary.
 - **Backpressure.** When producers outrun consumers in an async system, the system must signal upstream to slow down. See [`backpressure.md`](backpressure.md).
 
@@ -305,7 +303,7 @@ Canonical: [`../observability/tracing.md`](../observability/tracing.md), [`../ob
 
 **Choose the abstraction at the right layer.** Async at the leaves of your code is leaky and complex. Async at the framework layer (e.g., your HTTP client returns suspend functions) means most application code is sync-looking but async-executing. Push async upward to where the dispatcher lives; let application code call `suspend` functions in a sequential style.
 
-**Don't async-ify CPU-bound work.** A Staff engineer notices when "we made it async" gives no measurable benefit. CPU-bound algorithms belong on a fixed-size thread pool, not on the async dispatcher. The general rule: async for waits, threads for work.
+**Separate execution policy from API shape.** CPU-bound work can be a main-safe suspend function that uses an injected CPU dispatcher. Coroutines still execute CPU instructions on threads; the question is which pool, how much parallelism and which owner controls cancellation.
 
 **Hold the line at boundaries.** Mixing sync and async in the same codebase creates dispatcher footguns. Either pick a side per service, or define explicit bridge points (`runBlocking`, `Future.await()`) and document them.
 
@@ -315,7 +313,7 @@ Canonical: [`../observability/tracing.md`](../observability/tracing.md), [`../ob
 
 ## Common Misconceptions
 
-**"Async is faster than sync."** No. Async has the same wall-clock time per operation. Async wins on *throughput* by freeing the thread, not on per-operation speed.
+**"Async is always faster."** No. Non-blocking waits can improve resource utilization, and overlapping independent operations can reduce end-to-end latency. Scheduling, contention and serialization can erase those benefits; measure the complete path.
 
 **"Async means parallel."** Async means concurrent; parallel means simultaneous execution on multiple cores. A single-threaded event loop is async but not parallel. A parallel computation can be sync or async.
 
@@ -323,7 +321,7 @@ Canonical: [`../observability/tracing.md`](../observability/tracing.md), [`../ob
 
 **"`Dispatchers.IO` is for any I/O."** It's for *blocking* I/O. Non-blocking I/O (the kind that's truly async under the hood) doesn't need `Dispatchers.IO` — it would just bounce through the dispatcher for nothing.
 
-**"If it's slow, make it async."** Async helps when threads are idle waiting. If the operation is slow because of computation, async makes it slower (dispatcher overhead) without helping.
+**"If it's slow, make it async."** First identify waiting, computation and contention. Moving CPU work off the UI thread can improve responsiveness without reducing its CPU cost; a blocking wait still occupies whichever thread executes it.
 
 ---
 
@@ -333,7 +331,7 @@ Canonical: [`../observability/tracing.md`](../observability/tracing.md), [`../ob
 2. Why is `viewModelScope.launch { ... }` preferred over `GlobalScope.launch { ... }` in Android?
 3. Two coroutines each `await` on the other's result. How do you detect this in production?
 4. You have a CPU-bound algorithm that takes 800 ms to compute. Should it be a `suspend fun`? Why or why not?
-5. Explain how a `suspend fun` returns "twice" — once when it suspends, once when it resumes.
+5. Explain immediate completion versus actual suspension in a `suspend fun`. How does its continuation support later resumption?
 6. Under what conditions does async *not* improve throughput?
 7. Why might `Dispatchers.IO` be exhausted in a system that has plenty of CPU and memory available?
 8. A user navigates away from a screen mid-network-request. What is the idiomatic way to ensure the request is cancelled?
@@ -349,17 +347,17 @@ Canonical: [`../observability/tracing.md`](../observability/tracing.md), [`../ob
 3.  **Two coroutines each `await` on the other's result. How do you detect this in production?**
     This is an async deadlock. It can be detected using timeouts on all `await` calls, monitoring for coroutines that never complete, or observing metrics for tasks stuck in progress indefinitely.
 4.  **You have a CPU-bound algorithm that takes 800 ms to compute. Should it be a `suspend fun`? Why or why not?**
-    It shouldn't just be a `suspend fun` without a dispatcher change. Async is for waiting, not computing. It should run on a thread pool sized for CPU work (e.g., `Dispatchers.Default`) because it will occupy a thread for the full 800 ms.
-5.  **Explain how a `suspend fun` returns "twice" — once when it suspends, once when it resumes.**
-    When it hits a suspension point, it returns a special `COROUTINE_SUSPENDED` token to release the calling thread. Later, when the awaited result is ready, the continuation is invoked, effectively "resuming" and returning the final result.
+    It can be a main-safe suspend API that moves substantial CPU work to an injected CPU-oriented dispatcher such as Dispatchers.Default. The suspend keyword alone neither changes threads nor reduces CPU cost. The computation still executes on a thread; add cooperative cancellation checks where a long loop needs them.
+5.  **Explain immediate completion versus actual suspension in a `suspend fun`. How does its continuation support later resumption?**
+    A call to a suspend function may complete without suspending: if the result is already available, it returns that value directly. Only when it actually suspends does it return the COROUTINE_SUSPENDED marker, releasing the calling thread. Its continuation holds the state machine's label and locals; when the awaited result is ready, resuming the continuation re-enters the function at that label and eventually delivers the final result to the caller's continuation.
 6.  **Under what conditions does async *not* improve throughput?**
     When the workload is purely CPU-bound (no I/O or waiting). In this case, async just adds overhead (context switching and state machine allocation) without freeing up threads that could be doing other work.
 7.  **Why might `Dispatchers.IO` be exhausted in a system that has plenty of CPU and memory available?**
-    Because `Dispatchers.IO` has a finite thread limit (default 64 or core count). If too many coroutines execute blocking operations simultaneously, they consume all available IO threads, leading to thread pool starvation.
+    Dispatchers.IO limits parallel blocking tasks by default to max(64, available processors). Its limitedParallelism views have documented elasticity, so that is not a strict global thread cap. Long-running blocking calls can occupy the available execution slots; bound admission and dependency concurrency rather than enqueueing without limit.
 8.  **A user navigates away from a screen mid-network-request. What is the idiomatic way to ensure the request is cancelled?**
-    Launch the network request within a structured scope tied to the screen's lifecycle, such as `viewModelScope` or `lifecycleScope`. The cancellation automatically propagates when the scope is destroyed.
+    Choose the owner whose end matches the requirement. viewModelScope cancels when the ViewModel is cleared; lifecycleScope cancels when that Lifecycle is destroyed. For work restricted to a visible lifecycle state, use an appropriate repeatOnLifecycle block. The network API must cooperate with cancellation.
 9.  **Compare the memory footprint of 10,000 OS threads vs 10,000 coroutines under load.**
-    10,000 OS threads will consume gigabytes of memory (typically 1-2 MB per thread stack). 10,000 coroutines only require a few megabytes for their state machines and continuation objects.
+    There is no fixed memory total from task counts alone. Platform threads carry stack/runtime costs; coroutines retain continuations and reachable data; virtual threads are another JVM model. Measure resident memory and retained objects under the actual load rather than multiplying an assumed reserved stack size.
 10. **Where in your architecture should the sync/async boundary live — at the HTTP client, the repository, the ViewModel, or somewhere else? Justify.**
     At the lowest boundary possible, such as the HTTP client or database driver. This ensures the entire application layer uses suspending functions, maximizing throughput and preventing accidental blocking at higher layers.
 
@@ -381,3 +379,27 @@ External:
 - Dan Kegel, *The C10K Problem*. The 1999 essay that started the move to non-blocking servers.
 - Roman Elizarov, *Structured Concurrency*. The motivation behind Kotlin's structured-concurrency model.
 - Bob Nystrom, *What Color is Your Function?* — the most-cited essay on the function-coloring cost of async.
+
+### Official verification references
+
+The corrections in this chapter were checked against the following primary references.
+
+- [learn.microsoft.com: asynchronous-programming](https://learn.microsoft.com/en-us/dotnet/csharp/asynchronous-programming/)
+- [nodejs.org: dont-block-the-event-loop](https://nodejs.org/learn/asynchronous-work/dont-block-the-event-loop)
+- [docs.oracle.com: virtual-threads.html](https://docs.oracle.com/en/java/javase/25/core/virtual-threads.html)
+- [developer.android.com: coroutines-best-practices](https://developer.android.com/kotlin/coroutines/coroutines-best-practices)
+- [kotlinlang.org: coroutine-scope.html](https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines/coroutine-scope.html)
+- [nginx.org: beginners_guide.html](https://nginx.org/en/docs/beginners_guide.html)
+- [developer.android.com: diagnose-and-fix-anrs](https://developer.android.com/topic/performance/anrs/diagnose-and-fix-anrs)
+- [developer.android.com: coroutines](https://developer.android.com/topic/libraries/architecture/coroutines)
+- [developer.android.com: AsyncTask](https://developer.android.com/reference/android/os/AsyncTask)
+- [kotlinlang.org: callback-flow.html](https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines.flow/callback-flow.html)
+- [kotlinlang.org: -i-o.html](https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines/-dispatchers/-i-o.html)
+- [kotlinlang.org: coroutines-basics.html](https://kotlinlang.org/docs/coroutines-basics.html)
+- [kotlinlang.org: -default.html](https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines/-dispatchers/-default.html)
+- [kotlinlang.org: ensure-active.html](https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines/ensure-active.html)
+- [kotlinlang.org: with-timeout.html](https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines/with-timeout.html)
+- [kotlinlang.org: asynchronous-programming-with-coroutines.html](https://kotlinlang.org/spec/asynchronous-programming-with-coroutines.html)
+- [kotlinlang.org: run-blocking.html](https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines/run-blocking.html)
+- [developer.android.com: awake](https://developer.android.com/develop/background-work/background-tasks/awake/)
+- [developer.android.com: wakelock](https://developer.android.com/develop/background-work/background-tasks/awake/wakelock/)

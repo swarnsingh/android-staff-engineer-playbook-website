@@ -386,6 +386,11 @@ Updates to `flags[key]` re-trigger any Composable that called `isEnabled(key)`. 
 For library code: implement your own state object subclass:
 
 ```kotlin
+private class CounterStateRecord(var value: Int) : StateRecord() {
+    override fun assign(value: StateRecord) { this.value = (value as CounterStateRecord).value }
+    override fun create(): StateRecord = CounterStateRecord(value)
+}
+
 class CounterState(initialValue: Int = 0) : StateObject {
     private var record = CounterStateRecord(initialValue)
 
@@ -396,9 +401,9 @@ class CounterState(initialValue: Int = 0) : StateObject {
     }
 
     var value: Int
-        get() = readable(record, this).value
+        get() = record.readable(this).value
         set(value) {
-            writable(record, this) { this.value = value }
+            record.writable(this) { this.value = value }
         }
 }
 ```
@@ -421,7 +426,7 @@ Almost no app developer needs this. Useful only if you're building a Compose-awa
 | Observation outlives its consumer | `snapshotFlow` collector is launched in an owner that lives too long | Collect in the intended lifecycle/composition scope and cancel that scope appropriately |
 | `mutableStateListOf` not observed | Read the list as a captured local outside Composable | Read inside `@Composable` or `snapshotFlow` |
 | Production app: state changes from background threads silently ignored | Object stored is not a snapshot state | Migrate to `mutableStateOf` |
-| Snapshot exception "Reading a state that is not in the current snapshot" | Captured snapshot leaked across scope | Don't pass `Snapshot` references across coroutines |
+| IllegalStateException when reading state in a snapshot | The state was created after that snapshot or in an unapplied snapshot | Inspect creation, publication and apply boundaries; do not infer a leaked Snapshot reference from this diagnostic alone |
 | `derivedStateOf` always returns initial value | Body reads a `var` instead of a state | Use `mutableStateOf` for the source state |
 | Compiler reports a snapshot-state wrapper as unstable | The wrapper's public behavior does not satisfy an inferred stability contract | Make the contract genuinely stable; annotate only when all stability guarantees are true |
 | Performance regression from `mutableStateListOf` | Many small mutations triggering recomposition | Batch with `withMutableSnapshot` |
@@ -485,4 +490,8 @@ Almost no app developer needs this. Useful only if you're building a Compose-awa
 - [Android Developers — State and Jetpack Compose](https://developer.android.com/develop/ui/compose/state) — observable state overview.
 - [Android Developers — `Snapshot` API](https://developer.android.com/reference/kotlin/androidx/compose/runtime/snapshots/Snapshot) — mutable snapshots, apply semantics, and observers.
 - [Android Developers — snapshot runtime package](https://developer.android.com/reference/kotlin/androidx/compose/runtime/snapshots/package-summary) — current API and source links.
-- [Leland Richardson — The State of State (Android Dev Summit)](https://www.youtube.com/results?search_query=leland+richardson+compose+state) — Compose architect's talk.
+- [Zach Klippenstein — "Introduction to the Compose Snapshot system"](https://dev.to/zachklipp/introduction-to-the-compose-snapshot-system-19cn) — Compose engineer's explainer.
+
+### Official verification references
+
+- [Primary documentation or owning implementation](https://raw.githubusercontent.com/androidx/androidx/androidx-main/compose/runtime/runtime/src/commonMain/kotlin/androidx/compose/runtime/snapshots/Snapshot.kt)

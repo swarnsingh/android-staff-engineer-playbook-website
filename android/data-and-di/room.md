@@ -136,9 +136,8 @@ interface MusicDao {
   ```
   If you add the `email` column to the `User` entity, increment the database version to 2, but forget to provide a `Migration` object, Room will completely wipe the user's database (if `fallbackToDestructiveMigration` is enabled) or instantly crash the app with an `IllegalStateException`.
   *(Fix: Always write migration tests using `MigrationTestHelper` to verify that upgrading from V1 to V2 preserves data).*
-- **The N+1 Query Problem:**
-  If a developer uses the older `@Relation` system to load a list of `Users` and their associated `Playlists`, Room executes 1 query to get the Users, and then potentially N queries to get the playlists for each user.
-  *(Fix: Always look at the generated `Dao_Impl.java` code, or utilize modern Multi-Map returns which force a single `JOIN` statement).*
+- **Assuming `@Relation` means N+1:**
+  Room batches related-row retrieval; its documented simple User/Playlist relationship uses a parent query and a related-rows query. It is not inherently one child query per parent. Nested relationships and large key sets can require more work, so inspect generated code and measure the actual shape. A multimap JOIN is an alternative with its own row duplication and mapping costs.
 - **Blocking the Main Thread:**
   If you attempt to call `dao.insert(user)` on the Main Thread, Room throws an exception and crashes the app.
   *(Fix: Always mark DAO methods as `suspend` (e.g., `suspend fun insert(user: User)`). Room will automatically route the database I/O to a custom background dispatcher, ensuring the Main thread is never blocked).*
@@ -211,7 +210,7 @@ If the schema diff is too large to review manually, the migration is too risky t
 When reviewing Room architecture, a Staff engineer focuses heavily on Migrations and Query Efficiency:
 
 1.  **Schema Export:** I ensure `exportSchema = true` is set in the `@Database` annotation, and that the generated `.json` files are committed to Git. This provides an exact historical record of the database schema for migration testing.
-2.  **Flow Granularity:** A major architectural flaw is exposing a `Flow<List<HeavyObject>>` when the UI only needs the ID and Title. Every time a minor field (like `lastLoginDate`) changes, the `InvalidationTracker` re-emits the entire massive list, causing the Compose UI to stutter. I enforce specific Projection classes (e.g., `@Query("SELECT id, title FROM items") fun getLightItems(): Flow<List<LightItem>>`).
+2. **Flow granularity:** Project only the columns the consumer needs to reduce I/O and mapping. Invalidation is still at the observed-table level: changing another column can re-run the query. Apply `distinctUntilChanged()` when equal mapped results should be suppressed, and measure the UI's actual recomposition behavior.
 3.  **Transactions:** If a Use Case inserts a User, and then inserts their Preferences, I ensure the DAO exposes a `@Transaction` function. If the second insert fails, the first one must rollback to prevent corrupted database state.
 
 ## Common Misconceptions
@@ -245,9 +244,9 @@ When reviewing Room architecture, a Staff engineer focuses heavily on Migrations
 5. **What is the `InvalidationTracker`, and how does it power Room's reactive `Flow` streams?**
    The `InvalidationTracker` maintains a mapping of Room queries to the specific SQLite tables they reference. It registers database triggers so that when an `INSERT`, `UPDATE`, or `DELETE` occurs on those tables, it notifies active observers (like `Flow`s) to re-run their `SELECT` queries and emit fresh data.
 6. **Describe the performance implications of fetching an entire `@Entity` object via a `Flow` when the UI only displays one specific column.**
-   If you select all columns (e.g., `SELECT *`), any update to *any* column in that table triggers the `InvalidationTracker`. This causes the query to re-run and the `Flow` to emit identically relevant UI data, triggering unnecessary recompositions and wasting CPU/battery. Always project only the needed columns.
+   Projection reduces fetched data and mapping cost. It does not prevent invalidation when another column in an observed table changes. The query can re-run and return an equal projection; use `distinctUntilChanged()` where equal downstream results should be suppressed.
 7. **What is a Multi-Map return type in Room, and how does it improve upon the older `@Relation` annotation system?**
-   A Multi-Map return type (e.g., `Map<User, List<Playlist>>`) allows developers to write a standard SQL `JOIN` query, and Room automatically groups the flat ResultSet into a Kotlin Map. It eliminates the boilerplate of `@Relation` data classes and solves the N+1 query performance problem inherent in the older system.
+   A multimap return such as `Map<User, List<Playlist>>` groups a SQL JOIN result by parent. It can avoid a separate relation data class, but does not fix an inherent @Relation N+1 problem: Room batches relation retrieval. Compare generated SQL, result size and mapping costs for the actual schema.
 8. **Why is it critical to commit Room's exported schema JSON files to your version control system (Git)?**
    The JSON files serve as a historical snapshot of exactly what the database looked like at each version. Room's `MigrationTestHelper` requires these historical snapshots to validate that your SQL migration code correctly transforms the old schema into the new schema without data loss.
 9. **Explain the purpose of the `@Transaction` annotation in Room. What data corruption scenario does it prevent?**
@@ -260,3 +259,8 @@ When reviewing Room architecture, a Staff engineer focuses heavily on Migrations
 - [`flow.md`](../architecture/flow.md) — How the UI observes the database reactive streams.
 - [`paging.md`](paging.md) — How to handle Room queries that return 100,000+ rows without crashing the device.
 - [Android Developers: Room](https://developer.android.com/training/data-storage/room)
+
+### Official verification references
+
+- [Primary documentation or owning implementation](https://developer.android.com/training/data-storage/room/async-queries)
+- [Primary documentation or owning implementation](https://developer.android.com/training/data-storage/room/relationships/one-to-many)

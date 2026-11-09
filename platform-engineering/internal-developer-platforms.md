@@ -97,13 +97,13 @@ jobs:
 
 The reusable `standard-pr.yml` workflow:
 
-- Detects affected modules via `./gradlew :app:checkAffected`.
+- Detects affected modules from the Git diff and the project dependency graph (a platform-owned Gradle task or an affected-module plugin; Gradle has no built-in task for this).
 - Runs unit tests + lint + ktlint + detekt + dependency-analysis on affected modules only.
 - Runs Paparazzi snapshot tests.
 - Runs an instrumented smoke test on a Firebase Test Lab matrix.
 - Reports back to GitHub via checks API.
 
-When the Platform team upgrades the workflow from `@v3` to `@v4` (e.g., adding a new lint rule), all consumers get it on the next merge automatically.
+The `@v3` ref can be a SHA, a release tag or a branch. When the Platform team moves the `v3` tag or branch to a new commit (e.g., adding a new lint rule), every consumer picks it up on its next run. A breaking change ships as `@v4`, which consumers adopt only by changing the ref. GitHub notes that pinning to a commit SHA is the safest option for stability and security, at the cost of manual upgrades.
 
 ### Quality gates as platform product
 
@@ -161,8 +161,8 @@ See [`../release-engineering.md`](../release-engineering.md) for what feature te
 ```bash
 $ yourorg doctor
 ✔ JDK 17 (Temurin) installed
-✔ Android SDK 34 + 26 platforms installed
-✘ Android Studio is Hedgehog Beta (recommended: Iguana Stable)
+✔ Android SDK Platform 36 installed (matches compileSdk)
+✘ Android Studio is a Canary build (team baseline: current Stable)
    Fix: brew install --cask android-studio
 ✘ ANDROID_HOME not set
    Fix: append `export ANDROID_HOME=$HOME/Library/Android/sdk` to ~/.zshrc
@@ -172,7 +172,7 @@ $ yourorg doctor
 2 issues found. Run `yourorg doctor --fix` to auto-fix.
 ```
 
-The cost is one weekend to build it. The savings is one onboarding day per new hire, forever.
+A first version is small. Measure the onboarding time it saves (time to first commit, setup tickets) before investing further.
 
 ---
 
@@ -196,11 +196,11 @@ Publish the dashboard. Make it un-fakeable. Tie it to the platform team's OKRs.
 
 ### DORA Metrics for Mobile
 
-Beyond local metrics, track DORA metrics tailored for mobile delivery performance: **Deployment Frequency** (how often a release becomes available to users on the production track), **Lead Time for Changes** (commit to production availability), **Mean Time to Recovery** (time from a user-impacting failure until the affected population is healthy again after a completed rollback or hotfix), and **Change Failure Rate** (percentage of production deployments that degrade service and require remediation, including a feature-flag disablement, configuration change, roll-forward, hotfix, or rollback). Define whether a staged release counts at rollout start or completion and apply that rule consistently. Track time-to-halt a rollout separately as a mitigation-speed signal; halting exposure does not recover users who already received the bad release. Track store-review latency separately so platform teams can distinguish internal delivery time from marketplace delay. These provide a macro-level view of platform health.
+Beyond local metrics, track DORA metrics tailored for mobile delivery performance. DORA now uses five software delivery metrics: **Deployment Frequency** (how often a release becomes available to users on the production track), **Change Lead Time** (commit to production availability), **Failed Deployment Recovery Time** (formerly Mean Time to Recovery; time from a failed deployment until the affected population is healthy again after a completed rollback or hotfix), **Change Fail Rate** (percentage of production deployments that degrade service and require remediation, including a feature-flag disablement, configuration change, roll-forward, hotfix, or rollback), and **Deployment Rework Rate** (the share of deployments that are unplanned and happen because of a production incident, such as hotfix releases). Define whether a staged release counts at rollout start or completion and apply that rule consistently. Track time-to-halt a rollout separately as a mitigation-speed signal; halting exposure does not recover users who already received the bad release. Track store-review latency separately so platform teams can distinguish internal delivery time from marketplace delay. These provide a macro-level view of platform health.
 
 ### What "P90 build time" means at scale
 
-If the P90 local incremental build is 90 seconds, every engineer loses ~30 minutes/day to waiting. At 100 engineers, that's 50 hours/day, ~10,000 hours/year, ~$3M/year at fully-loaded cost. Cutting it to 30 seconds returns $2M/year. That's how you defend two platform headcount.
+An illustrative model: if a typical incremental build takes 90 seconds and an engineer runs about 20 a day, they wait ~30 minutes/day. At 100 engineers, that's 50 hours/day, ~10,000 hours/year (about 200 working days), ~$3M/year at an assumed $300/hour fully-loaded cost. Cutting it to 30 seconds returns ~$2M/year. Use mean build time and your own build counts for totals; P90 overstates the total, though it is the right number for tracking the painful tail. That's how you defend two platform headcount.
 
 ---
 
@@ -328,7 +328,7 @@ This avoids architecture by folklore. Teams know what is blessed, what is experi
 
 The Director asks: "Why do I need 4 engineers on the platform team?"
 
-Bring numbers:
+Bring numbers. The table below is an illustrative model; replace every line with your own measurements and loaded costs:
 
 | Investment | Annual cost (loaded) | Return |
 |---|---|---|
@@ -394,7 +394,7 @@ The Director funds the team. You report on the dashboard quarterly. Repeat.
 - [`sdk-distribution.md`](sdk-distribution.md) — what to do when consumers are outside your org.
 - [`../release-engineering.md`](../release-engineering.md) — the platform's release infrastructure.
 - [`../observability.md`](../observability.md) — observability as platform service.
-- [Thoughtworks — Platform-as-a-Product](https://www.thoughtworks.com/insights/blog/platform-engineering-product-thinking) — the foundational framing.
+- [Thoughtworks — Platforms as products](https://www.thoughtworks.com/insights/looking-glass/platforms-as-products) — the foundational framing.
 - [Team Topologies (Skelton & Pais)](https://teamtopologies.com/) — Platform team vs Stream-aligned team vs Enabling team.
-- [Spotify — Paved Path](https://engineering.atspotify.com/) — early write-ups on golden paths.
+- [Spotify — How we use Golden Paths](https://engineering.atspotify.com/2020/08/how-we-use-golden-paths-to-solve-fragmentation-in-our-software-ecosystem) — early write-up on golden paths.
 - [Now in Android — `build-logic/`](https://github.com/android/nowinandroid/tree/main/build-logic) — canonical convention-plugin shape.

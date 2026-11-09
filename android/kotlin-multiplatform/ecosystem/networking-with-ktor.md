@@ -34,6 +34,8 @@ Ktor can select an engine when the matching target dependency is present, but ex
 
 import io.ktor.client.*
 import io.ktor.client.engine.*
+import io.ktor.client.plugins.api.createClientPlugin
+import io.ktor.client.statement.bodyAsText
 import io.ktor.client.plugins.*
 import io.ktor.client.plugins.contentnegotiation.*
 import io.ktor.client.plugins.logging.*
@@ -56,7 +58,7 @@ fun createHttpClient(
                 isLenient = true               // Accept malformed JSON gracefully
                 encodeDefaults = false         // Don't serialize default values
                 explicitNulls = false          // Omit null fields from output
-                coerceInputValues = true       // Use defaults for missing fields
+                coerceInputValues = true // Coerce supported null/unknown-enum values; missing defaults are a separate rule.
             })
         }
         
@@ -80,9 +82,13 @@ fun createHttpClient(
             contentType(ContentType.Application.Json)
         }
         
-        // 4. Authentication (replaces OkHttp AuthInterceptor)
+        // 4. Bounded retries for explicitly replay-safe requests
         install(HttpRequestRetry) {
-            retryOnServerErrors(maxRetries = 3)
+            maxRetries = 3
+            retryIf { request, response ->
+                request.method in setOf(HttpMethod.Get, HttpMethod.Head) &&
+                    response.status.value in 500..599
+            }
             exponentialDelay()
         }
         
@@ -137,7 +143,7 @@ import io.ktor.client.engine.okhttp.*
 import okhttp3.OkHttpClient
 import java.util.concurrent.TimeUnit
 
-fun createPlatformEngine(): OkHttpEngine {
+fun createPlatformEngine(): HttpClientEngine {
     return OkHttp.create {
         config {
             // Access the raw OkHttpClient.Builder for Android-specific features
@@ -306,6 +312,7 @@ In Retrofit, error handling is implicit — a non-2xx response throws `HttpExcep
 
 ```kotlin
 // shared/src/commonMain/kotlin/com/example/network/NetworkResult.kt
+import kotlinx.io.IOException
 
 sealed interface NetworkResult<out T> {
     data class Success<T>(val data: T) : NetworkResult<T>
@@ -323,6 +330,8 @@ suspend inline fun <reified T> safeApiCall(
 ): NetworkResult<T> {
     return try {
         NetworkResult.Success(block())
+    } catch (e: ApiException) {
+        NetworkResult.Error(e.statusCode, e.message ?: "API error", e.errorBody)
     } catch (e: ClientRequestException) {
         // 4xx errors
         NetworkResult.Error(
@@ -358,7 +367,7 @@ class ProductRepository(private val api: ProductApi) {
 
 ## 4. Testing Ktor in `commonTest`
 
-Ktor provides a **MockEngine** that intercepts HTTP requests and returns pre-defined responses. This runs identically on JVM and Native:
+MockEngine provides deterministic transport responses in commonTest on supported targets. Runtime initialization, dispatchers and platform assumptions still differ; run the selected target tests rather than promise identical execution.
 
 ```kotlin
 // shared/src/commonTest/kotlin/com/example/network/ProductApiTest.kt
@@ -471,3 +480,9 @@ Default to Darwin when the Apple client should follow `NSURLSession` behavior, b
 - [`../../android/networking-and-security/ktor-vs-retrofit.md`](../../networking-and-security/ktor-vs-retrofit.md) — The detailed Android-focused decision file comparing Retrofit and Ktor.
 - [`dependency-injection.md`](dependency-injection.md) — How to inject the platform-specific `HttpClientEngine` via Koin.
 - [`build-system-and-source-sets.md`](../tooling/build-system-and-source-sets.md) — Where to put `ktor-client-okhttp` (androidMain) vs `ktor-client-darwin` (iosMain) dependencies.
+
+### Official verification references
+
+- [Primary documentation or owning implementation](https://github.com/ktorio/ktor/blob/main/ktor-client/ktor-client-core/common/src/io/ktor/client/engine/HttpClientEngineFactory.kt)
+- [Primary documentation or owning implementation](https://kotlinlang.org/api/kotlinx.serialization/kotlinx-serialization-json/kotlinx.serialization.json/-json-builder/coerce-input-values.html)
+- [Primary documentation or owning implementation](https://ktor.io/docs/client-custom-plugins.html)

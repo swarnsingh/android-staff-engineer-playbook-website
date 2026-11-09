@@ -11,7 +11,7 @@ You have an SDK the moment **another team consumes your code via Maven coordinat
 Common scenarios:
 
 - **Multi-app companies** — Rider, Driver, and Merchant apps all consume `:auth-sdk`, `:payments-sdk`, `:analytics-sdk`.
-- **Public SDKs** — Firebase, Stripe, Branch, Segment publish to Maven Central or jCenter.
+- **Public SDKs** — Firebase, Stripe, Branch, Segment publish to Google's Maven repository or Maven Central (JCenter was shut down on August 15, 2024).
 - **White-label / partner SDKs** — Your code embedded in a partner's app; you don't control their release cadence.
 - **Cross-org internal libraries** — Your platform team's `:design-system` consumed by 20 product teams.
 
@@ -25,8 +25,8 @@ The discipline is the same in all four cases. The blast radius differs.
 |---|---|---|
 | **AAR (Android Archive)** | Android-specific SDK with resources, AndroidManifest entries, or `assets/` | Standard for Android libraries. Includes resources + manifest merging. |
 | **JAR** | Pure-Kotlin / pure-Java SDK with no Android dependencies | Smaller, faster to download. No resource support. Use for `:auth-tokens` (pure logic), not `:design-system` (resources). |
-| **Source dependency / composite build** | Internal monorepo modules consumed by sibling modules | Re-compiled on every build — bad for cross-team SDKs. Good for tight feedback inside one repo. |
-| **Klib (Kotlin Multiplatform)** | KMP SDK targeting iOS + Android from one codebase | Multiplatform; more complex publishing. Use when iOS team is also a consumer. |
+| **Source dependency / composite build** | Internal monorepo modules consumed by sibling modules | Compiled inside the consumer's build (on clean builds and cache misses) — bad for cross-team SDKs. Good for tight feedback inside one repo. |
+| **KMP publication** | KMP SDK targeting iOS + Android from one codebase | Multiplatform: klibs for native targets, an AAR for the Android target; more complex publishing. Use when iOS team is also a consumer. |
 
 For internal SDKs consumed by separate apps: **publish AARs**. Consuming source forces every consumer to rebuild your SDK on every clean build — destroys their build times for no benefit.
 
@@ -38,10 +38,12 @@ flowchart TD
     aar --> classes["classes.jar<br/>compiled JVM bytecode"]
     aar --> resources["res/<br/>Android resources"]
     aar --> assets["assets/<br/>raw assets"]
-    aar --> libs["libs/<br/>transitive JARs; prefer POM metadata"]
+    aar --> libs["libs/<br/>bundled local JARs; prefer POM metadata"]
     aar --> native["jni/<br/>native libraries per ABI"]
     aar --> proguard["proguard.txt<br/>consumer R8 rules"]
-    aar --> symbols["R.txt<br/>public resource symbols"]
+    aar --> symbols["R.txt<br/>resource symbol table"]
+    aar --> publicres["public.txt<br/>resources declared public"]
+    aar --> lint["lint.jar<br/>published lint checks"]
 ```
 
 `proguard.txt` is critical — covered below.
@@ -107,7 +109,7 @@ plugins {
 
 android {
     namespace = "com.yourorg.sdk.auth"
-    compileSdk = 34
+    compileSdk = 36
     defaultConfig {
         minSdk = 24
         consumerProguardFiles("consumer-rules.pro")
@@ -143,8 +145,10 @@ afterEvaluate {
                         "https://artifactory.yourorg.internal/android-releases"
                 )
                 credentials {
-                    username = providers.environmentVariable("ARTIFACTORY_USER").get()
-                    password = providers.environmentVariable("ARTIFACTORY_PASSWORD").get()
+                    // orNull, not get(): get() would fail configuration of every
+                    // build on machines without these variables, not just publishing.
+                    username = providers.environmentVariable("ARTIFACTORY_USER").orNull
+                    password = providers.environmentVariable("ARTIFACTORY_PASSWORD").orNull
                 }
             }
         }
@@ -164,14 +168,16 @@ Then in a sample consumer app:
 // consumer settings.gradle.kts
 dependencyResolutionManagement {
     repositories {
-        mavenLocal()                // pick up your local publish
         google()
         mavenCentral()
+        mavenLocal {                // last, and only for your own SDK's group
+            content { includeGroup("com.yourorg.sdk") }
+        }
     }
 }
 ```
 
-This local round-trip is the fastest way to catch publishing bugs before pushing to Artifactory.
+This local round-trip is the fastest way to catch publishing bugs before pushing to Artifactory. Keep `mavenLocal()` out of production builds: Gradle advises against it because it is an unverified cache whose contents can change at any time, and Gradle disables caching for it.
 
 ---
 
@@ -202,7 +208,7 @@ public class AuthClient(
 Discipline:
 
 - **`public`** — only the small set of classes consumers should call. The SDK's contract.
-- **`internal`** — implementation classes shared *across modules within the SDK* but invisible to consumers.
+- **`internal`** — implementation visible only inside the same Kotlin module (one Gradle source set and its tests), invisible to Kotlin consumers. It does **not** cross Gradle modules: code shared between the SDK's own modules must be `public`, so mark it with an opt-in annotation (`@RequiresOptIn`) or move it behind the facade. `internal` declarations are still public in JVM bytecode, so Java callers can reach them.
 - **`private`** — single-class implementation detail.
 
 A mature SDK is shaped like an hourglass: a wide internal implementation, a narrow public Facade. The narrower the public surface, the cheaper future evolution is.
@@ -211,16 +217,16 @@ A mature SDK is shaped like an hourglass: a wide internal implementation, a narr
 
 ```kotlin
 plugins {
-    id("org.jetbrains.kotlinx.binary-compatibility-validator") version "0.14.0"
+    id("org.jetbrains.kotlinx.binary-compatibility-validator") version "0.18.2"
 }
 ```
 
-First build dumps `:sdk:auth/api/auth.api`. Every subsequent change to public ABI fails CI unless the developer runs `./gradlew apiDump` and commits the diff. The diff goes to PR review:
+The plugin is in maintenance mode; new projects can use the Kotlin Gradle plugin's experimental built-in [`abiValidation`](https://kotlinlang.org/docs/gradle-binary-compatibility-validation.html) instead (`checkKotlinAbi` / `updateKotlinAbi`). With the plugin, run `./gradlew apiDump` once to create `:sdk:auth/api/auth.api` and commit it. Every subsequent change to public ABI fails `apiCheck` (part of `check`) in CI unless the developer runs `./gradlew apiDump` and commits the diff. The diff goes to PR review:
 
 ```diff
  public final class com/yourorg/sdk/auth/AuthClient {
--    public fun login (Ljava/lang/String;Ljava/lang/String;)Lcom/yourorg/sdk/auth/AuthResult;
-+    public fun login (Lcom/yourorg/sdk/auth/Credentials;)Lcom/yourorg/sdk/auth/AuthResult;
+-    public final fun login (Ljava/lang/String;Ljava/lang/String;)Lcom/yourorg/sdk/auth/AuthResult;
++    public final fun login (Lcom/yourorg/sdk/auth/Credentials;)Lcom/yourorg/sdk/auth/AuthResult;
  }
 ```
 
@@ -236,22 +242,20 @@ Ship `consumer-rules.pro` *inside* the AAR:
 
 ```pro
 # :sdk:auth/consumer-rules.pro
+# Keep only what this SDK reaches by reflection or JNI. The consumer's own
+# code keeps the public API it actually calls, so don't keep that here.
 
-# Keep public API classes
--keep public class com.yourorg.sdk.auth.AuthClient { public *; }
--keep public class com.yourorg.sdk.auth.AuthResult { *; }
--keep public class com.yourorg.sdk.auth.Credentials { *; }
+# Example: a token store the SDK instantiates by name via Class.forName
+-keep class com.yourorg.sdk.auth.internal.KeystoreTokenStore { <init>(); }
 
-# Moshi: JSON adapters generated at compile time
--keep,allowobfuscation,allowshrinking @com.squareup.moshi.JsonClass class * { *; }
--keep class **JsonAdapter { <init>(...); }
+# Example: a reflectively-serialized response model (not needed with Moshi codegen)
+-keepclassmembers class com.yourorg.sdk.auth.internal.TokenResponse { <fields>; }
 
-# Coroutines: keep the suspend marker
--keepclassmembers class kotlinx.coroutines.android.AndroidDispatcherFactory { *; }
-
-# Don't warn on optional Kotlin reflect
--dontwarn kotlin.reflect.jvm.internal.**
+# No rules for Moshi, kotlinx-coroutines or OkHttp: those artifacts bundle
+# their own consumer rules.
 ```
+
+Android's library-optimization guidance is strict about what consumer rules may contain: no broad or package-wide keeps such as `-keep class com.yourorg.sdk.** { *; }`, and no global options such as `-dontobfuscate`. Every rule you ship applies to the consumer's entire app.
 
 ```kotlin
 android {
@@ -263,7 +267,7 @@ android {
 
 `consumerProguardFiles` (not `proguardFiles`) injects the rules into every consumer's R8 run automatically. The consumer doesn't need to know about them.
 
-Verify by enabling R8 in a sample app and checking `app/build/outputs/mapping/release/missing_rules.txt`.
+Verify by enabling R8 in the sample app, running its release build's tests, and checking `app/build/outputs/mapping/release/missing_rules.txt` (it lists missing-class warnings, not reflection that R8 broke).
 
 ---
 
@@ -300,7 +304,7 @@ When you publish, Gradle writes a `.pom` file:
 - Use `implementation` for **internal** dependencies. They appear at runtime so your SDK works, but consumers can't call them.
 - Use `api` only when your SDK's **public types reference** the dependency's types. If your `login()` method returns a `Moshi.JsonAdapter`, you must `api(moshi)` so the consumer can compile.
 
-If you `api` everything, you force version constraints on the consumer that may conflict with their own dependencies. Minimize `api`; **never `api` a third-party HTTP client.**
+If you `api` everything, you force version constraints on the consumer that may conflict with their own dependencies. Minimize `api`; **don't `api` a third-party HTTP client unless your public API takes or returns its types** (for example, an SDK that accepts the consumer's `OkHttpClient`).
 
 ---
 
@@ -308,7 +312,7 @@ If you `api` everything, you force version constraints on the consumer that may 
 
 The temptation: "let me bundle OkHttp inside the AAR so the consumer doesn't need to declare it."
 
-The result: **`DuplicateClassException`**. The consumer already has OkHttp in their build (every Android app does); now they have two copies; the build fails.
+The result: a **duplicate class** build error. Many consumers already have OkHttp in their build; now the same classes arrive through two artifacts, and the build fails.
 
 Don't fat-AAR. Let the POM declare your transitives:
 
@@ -318,15 +322,16 @@ dependencies {
 }
 ```
 
-The consumer's Gradle sees `okhttp` in your POM, resolves it once at the version both your SDK and they agreed on, and the build works.
+The consumer's Gradle sees `okhttp` in your POM, resolves a single version (by default the highest one requested), and the build works.
 
 ### Exception: relocated/shadowed deps
 
-If your SDK genuinely cannot share a transitive (e.g., you've forked a library, or the version skew with the consumer is unfixable), use `com.github.johnrengelman.shadow` to relocate the package:
+If your SDK genuinely cannot share a transitive (e.g., you've forked a library, or the version skew with the consumer is unfixable), use the Shadow plugin (now `com.gradleup.shadow`; formerly `com.github.johnrengelman.shadow`) to relocate the package. Shadow builds JARs, so do this in a separate JVM module that your AAR depends on:
 
 ```kotlin
+// :sdk:auth-shaded-okhttp/build.gradle.kts (a JVM module)
 plugins {
-    id("com.github.johnrengelman.shadow")
+    id("com.gradleup.shadow")
 }
 
 tasks.shadowJar {
@@ -334,7 +339,18 @@ tasks.shadowJar {
 }
 ```
 
-Now the SDK uses `com.yourorg.sdk.shaded.okhttp3.OkHttpClient` — invisible to consumers. Use very sparingly; doubles the size of the artifact and you maintain a shaded copy forever.
+Configuring `shadowJar` doesn't change what a plain `project(...)` dependency resolves to; that still selects the unshaded JAR. The AAR must consume the module's `shadow` configuration explicitly:
+
+```kotlin
+// :sdk:auth/build.gradle.kts
+dependencies {
+    implementation(project(path = ":sdk:auth-shaded-okhttp", configuration = "shadow"))
+}
+```
+
+(Alternatively, make the shadowed JAR the shaded module's only outgoing artifact by replacing the artifacts of its `apiElements` and `runtimeElements` configurations, as Shadow's multi-project guide shows.)
+
+Now the SDK uses `com.yourorg.sdk.shaded.okhttp3.OkHttpClient` — invisible to consumers. Use very sparingly: every consumer that also uses OkHttp now ships two copies, and you maintain a shaded copy forever.
 
 ---
 
@@ -368,14 +384,17 @@ on:
   push:
     tags: ['v*.*.*']
 
+permissions:
+  contents: write   # push gh-pages and create the GitHub Release
+
 jobs:
   release:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with: { fetch-depth: 0 }
 
-      - uses: actions/setup-java@v4
+      - uses: actions/setup-java@v6
         with: { distribution: temurin, java-version: '17' }
 
       - name: Set version from tag
@@ -393,17 +412,17 @@ jobs:
           ARTIFACTORY_PASSWORD: ${{ secrets.ARTIFACTORY_PASSWORD }}
         run: ./gradlew :sdk:auth:publish
 
-      - name: Generate Dokka docs
-        run: ./gradlew :sdk:auth:dokkaHtml
+      - name: Generate Dokka docs   # Dokka 2.1+ (Gradle plugin v2): dokkaHtml is gone
+        run: ./gradlew :sdk:auth:dokkaGenerate
 
       - name: Publish docs to GitHub Pages
-        uses: peaceiris/actions-gh-pages@v3
+        uses: peaceiris/actions-gh-pages@v4
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           publish_dir: ./sdk/auth/build/dokka/html
 
       - name: Create GitHub Release
-        uses: softprops/action-gh-release@v1
+        uses: softprops/action-gh-release@v3
         with:
           name: ${{ github.ref_name }}
           body_path: CHANGELOG.md
@@ -460,13 +479,13 @@ See [`library-versioning.md`](library-versioning.md) for SemVer policy. SDK-spec
 | Symptom | Cause | Fix |
 |---|---|---|
 | Consumer crashes only in release build | Missing `consumer-rules.pro` for reflection | Add R8 keep rules; ship inside AAR |
-| `DuplicateClassException` on integration | Fat AAR or `api` of a popular lib | Use `implementation`; don't bundle transitives |
+| Duplicate class build error on integration | Fat AAR or bundled JAR that duplicates a library the consumer also uses | Declare transitives in the POM; don't bundle them |
 | Consumer Moshi types don't compile | `implementation(moshi)` instead of `api` | Use `api` only when types appear on SDK's public surface |
 | ABI broke on a PATCH release | No binary-compatibility-validator | Add the plugin; gate CI on `apiCheck` |
 | Sample app passes; consumer fails | Sample uses `project(":sdk")` not Maven coordinates | Sample must consume via `mavenLocal()` |
-| Multiple SDK versions installed across consumer apps | No BOM | Publish an SDK BOM (see `library-versioning.md`) |
-| Mystery NoSuchMethodError on Android 8 | `minSdk` mismatch between SDK and consumer | Document `minSdk`; assert at init time |
-| Released `1.4.0` but consumers can't find it | Artifactory ACLs / repo not declared | Verify in a clean sample app via `mavenLocal()` first |
+| Mismatched versions of the SDK's own artifacts inside one app | No BOM | Publish an SDK BOM (see `library-versioning.md`) |
+| Mystery NoSuchMethodError on Android 8 | SDK calls a platform API newer than the device's API level without an `SDK_INT` check (a higher library `minSdk` fails the consumer's manifest merge at build time instead) | Keep Lint's `NewApi` check as an error; test on `minSdk` devices |
+| Released `1.4.0` but consumers can't find it | Artifactory ACLs / repo not declared | After publishing, resolve it from Artifactory in a clean consumer project without `mavenLocal()` |
 | Public API leaks `internal` types | No `explicitApi` | Enable `kotlin { explicitApi() }` |
 | SDK pulls in 14 MB of transitive deps | Heavy deps not isolated | Audit; relocate if needed; replace heavy deps |
 
@@ -479,8 +498,8 @@ Consumer engineers will ask: "How much will this add to my APK?"
 Measure and publish:
 
 ```bash
-./gradlew :sdk:auth:assembleRelease
-# Then run APK Analyzer on the AAR + a tiny sample app diff
+./gradlew :sample:assembleRelease   # R8 on; build once with and once without the SDK
+# Compare the two APKs with APK Analyzer (Build > Analyze APK) or apkanalyzer
 ```
 
 Targets for an Android SDK:
@@ -500,7 +519,7 @@ Crash these thresholds and consumers will resist adoption. Use R8 effectively, a
 
 - **Treating the SDK like internal code.** A typo'd method name is a 2-month deprecation cycle, not a quick rename. Review every public-API change like a published contract.
 - **No ProGuard rules shipped.** Works in debug, crashes in release. Always ship `consumer-rules.pro` and exercise R8 in your CI.
-- **Heavy transitives.** Pulling Apache HttpClient, Gson, and Guava into an "auth SDK" wastes 4 MB of consumer APK. Audit and replace with lighter equivalents.
+- **Heavy transitives.** Pulling Apache HttpClient, Gson, and Guava into an "auth SDK" can add megabytes to every consumer APK. Audit and replace with lighter equivalents.
 - **No sample app.** First sign you can't see how your SDK feels to consumers. The sample doubles as integration test + onboarding doc.
 - **Single-channel publishing.** No snapshot channel = no way to try a fix before tagging a release. Publish snapshots from `main`.
 - **No version telemetry.** You won't know which versions are live and can't make data-driven sunset decisions.
@@ -529,13 +548,13 @@ Crash these thresholds and consumers will resist adoption. Use R8 effectively, a
 2. **Your SDK works in debug, crashes with `NoSuchMethodException` only in release builds. Walk through the first 30 minutes of investigation.**
    This is an R8 shrinking/obfuscation issue. Pull the consumer's `mapping.txt` and `missing_rules.txt`. Check if reflection is used (e.g., for JSON parsing) on the class throwing the error. Add appropriate `-keep` rules to the SDK's `consumer-rules.pro` and verify via a local release build of the sample app.
 3. **Why is `consumer-rules.pro` shipped inside the AAR instead of letting the consumer manage R8 rules?**
-   It abstracts the internal implementation details from the consumer. Forcing consumers to write rules for your SDK's internal libraries (like Moshi or Coroutines) causes integration friction and guarantees production crashes when you change internal dependencies.
+   It abstracts the internal implementation details from the consumer. Forcing consumers to write rules for what your SDK reaches by reflection causes integration friction and risks release-only crashes whenever you change those internals. (Libraries such as Moshi and kotlinx-coroutines already ship their own rules.)
 4. **When does `api(dep)` make sense vs `implementation(dep)`? Give an example of each.**
    Use `api` if the dependency's types are part of your public API (e.g., returning a `Moshi.JsonAdapter` requires `api("moshi")`). Use `implementation` for internal workings that the consumer shouldn't access directly (e.g., using `implementation("okhttp")` for your network calls).
 5. **A consumer team complains the SDK adds 3 MB to their APK. Walk through your audit.**
-   Build the AAR and run the Android Studio APK Analyzer. Check the `classes.jar` for fat dependencies (like Guava), inspect `res/` and `assets/` for uncompressed images or large files. Replace heavy libraries with lighter alternatives and ensure you aren't bundling transitive dependencies directly into the AAR.
+   Build a release (R8-enabled) sample app with and without the SDK and compare the APKs in APK Analyzer. Inspect the AAR's `classes.jar` and the dependency tree for fat dependencies (like Guava), and `res/` and `assets/` for uncompressed images or large files. Replace heavy libraries with lighter alternatives and ensure you aren't bundling transitive dependencies directly into the AAR.
 6. **Walk through your deprecation plan for removing a widely-used public method.**
-   In version N, mark the method `@Deprecated` with a `ReplaceWith` hint, pointing to the new method. In version N+1, elevate the deprecation level to `ERROR`. In version N+2 (a major version bump), remove the method entirely and document the change in the migration guide.
+   In a minor release, mark the method `@Deprecated` with a `ReplaceWith` hint, pointing to the new method. In a later minor release, elevate the deprecation level to `ERROR`, then to `HIDDEN` (still in the binary for already-compiled callers). In the next major release, remove the method entirely and document the change in the migration guide.
 7. **Your SDK depends on OkHttp 4.12; the consumer app uses OkHttp 4.9. What happens? How would you protect against the worst case?**
    Gradle resolves the conflict by picking the highest version (4.12). If this breaks the consumer, they might `force` 4.9, which could break your SDK. To protect against this, write integration tests against older versions, or if strictly necessary, shade (relocate) OkHttp using the Shadow plugin.
 8. **Why is shipping a sample app non-negotiable for an SDK team?**
@@ -550,6 +569,7 @@ Crash these thresholds and consumers will resist adoption. Use R8 effectively, a
 - [`../android/performance/app-size-and-r8.md`](../android/performance/app-size-and-r8.md) — R8 mechanics consumers rely on.
 - [Android — Create an Android Library](https://developer.android.com/studio/projects/android-library) — official AAR reference.
 - [Gradle — `maven-publish` plugin](https://docs.gradle.org/current/userguide/publishing_maven.html) — publishing reference.
-- [Kotlin — binary-compatibility-validator](https://github.com/Kotlin/binary-compatibility-validator) — ABI guard.
+- [Kotlin — binary-compatibility-validator](https://github.com/Kotlin/binary-compatibility-validator) — ABI guard plugin (maintenance mode; see also the Kotlin Gradle plugin's built-in ABI validation).
+- [Android — Optimization for library authors](https://developer.android.com/topic/performance/app-optimization/library-optimization) — what consumer keep rules may and may not contain.
 - [Dokka](https://kotlinlang.org/docs/dokka-introduction.html) — Kotlin API docs.
-- [Square's `okhttp` repo](https://github.com/square/okhttp) — reference Android SDK structure and release workflow.
+- [OkHttp repository](https://github.com/lysine-dev/okhttp) — reference library structure and release workflow (moved from `square/okhttp`).

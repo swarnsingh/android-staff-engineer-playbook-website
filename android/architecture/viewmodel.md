@@ -52,13 +52,13 @@ public final Object onRetainNonConfigurationInstance() {
 }
 ```
 
-The Android OS explicitly allows an Activity to pass *one* object to the OS before it is destroyed for a configuration change. Jetpack uses this loophole to hand the entire `ViewModelStore` to the OS. When the new Activity boots up, it asks the OS, "Hey, do you have my NonConfigurationInstance?" and gets the store back.
+During a configuration change, the retained `ViewModelStore` stays in the app process. AndroidX `ComponentActivity` retains it through its non-configuration instance and restores the reference for the replacement Activity. The store is not serialized to system_server and cannot survive process death.
 
 ### The `onCleared()` Callback
 
-When the Activity is *actually* finishing (e.g., the user presses the Back button to exit the screen permanently), the Activity will clear the `ViewModelStore`. 
+When the owning Activity actually finishes, it clears its ViewModelStore. A navigation entry can similarly clear its own store when removed. On Android 12+, default Back on a root launcher Activity backgrounds its task, so a Back gesture alone is not a universal clearing condition.
 
-The store iterates through all its ViewModels and calls their `onCleared()` method. This is where the ViewModel cancels its `viewModelScope` coroutines to stop background work.
+Clearing the ViewModel releases its registered resources, including cancelling viewModelScope, before invoking onCleared(). Use onCleared for remaining owner cleanup; do not rely on a callback during process termination.
 
 ### CreationExtras
 
@@ -124,7 +124,7 @@ class ProfileViewModel @Inject constructor(
     }
 
     private fun loadUser() {
-        // viewModelScope is automatically cancelled in onCleared()
+        // Clearing this ViewModel cancels viewModelScope before onCleared().
         viewModelScope.launch {
             _uiState.update { it.copy(isLoading = true, error = null) }
             
@@ -209,3 +209,9 @@ When reviewing ViewModel architectures, a Staff engineer focuses on purity and f
 - [`flow.md`](flow.md) — The reactive streams used inside the ViewModel to expose state.
 - [Android Developers: ViewModel overview](https://developer.android.com/topic/libraries/architecture/viewmodel)
 - [Android Developers: Recommendations for Android architecture](https://developer.android.com/topic/architecture/recommendations)
+
+### Official verification references
+
+- [Primary documentation or owning implementation](https://developer.android.com/about/versions/12/behavior-changes-all#back-press)
+- [Primary documentation or owning implementation](https://developer.android.com/reference/androidx/lifecycle/ViewModel#onCleared())
+- [Primary documentation or owning implementation](https://raw.githubusercontent.com/androidx/androidx/androidx-main/activity/activity/src/main/java/androidx/activity/ComponentActivity.kt)

@@ -8,14 +8,14 @@ WebView sits at an awkward intersection: it is simultaneously a UI widget, a bro
 
 ## Why It Matters
 
-- **It's a browser inside your security boundary.** Content rendered in a WebView executes JavaScript inside your app's process. A JavaScript bridge exposed to the wrong page hands that page a native API surface with your app's identity and permissions.
+- **It is a browser inside your security boundary.** Modern multiprocess WebView normally renders web content in a separate sandboxed renderer. A native bridge still exposes capabilities with the hosting app's identity, so validate trust and origin independently of process isolation.
 - **Payment challenges may flow through it.** A 3-DS challenge may require WebView cookie and redirect handling; mistakes can break checkout or expose sensitive data. Native OAuth authorization uses an external browser context and returns to the app through a registered redirect URI.
 - **It's the fastest hybrid escape hatch** — and the easiest to over-use. Staff engineers need a principled answer for *which* surfaces belong in web content and which never should.
 - **It ships separately from your app.** WebView updates through Play as its own package; the engine version under your feature changes without your release train's involvement.
 
 ## First Principles
 
-1.  **Two trust domains, one process.** Native code is trusted; loaded web content is not (even "your own" pages can be compromised, MITM'd on old devices, or redirected). Every WebView design decision is about policing that boundary.
+1. **Two trust domains.** Native capabilities and untrusted web content have different privileges. A separate renderer does not make an unsafe native bridge safe.
 2.  **The URL decides the trust.** What the WebView is *currently showing* determines what capabilities it should have. Navigation is therefore a security event, not just a UX event.
 3.  **Bridges are API surface.** Anything exposed via a JavaScript bridge is a public API callable by whatever wins control of the page.
 4.  **The engine is a dependency you don't pin.** Behavior varies by installed WebView version and OEM; feature-detect via `androidx.webkit` rather than assuming.
@@ -80,7 +80,7 @@ override fun shouldOverrideUrlLoading(view: WebView, request: WebResourceRequest
 
     val url = request.url
     return when {
-        url.host in allowedHosts -> false                    // let the WebView load it
+        url.scheme == "https" && url.host in allowedHosts -> false // trusted HTTPS origin
         url.scheme in setOf("http", "https") -> {
             customTabs.launch(url); true                     // kick unknown web out to a browser context
         }
@@ -111,8 +111,8 @@ Allowlist, don't blocklist — and gate every native side effect on `request.isF
 
 A payments team embeds their PSP's 3-DS challenge in a WebView. Three incidents over one year:
 
-1. **Cookie loss:** the challenge relies on a session cookie set on a prior redirect; the app used a fresh WebView per screen, so `CookieManager` state was there but third-party cookie defaults differed across WebView versions → intermittent challenge loops on a subset of devices. Fix: pin the whole flow to one WebView instance, explicitly configure cookie acceptance for the PSP's domains, and assert the cookie before loading.
-2. **Redirect capture:** success returns via a `https://merchant.example/3ds-complete?...` redirect. The team parsed it in `onPageFinished` (fires for iframes and intermediate pages too) and double-processed results. Fix: intercept in `shouldOverrideUrlLoading` on exact host+path match, finish the WebView, hand the token to native code.
+1. **Cookie handling scenario:** A payment redirect relies on session cookies. A dedicated view owns the flow's navigation and settings, but does not create an independent cookie jar. CookieManager is shared by the WebView profile; setAcceptThirdPartyCookies controls acceptance for a view, not a PSP-domain allowlist. Test the provider's required redirects and cookie policy on supported versions.
+2. **Redirect capture scenario:** onPageFinished is main-frame-only, but page completion is not a payment-completion contract. Validate the expected HTTPS host/path, main-frame status and transaction identity; make result handling idempotent and validate the server result. shouldOverrideUrlLoading has documented gaps, including POST navigation.
 3. **The debug hole:** `setWebContentsDebuggingEnabled(true)` shipped in a release build "temporarily" for a support investigation — remote-debuggable checkout WebViews in production. Fix: tie it to `BuildConfig.DEBUG` and add a release-build lint check.
 
 The pattern across all three: WebView flows fail at the *edges* (cookies, redirects, settings), not in the middle — so the edges are what you test and lint.
@@ -121,7 +121,7 @@ The pattern across all three: WebView flows fail at the *edges* (cookies, redire
 
 - **Iteration speed vs capability tax:** web content deploys same-day but pays for it in gesture fidelity, startup cost (~100ms+ first-WebView-in-process init), memory (a renderer process), and a11y that must be correct in *two* stacks (TalkBack ↔ page semantics).
 - **WebView vs Custom Tabs:** Custom Tabs gives you the user's real browser (their sessions, their password manager, Safe Browsing UI) and takes away your bridge and your chrome. Default to Custom Tabs for third-party content; reserve WebView for content you need to *integrate*, not just display.
-- **One shared WebView vs per-feature instances:** sharing amortizes init cost but couples cookie/session state across features; per-flow instances isolate state but re-pay startup. Payment challenges can use a dedicated instance; OAuth authorization runs in an external user agent.
+- **Shared versus dedicated views:** A dedicated view separates navigation and per-view settings but does not by itself isolate cookies/profile storage. Specify the supported profile/isolation mechanism when that separation is required. OAuth uses an external user agent.
 
 ## Failure Modes
 
@@ -161,11 +161,11 @@ The pattern across all three: WebView flows fail at the *edges* (cookies, redire
 2. **Why must app-bundled content load through `WebViewAssetLoader` instead of `file://`, and what attack does that close?**
    Loading via `file://` requires enabling legacy file access flags, which can be exploited by XSS to read arbitrary local files from the device. `WebViewAssetLoader` creates an HTTPS virtual domain, respecting standard Same-Origin policies while safely serving local files.
 3. **Design the WebView setup for a 3-DS payment challenge: instance strategy, cookie handling, redirect capture, and the settings you'd lint against.**
-   Use a dedicated WebView instance for the flow to isolate state. Explicitly configure `CookieManager` to accept third-party cookies for the PSP domain. Capture redirects carefully via `shouldOverrideUrlLoading` (ensuring `isForMainFrame`). Lint against `setWebContentsDebuggingEnabled` in release and `onReceivedSslError.proceed()`.
+   Use a dedicated view to own navigation and settings, while accounting for shared profile cookies. setAcceptThirdPartyCookies is per view, not per PSP domain. Validate the required provider flow, scheme/host/path and main-frame redirects; keep result handling idempotent and prohibit unsafe SSL bypasses or release debugging.
 4. **When do you choose Custom Tabs over WebView, and what do you lose in each direction?**
    Choose Custom Tabs for OAuth or third-party web content to utilize the browser's cookies and password manager safely. You lose UI customizability and the ability to bridge JS to native. Choose WebView when deep native integration and customized UI are strictly required.
 5. **A blank white view appears intermittently on low-end devices. Walk through the renderer-process explanation and the recovery path.**
-   On low-memory devices, Android may kill the separate WebView renderer process to reclaim RAM, leaving the native WebView empty. Recover by overriding `onRenderProcessGone()`, returning `true` to keep the app alive, and rebuilding or reloading the WebView.
+   Handle onRenderProcessGone, remove and destroy the affected WebView, and create a replacement. The failed instance cannot be reused or simply reloaded. Restore only safe application state and return true only after handling cleanup for that view.
 6. **How would you structure a hybrid-surface rubric for a 40-team app, and how do you keep teams from routing around it?**
    Define clear guidelines based on interaction depth, offline requirements, capability access, and iteration speed. Implement CI lint checks and centralize WebView creation in a single, well-reviewed factory class so teams physically cannot instantiate rogue WebViews.
 
@@ -179,3 +179,11 @@ The pattern across all three: WebView flows fail at the *edges* (cookies, redire
 - [`security-and-keystore.md`](security-and-keystore.md) — the broader app trust model this plugs into.
 - [`../../mobile-system-design/payment-flow.md`](../../mobile-system-design/payment-flow.md) — where the 3-DS flow fits in checkout.
 - [`../../security/certificate-pinning.md`](../../security/certificate-pinning.md) — why `onReceivedSslError.proceed()` is never the fix.
+
+### Official verification references
+
+- [Primary documentation or owning implementation](https://developer.android.com/develop/ui/views/layout/webapps/managing-webview#termination-handle)
+- [Primary documentation or owning implementation](https://developer.android.com/privacy-and-security/risks/unsafe-uri-loading)
+- [Primary documentation or owning implementation](https://developer.android.com/reference/android/webkit/CookieManager)
+- [Primary documentation or owning implementation](https://developer.android.com/reference/android/webkit/WebViewClient#onPageFinished(android.webkit.WebView,%20java.lang.String))
+- [Primary documentation or owning implementation](https://developer.android.com/reference/android/webkit/WebViewClient#onRenderProcessGone(android.webkit.WebView,%20android.webkit.RenderProcessGoneDetail))

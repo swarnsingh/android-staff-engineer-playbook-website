@@ -224,6 +224,6 @@ This trades scheduling friction for cadence. The team gets used to the rhythm; R
 - [`technical-mentorship.md`](technical-mentorship.md) — letting a junior facilitate as practice.
 - [`../career/writing-rfcs.md`](../career/writing-rfcs.md) — what gets reviewed.
 - [Google eng-practices — Review Standard](https://google.github.io/eng-practices/review/reviewer/standard.html) — code-review principles; not a design-document approval policy.
-- [Lara Hogan — Resilient Management](https://larahogan.me/blog/) — meeting facilitation patterns.
+- [Lara Hogan — Resilient Management](https://resilient-management.abookapart.com/) — book on team and meeting practices.
 - [Atlassian — DACI](https://www.atlassian.com/team-playbook/plays/daci) — explicit decision ownership.
 - [Google review comments](https://google.github.io/eng-practices/review/reviewer/comments.html)

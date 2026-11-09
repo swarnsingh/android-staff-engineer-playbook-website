@@ -182,7 +182,7 @@ dependencies {
 }
 ```
 
-Slight ergonomic improvement; refactors propagate via the IDE. Still a feature preview but stable in Gradle 8+.
+Type-safe project accessors are an incubating feature requiring explicit enablement; verify the current Gradle compatibility contract before adopting them in shared build logic.
 
 ---
 
@@ -216,7 +216,7 @@ android {
 | AR feature used by 5% of users (50 MB native libs) | ✅ Strong fit |
 | Onboarding tutorial (mostly install-time only) | ✅ Good fit |
 | Region-specific feature (only India / only US) | ✅ Conditional install |
-| Instant-app entry point | ✅ Required |
+| Instant-app entry point | Google Play Instant distribution ended in December 2025; do not use it as a current adoption reason |
 | Every screen, "to reduce APK size" | ❌ Over-engineering; complexity > benefit |
 | Per-team modular ownership | ❌ Use regular modules + module-owner code reviews |
 | Faster startup | ❌ Doesn't help — APK size and startup time are mostly decoupled |
@@ -229,7 +229,7 @@ android {
 - Crashes attribution becomes harder (rollbacks per module).
 - AABs (App Bundle) already deliver APK splits by ABI/density/locale — the APK size win is usually already realized.
 
-For a "normal" multi-module Android project, **use regular Android library modules**. Reach for dynamic features only when the install-time / region / instant-app reasons explicitly apply.
+For a normal modular app, use regular Android library modules. Consider dynamic features for a supported on-demand/conditional delivery need; deprecated Play Instant is not a current requirement.
 
 ---
 
@@ -242,7 +242,7 @@ Tools to verify:
 ### 1. Affected module detection
 
 ```bash
-./gradlew :app:projectDependencyGraph
+./gradlew generateProjectDependencyGraph // supplied by the dependency-graph-generator plugin
 ```
 
 (Requires the `dependency-graph-generator` plugin.)
@@ -440,8 +440,8 @@ A well-shaped `:app` is *small*: 5–15 Kotlin files, all about wiring.
 | Type-safe project accessors not generated | Feature preview not enabled | `enableFeaturePreview("TYPESAFE_PROJECT_ACCESSORS")` |
 | Test fixtures can't access feature implementation | Tried to depend on `:impl` | Use `:api` only; or move type to `:api` |
 | Dynamic feature module crashes on install | Resources not in dynamic feature | Verify `tools:keep` rules and resource references |
-| `./gradlew :app:dependencyGraph` blows up | Plugin not applied | Add `dependency-analysis-gradle-plugin` |
-| Build cache hits drop after refactor | Module path changed; cache key includes path | Expected — settles after a few builds |
+| Dependency graph task is missing | Wrong plugin/task name | With dependency-graph-generator, use generateDependencyGraph or generateProjectDependencyGraph; dependency-analysis is a different plugin |
+| Build cache hits drop after refactor | Inputs, normalization or implementation changed | Task path is not itself a cache-key input; inspect changed inputs and absolute-path sensitivity before attributing the miss |
 | One module's lint baseline disagrees with another's | Per-module baseline drift | Standardize via convention plugin |
 | Build configuration time > 60s | 200 modules, lots of plugins | Disable unused plugins; lazy task creation |
 | Adding a new feature requires 10 file edits | App-level wiring not abstracted | Provide a "feature template" via `yourorg create-module` |
@@ -490,9 +490,9 @@ A well-shaped `:app` is *small*: 5–15 Kotlin files, all about wiring.
 2. **Why must `:feature:cart:impl` depend on `:feature:profile:api`, not `:feature:profile:impl`?**
    Depending on the `:impl` couples the cart feature to the internal implementation details of the profile feature, destroying encapsulation and causing an avalanche compilation where a change in profile UI forces a cart rebuild.
 3. **Build-time perf: `./gradlew :app:assembleDebug` takes 6 minutes. Walk through your audit.**
-   First, run with `--scan` to check cache hit rates and identify long-running tasks. Second, run `:app:projectDependencyGraph` to look for bottlenecks like a massive `:core:common` with hundreds of dependents. Third, ensure KSP is used instead of KAPT and configuration caching is enabled.
+   Inspect build reports and the plugin's generateProjectDependencyGraph task for graph bottlenecks. Check configuration-cache compatibility, affected-source compilation and processor choice; do not assume one plugin supplies another plugin's tasks.
 4. **Dynamic Feature Modules — name three scenarios where they're a good fit and three where they're not.**
-   *Good fit:* Heavy assets (AR features), rarely used flows (customer support chat), region-specific features, or instant-apps. *Bad fit:* Core UI components, per-team ownership boundaries, or every screen just to reduce APK size unnecessarily.
+   Good fits include supported on-demand heavy assets, rarely used flows and conditional delivery. Core UI and team boundaries alone do not justify dynamic delivery; Play Instant is no longer a current distribution reason.
 5. **Type-safe project accessors — what do they buy you?**
    They replace brittle string-based project references (`project(":feature:cart")`) with IDE-aware, autocomplete-friendly Kotlin properties (`projects.feature.cart`), ensuring compile-time safety and easy refactoring when module paths change.
 6. **Hilt across modules: how do bindings from `:feature:cart:impl` reach the SingletonComponent?**
@@ -525,4 +525,11 @@ A well-shaped `:app` is *small*: 5–15 Kotlin files, all about wiring.
 - [`../../platform-engineering/internal-developer-platforms.md`](../../platform-engineering/internal-developer-platforms.md) — modularization as platform.
 - [Now in Android (Google sample)](https://github.com/android/nowinandroid) — canonical multi-module Android.
 - [Android Developers — Modularize your app](https://developer.android.com/topic/modularization) — official.
-- [Cash App — Modular at scale](https://developer.squareup.com/blog/) — practitioner blog.
+- [Cash App — Android Architecture for the Rocketship, Part 1: Modularisation](https://code.cash.app/android-architecture-for-the-rocketship-part1-modularisation) — practitioner blog.
+
+### Official verification references
+
+- [Primary documentation or owning implementation](https://developer.android.com/topic/google-play-instant/release-notes)
+- [Primary documentation or owning implementation](https://docs.gradle.org/current/userguide/build_cache.html)
+- [Primary documentation or owning implementation](https://docs.gradle.org/current/userguide/declaring_dependencies_basics.html)
+- [Primary documentation or owning implementation](https://github.com/vanniktech/gradle-dependency-graph-generator-plugin)

@@ -2,13 +2,13 @@
 
 ## Overview
 
-Immutability is the principle that once an object is created, its state cannot be modified. If you need to change the data, you must create a new object with the new data. In modern Android engineering, immutability is the absolute bedrock of robust architecture. Without it, Jetpack Compose, Kotlin Coroutines, and Unidirectional Data Flow (UDF) simply do not work reliably.
+Immutability is the principle that once an object is created, its state cannot be modified. If you need to change the data, you must create a new object with the new data. In modern Android engineering, immutable values help make state changes easier to reason about. They simplify shared snapshots, but Compose also supports observable mutable state, coroutines can coordinate mutable state, and UDF is primarily an ownership and update-flow discipline.
 
 ## Why It Matters
 
 Shared mutable state is the root of all evil in concurrent programming. If Thread A and Thread B have a reference to the same `User` object, and Thread A changes the user's name while Thread B is writing the user to a database, you have a race condition leading to data corruption or a crash.
 
-In UI frameworks like Jetpack Compose, if a UI state object is mutated internally (e.g., changing a property without replacing the object), Compose has no idea the state changed, and the UI will not re-render. Immutability guarantees thread safety and predictable change observation.
+Compose observes reads and writes of supported snapshot state. Mutating an ordinary, unobservable field or MutableList does not notify it, whereas MutableState and snapshot collections can notify observers without replacing the containing object. Immutable snapshots help reasoning; publication and update observation still need their own contracts.
 
 ## Historical Context
 
@@ -16,9 +16,9 @@ Rooted in functional programming languages (Lisp, Haskell). For decades, Object-
 
 ## First Principles
 
-1.  **Read-Only:** An immutable object has no setters or mutating methods.
-2.  **Thread Safety by Default:** If an object cannot be changed, it can be shared across 1,000 threads simultaneously without any locks, mutexes, or synchronization.
-3.  **Predictability:** If a function takes an immutable object as an argument, the caller is guaranteed that the object will not be altered by the function. (No side effects).
+1.  **Read-Only Is Not Enough:** A read-only reference or API can still expose a mutable object graph. Immutability requires that the object's observable state cannot change after construction.
+2.  **Safe Concurrent Reads:** Properly constructed, safely published, deeply immutable values do not need locks to protect their contents from concurrent mutation. Publishing references and coordinating replacement versions remain separate concurrency concerns.
+3.  **Predictability:** A function cannot mutate the contents of a truly immutable argument. It can still perform other side effects, such as I/O or changing separate mutable state.
 
 ## Mental Model
 
@@ -102,7 +102,7 @@ graph TD
 
 **Jetpack Compose State**
 
-Compose relies entirely on object equality (`==`) to know when to redraw the screen (Recomposition). If you mutate an object internally, its memory address doesn't change, and Compose thinks nothing happened.
+Compose tracks snapshot-state reads and invalidates dependent scopes when observable state changes. State mutation policies and composable-parameter skipping are separate checks. Under strong skipping, stable parameters use equals while unstable parameters use identity; recomposition is not determined solely by a containing object's memory address.
 
 ```kotlin
 // BAD: Compose will NOT redraw when items are added.
@@ -111,7 +111,7 @@ class ViewState {
     val items = mutableListOf<String>()
 }
 
-// GOOD: Compose WILL redraw when state is updated via copy()
+// New state must reach observable state collected/read by Compose. copy() alone is not a notification.
 data class ImmutableViewState(
     val isLoading: Boolean = false,
     val items: List<String> = emptyList() // Read-only list
@@ -127,14 +127,14 @@ _state.value = _state.value.copy(
 ## Tradeoffs
 
 **Advantages**
-- **Zero Synchronization Overhead:** No `synchronized` blocks, no mutexes, no deadlocks.
-- **Trivial Caching:** You can cache immutable objects forever without worrying that they will become stale or corrupted by another component.
+- **Simpler Read Sharing:** Deeply immutable contents need no mutation locks. Publication, replacement updates and any surrounding mutable resources can still require synchronization.
+- **Stable Cached Values:** Another component cannot mutate a truly immutable cached value, but it can still become stale relative to the source. Freshness, invalidation and retention policies remain necessary.
 - **Replayability:** In Redux/MVI architectures, because every state change produces a brand new object, you can keep a history of states and implement "Undo" or "Time Travel Debugging" trivially.
 
 **Disadvantages**
 - **Memory Allocation (GC Pressure):** If you are updating a complex object 60 times a second (e.g., moving a character on screen), creating a new copy of the object every frame puts massive pressure on the Garbage Collector, leading to jank.
 - **Deep Copy Costs:** Copying a deeply nested object tree (`Company -> Department -> Employee -> Address`) just to change the Zip Code is computationally expensive.
-- **Kotlin Standard Library Limitations:** Kotlin's `List` interface is read-only, not strictly immutable. Under the hood, it's often a Java `ArrayList`. If someone casts it back to `MutableList` via `(myList as MutableList<String>).add("Hacked")`, it will mutate. For strict immutability, external libraries like Kotlinx.Collections.Immutable are required.
+- **Kotlin Standard Library Limitations:** Kotlin's `List` interface is read-only, not strictly immutable. Under the hood, it's often a Java `ArrayList`. If someone casts it back to `MutableList` via `(myList as MutableList<String>).add("Hacked")`, it will mutate. An immutable collection implementation can enforce the collection boundary; Kotlinx.Collections.Immutable is one option. Its elements must also satisfy the required immutability contract. A cast to MutableList is not guaranteed to work for every read-only list implementation.
 
 ## Failure Modes
 
@@ -149,7 +149,7 @@ _state.value = _state.value.copy(
   (list as MutableList<String>).clear() // The client just wiped the Repo's internal cache!
   ```
   *(Fix: `val cache: List<String> get() = _cache.toList()` to create a defensive copy).*
-- **Mutable Data Classes:** Using `var` inside a `data class`. `data class User(var name: String)`. This destroys the safety of the `copy()` mechanism and makes it useless as a key in a `HashMap` or a State object in Compose.
+- **Mutable Data Classes:** Using `var` inside a `data class`. `data class User(var name: String)`. copy() still creates a shallow copy. The risk is that later mutation changes an equality/hash-relevant property or bypasses the observable-state update path; a mutable data class is not automatically unusable in every context.
 - **Over-allocation in tight loops:** Using `copy()` inside an $O(N)$ loop of 10,000 items. (Fix: Mutate locally inside a function, then freeze and return as immutable).
 
 ## Staff Engineer Thinking
@@ -168,7 +168,7 @@ When reviewing code, a Staff engineer hunts for hidden mutability:
 ## Probing Questions
 
 1.  Explain the difference between `val` and true object immutability in Kotlin.
-2.  Why is immutability a strict requirement for Unidirectional Data Flow (UDF) architectures?
+2.  How do immutable snapshots support Unidirectional Data Flow (UDF), and which ownership rule must still be enforced?
 3.  How does Jetpack Compose use immutability to determine if Recomposition is necessary?
 4.  What is a "Defensive Copy," and when should you use it?
 5.  Why is it dangerous to use a mutable object as a key in a `HashMap`?
@@ -182,10 +182,10 @@ When reviewing code, a Staff engineer hunts for hidden mutability:
 
 1.  **Explain the difference between `val` and true object immutability in Kotlin.**
     `val` means a read-only reference (you can't reassign the variable), while true object immutability means the object's internal state cannot be modified. A `val` pointing to a `MutableList` is not immutable.
-2.  **Why is immutability a strict requirement for Unidirectional Data Flow (UDF) architectures?**
-    UDF relies on state being a single source of truth that flows in one direction. If state is mutable, components can bypass the flow and modify it directly, leading to race conditions and breaking predictability.
+2.  **How do immutable snapshots support Unidirectional Data Flow (UDF), and which ownership rule must still be enforced?**
+    Immutable snapshots prevent readers from changing published contents. UDF still needs a state owner that accepts events and controls updates. Observable mutable state can also participate when changes go through that owner; immutability alone does not enforce event direction.
 3.  **How does Jetpack Compose use immutability to determine if Recomposition is necessary?**
-    Compose relies on object equality (`==`). If an object is mutable and modified internally, its reference remains the same, so Compose won't detect the change. Immutability forces a new object creation (`copy`), triggering recomposition.
+    Immutable state is useful when new values are published through observable state. Compose observes snapshot-state reads and writes; copy() by itself triggers nothing. MutableStateFlow also suppresses equal assignments, while strong-skipping parameter comparisons depend on stability.
 4.  **What is a "Defensive Copy," and when should you use it?**
     A defensive copy is creating a new instance (usually immutable) of a mutable object when exposing it across boundaries. Use it when returning internal mutable state (like a `MutableList`) to prevent external callers from modifying it.
 5.  **Why is it dangerous to use a mutable object as a key in a `HashMap`?**
@@ -198,14 +198,30 @@ When reviewing code, a Staff engineer hunts for hidden mutability:
     (list as MutableList<String>).add("C")
     ```
 8.  **How does immutability eliminate the need for `synchronized` blocks in multithreaded code?**
-    Since immutable objects cannot change state, multiple threads can safely read them concurrently. There are no writes after creation, hence no race conditions to synchronize against.
+    Properly constructed and safely published immutable contents can be read concurrently without mutation locks. A shared reference that selects the current version, and any other mutable resources used alongside it, still need appropriate visibility and atomic-update rules.
 9.  **If creating new objects causes Garbage Collection (GC) pauses, when might you intentionally choose to use a mutable object instead of an immutable one?**
     In performance-critical, tight loops (e.g., rendering loops in games or heavy numerical computations) where the overhead of continuous object allocation and GC outweighs the benefits of immutability.
 10. **Describe the impact of using `var` properties inside a Kotlin `data class`.**
-    It breaks the safety of the `copy()` mechanism and makes the class mutable. Changing the `var` modifies the object in place, undermining value-based equality and hashing guarantees.
+    A var makes that property mutable; generated copy() still performs a shallow copy. Changing a primary-constructor property can change generated equals/hashCode results, which is dangerous while the object is a hash key. Mutation must also use an observable or otherwise coordinated update path where required.
 
 ## Further Reading
 
 - [`state-machines.md`](state-machines.md) — Immutability makes state transitions safe.
 - [`../patterns/state.md`](../patterns/state.md) — The UI pattern that relies entirely on immutable states.
 - Kotlinx Immutable Collections: [GitHub Repository](https://github.com/Kotlin/kotlinx.collections.immutable)
+
+### Official verification references
+
+The corrections in this chapter were checked against the following primary references.
+
+- [developer.android.com: state](https://developer.android.com/develop/ui/compose/state)
+- [developer.android.com: ui-layer](https://developer.android.com/topic/architecture/ui-layer)
+- [kotlinlang.org: shared-mutable-state-and-concurrency.html](https://kotlinlang.org/docs/shared-mutable-state-and-concurrency.html)
+- [kotlinlang.org: collections-overview.html](https://kotlinlang.org/docs/collections-overview.html)
+- [kotlinlang.org: data-classes.html](https://kotlinlang.org/docs/data-classes.html)
+- [docs.oracle.com: jls-17.html](https://docs.oracle.com/javase/specs/jls/se25/html/jls-17.html)
+- [developer.android.com: strongskipping](https://developer.android.com/develop/ui/compose/performance/stability/strongskipping)
+- [kotlinlang.org: -state-flow](https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines.flow/-state-flow/)
+- [aws.amazon.com: caching-challenges-and-strategies](https://aws.amazon.com/builders-library/caching-challenges-and-strategies/)
+- [github.com: kotlinx.collections.immutable](https://github.com/Kotlin/kotlinx.collections.immutable)
+- [docs.oracle.com: HashMap.html](https://docs.oracle.com/en/java/javase/25/docs/api/java.base/java/util/HashMap.html)

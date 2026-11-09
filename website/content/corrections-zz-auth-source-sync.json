@@ -9,11 +9,12 @@
       "https://raw.githubusercontent.com/ktorio/ktor/3.6.0/ktor-client/ktor-client-core/common/src/io/ktor/client/plugins/HttpRequestRetry.kt",
       "https://raw.githubusercontent.com/square/okhttp/master/okhttp/src/commonJvmAndroid/kotlin/okhttp3/Authenticator.kt"
     ],
-    "status": "approved",
+    "status": "superseded-by-merged-source",
     "approval": "Owner merged source PR #74 and instructed publication, 2026-11-01.",
     "source_pr": 74,
     "source_commit": "8e152a8ead842de3c7f20ac6f88118d5b3e70fc6",
     "source_sha256": "a9cafcf2ec7c71ebbd7038b55e64299775a9fce8235fb70d37dc7d2d3885e2b4",
-    "validation": "Exact post-correction chapter matches the merged source bytes; the Ktor factory was executed against a mock engine for retry, 401 and logout cases."
+    "validation": "Exact post-correction chapter matches the merged source bytes; the Ktor factory was executed against a mock engine for retry, 401 and logout cases.",
+    "superseded_by": "source-snapshot.json android_provenance"
   }
 ]

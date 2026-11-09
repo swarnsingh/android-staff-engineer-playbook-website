@@ -128,13 +128,13 @@ val apolloClient = ApolloClient.Builder()
     .build()
 
 // 2. Observe the Data Reactively
-fun observeUser(id: String): Flow<GetUserProfileQuery.Data> {
-    // watch() returns a Flow that emits according to the fetch policy and
-    // relevant normalized-cache changes while it is collected.
+fun observeUser(id: String): Flow<ApolloResponse<GetUserProfileQuery.Data>> {
+    // Preserve data, GraphQL errors and transport failures for the UI/repository
+    // to handle explicitly. CacheAndNetwork can emit more than one response.
     return apolloClient.query(GetUserProfileQuery(id))
-        .fetchPolicy(FetchPolicy.CacheAndNetwork) // Read DB first, then hit Network
+        .fetchPolicy(FetchPolicy.CacheAndNetwork)
         .watch()
-}
+} // import com.apollographql.apollo.api.ApolloResponse
 ```
 When a mutation result is written under the same stable cache key and includes the changed `name` field, affected watchers can re-emit. Otherwise, configure cache keys and perform an explicit cache update or refetch.
 
@@ -220,3 +220,7 @@ When reviewing GraphQL integrations, a Staff engineer focuses on Cache policies 
 - [GraphQL over HTTP specification](https://graphql.github.io/graphql-over-http/draft/) — HTTP status and media-type semantics.
 - [`paging.md`](../data-and-di/paging.md) — How to design bounded pagination for large result sets, including Apollo-backed repositories.
 - [Apollo Kotlin Documentation](https://www.apollographql.com/docs/kotlin/)
+
+### Official verification references
+
+- [Primary documentation or owning implementation](https://www.apollographql.com/docs/kotlin/caching/query-watchers)

@@ -481,7 +481,7 @@ class SessionTracker(private val processLifecycleOwner: ProcessLifecycleOwner) {
 - [Mixpanel Android — design](https://docs.mixpanel.com/docs/tracking/reference/android) — events, identities, sessions.
 - [Android Developers — WorkManager](https://developer.android.com/topic/libraries/architecture/workmanager) — expedited + constraints.
 - [GDPR — Regulation (EU) 2016/679](https://eur-lex.europa.eu/eli/reg/2016/679/oj) — the legal text on consent.
-- [OpenTelemetry — spans + events](https://opentelemetry.io/) — adjacent: distributed traces.
+- [OpenTelemetry — Traces (spans and events)](https://opentelemetry.io/docs/concepts/signals/traces/) — adjacent: distributed traces.
 
 ---
 

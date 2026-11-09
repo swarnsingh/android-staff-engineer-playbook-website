@@ -93,7 +93,7 @@ On Android, shared Kotlin code runs natively on the JVM/ART. Crashes will surfac
 
 The primary observability risk is **R8 Obfuscation**.
 1.  **Mapping Uploads:** Ensure your CI pipeline automatically uploads the R8 `mapping.txt` file to your crash reporting tool (e.g., Firebase Crashlytics) for every release build.
-2.  **Serialization:** Ensure Kotlinx Serialization models or classes accessed via reflection are protected by `@Keep` annotations or explicit ProGuard rules, otherwise obfuscation will cause runtime `SerializationException` crashes.
+2. **Serialization:** kotlinx.serialization supplies consumer R8 rules. Add narrow extra rules only for documented cases such as named companion objects or independent reflection; test the optimized release configuration rather than blanket @Keep on every serializable model.
 3.  **Meaningful Messages:** Preserve useful exception messages without embedding PII.
 
 ---
@@ -104,9 +104,9 @@ iOS observability is the hardest aspect of KMP. Without strict configuration, an
 
 ### Apple dSYMs and UUID Matching
 For crash tools to map memory addresses back to your Kotlin source code, they need the **dSYM (Debug Symbol)** file.
-1.  When Kotlin/Native compiles the Apple framework, it generates a `.dSYM` bundle.
+1. Inspect the selected Kotlin/Native linkage and debug-info configuration; a separately loaded dynamic framework and statically linked code do not necessarily produce the same symbol packaging.
 2.  **UUID Matching:** The generated binary and the dSYM share a unique UUID. **If the UUIDs do not match perfectly, symbolication fails.**
-3.  If you distribute the KMP module as an XCFramework, the host iOS app's build process *must* preserve and upload the shared framework's dSYMs to the crash reporter alongside the app's own dSYMs.
+3. Preserve and upload symbols for the binaries actually loaded in the release. Dynamic framework images need matching framework symbols; statically linked code may be represented in the final app binary's debug information. Inspect archive contents, linkage and UUIDs rather than requiring a separate framework dSYM for every XCFramework.
 
 ### Kotlin/Native Crash Bridges
 By default, standard iOS crash reporters (which attach to Objective-C/Swift exception handlers) cannot cleanly catch Kotlin/Native unhandled exceptions before the process aborts.
@@ -122,7 +122,7 @@ Concurrency failures behave differently across platforms.
 ### Cancellation is Not a Crash
 A coroutine cancelled by its parent (e.g., a ViewModel clearing) throws a `CancellationException`.
 *   **Android:** The JVM treats this as a normal lifecycle event. It is swallowed by the coroutine machinery.
-*   **iOS:** If an `async` Swift function bridged to a Kotlin `suspend` function is cancelled, Swift receives a `CancellationError`.
+* **iOS:** A bridge such as SKIE propagates cancellation between Swift async and Kotlin suspend and can surface CancellationError. Plain Objective-C callback export with Swift async syntax does not by itself establish that cancellation propagation.
 
 **Rule:** Never blindly catch `Exception` or `Throwable` in shared code and report it to your crash tracker without rethrowing `CancellationException`. Doing so will flood your telemetry with false-positive crashes every time a user navigates away from a loading screen.
 
@@ -147,7 +147,7 @@ try {
 ### Projecting Errors to Swift
 When a `suspend` function fails, the `@Throws(ExceptionClass::class)` annotation converts only the explicitly listed exception classes (and their subclasses) into Swift `Error`s that can be caught with `do/catch`. Undeclared Kotlin exceptions can still terminate the iOS process.
 
-For `Flow` and async functions, relying heavily on unchecked exceptions across the boundary is risky. While tools like **SKIE** supply sealed wrappers and async/Flow conveniences, they do not automatically convert arbitrary Kotlin exception hierarchies into typed Swift `Error` enums. Instead of exceptions, prefer returning explicit `Result<T>` or a sealed `DomainFailure` class so iOS engineers can write exhaustive `switch` statements over shared domain errors safely without risking an uncatchable crash.
+Use explicit domain failures for a controlled error contract. Plain Objective-C export does not make Kotlin sealed classes exhaustive Swift enums; use a documented wrapper such as SKIE onEnum(of:) or the selected export path's actual generated API. Test cancellation and application errors separately.
 
 ---
 
@@ -171,7 +171,7 @@ fun forceSharedCrash() {
 ## Review Checklist
 
 1.  Is a deterministic shared build SHA attached to crash events on both platforms?
-2.  Are iOS dSYMs for the shared framework definitively extracted and uploaded to the crash reporter?
+2. Are debug symbols retained for the actual app/framework images and verified against the release UUIDs and linkage?
 3.  Is a Kotlin/Native crash bridge (like CrashKiOS) configured to prevent `konan::abort()` blind spots?
 4.  Do shared logs safely omit PII while retaining stable correlation IDs?
 5.  Are coroutine cancellations explicitly ignored by error reporting?
@@ -189,7 +189,7 @@ fun forceSharedCrash() {
 
 ## Answer Key
 
-1. First, the Apple dSYM files for the KMP framework are likely not being uploaded to the crash reporter, preventing memory addresses from mapping to source files. Second, the app lacks a Kotlin/Native unhandled exception hook bridge (like CrashKiOS), meaning the crash reporter is catching the native abort signal rather than the underlying Kotlin exception string and stack trace.
+1. Verify symbols against the actual loaded images, linkage and release UUIDs; missing separate framework symbols is one possible cause, not universal for static linkage. Also inspect whether the Kotlin exception details reach the crash reporter before the native abort signal.
 2. The shared code is catching a broad `Exception` (which includes `CancellationException`) and logging it as an error or crash before swallowing it. Coroutine cancellation is a normal lifecycle event; `CancellationException` must always be caught and rethrown (or handled via `suspend` mechanisms) to avoid false-positive error spam and breaking structured concurrency.
 3. Generate a stable Correlation ID (like a UUID) in the shared code before the request. Log it locally. Then, inject it into the Ktor HTTP request headers (e.g., using W3C Trace Context `traceparent` or a custom `X-Request-ID`). When the backend logs the 500 error, it must include that header, allowing seamless correlation across the boundary.
 4. The shared code should expose a `SharedBuildInfo` struct containing the exact Git SHA and version of the KMP module at compile time. This struct should be attached as a custom key to all crash reports. Inspecting the custom keys of the new crash will immediately reveal if the iOS app bundled the old or new SHA.
@@ -202,5 +202,12 @@ fun forceSharedCrash() {
 - [Kotlin/Native iOS Crash Symbolication (Touchlab CrashKiOS)](https://github.com/touchlab/CrashKiOS)
 - [Apple Documentation: Adding standard dSYMs](https://developer.apple.com/documentation/xcode/building-your-app-to-include-debugging-information)
 - [SKIE: Swift Kotlin Interface Enhancer](https://skie.touchlab.co/)
-- [Android Developers: R8 and mapping files](https://developer.android.com/studio/build/shrink-code#decode-stack-trace)
+- [Android Developers: R8 and mapping files](https://developer.android.com/tools/retrace)
 - [Kotlin Coroutines: Cancellation and Exceptions](https://kotlinlang.org/docs/exception-handling.html)
+
+### Official verification references
+
+- [Primary documentation or owning implementation](https://developer.apple.com/videos/play/wwdc2021/10211/)
+- [Primary documentation or owning implementation](https://github.com/Kotlin/kotlinx.serialization/blob/master/README.md)
+- [Primary documentation or owning implementation](https://kotlinlang.org/docs/native-objc-interop.html)
+- [Primary documentation or owning implementation](https://skie.touchlab.co/features/suspend)

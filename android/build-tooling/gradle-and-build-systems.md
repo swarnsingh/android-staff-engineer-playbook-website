@@ -79,11 +79,11 @@ class ProfileActivity { ... }
 If you use `implementation(project(":ModuleA"))` inside Module B, Module C **cannot** see the `UserRepo` class. The dependency is hidden. 
 If you modify `UserRepo` in Module A, Gradle must recompile Module A and Module B. **It does not recompile Module C.** This saves massive amounts of time.
 
-If you mistakenly use `api(project(":ModuleA"))`, Module C *can* see `UserRepo`. This leaks the ABI (Application Binary Interface). If you modify `UserRepo`, Gradle must now recompile Module A, Module B, *and* Module C. This is called an **Avalanche Compilation**.
+api exposes the dependency on downstream compile classpaths, while implementation hides it. Recompilation depends on ABI/classpath snapshots and which sources are affected; a private implementation change need not recompile every consumer.
 
 ### 2. The Configuration Phase Trap
 
-The Configuration Phase runs *every single time* you interact with Gradle, even if you are just asking it for a list of available tasks.
+Without a reusable configuration-cache entry, Gradle configures the requested build. A compatible configuration-cache hit reuses the stored graph and skips configuration; keep configuration work declarative and cache-compatible.
 
 ```kotlin
 // INCREDIBLY BAD build.gradle.kts
@@ -100,8 +100,8 @@ Because the `build.gradle.kts` file is evaluated during the Configuration Phase,
 ### 3. Build Cache and Build Scans
 
 A Staff Engineer implements a Remote Build Cache. 
-If Developer Alice compiles the `app` module on her laptop, Gradle creates a cryptographic hash of the input `.kt` files and uploads the resulting compiled `.class` files to a server.
-If Developer Bob pulls Alice's branch and hits "Build", Bob's Gradle calculates the same hash, asks the server if it has the result, and downloads the `.class` files instantly. Bob's laptop performs *zero* compilation.
+Eligible cacheable tasks use keys covering task implementation/classpath, declared input property values and relevant build logic, not only .kt contents. A remote hit restores declared outputs as FROM-CACHE.
+A compatible hit restores that task's outputs without executing its compiler action. Other tasks may still run; UP-TO-DATE describes matching outputs already present locally, not remote retrieval.
 
 ## Architecture
 
@@ -117,11 +117,11 @@ graph TD
         DAG --> T2[Task: mergeResources]
         
         T1 -->|Inputs unchanged?| Cache1{Check Cache}
-        Cache1 -->|Cache Hit| Skip1[Skip Task - UP-TO-DATE]
+        Cache1 -->|Cache Hit| Skip1[Restore outputs - FROM-CACHE]
         Cache1 -->|Cache Miss| Run1[Execute Kotlin Compiler]
         
         T2 -->|Inputs unchanged?| Cache2{Check Cache}
-        Cache2 -->|Cache Hit| Skip2[Skip Task - UP-TO-DATE]
+        Cache2 -->|Cache Hit| Skip2[Restore outputs - FROM-CACHE]
     end
 ```
 
@@ -129,11 +129,11 @@ graph TD
 
 **Modularization for Build Speed**
 
-A monolithic app (all code in one `app/` module) fundamentally breaks Gradle's ability to parallelize and cache work. If you have 500,000 lines of code in one module, and you change one string, Gradle must feed all 500,000 lines into the Kotlin compiler to ensure no references were broken.
+Kotlin/JVM incremental compilation is enabled by default and recompiles affected sources rather than every line after any edit. Module boundaries can still improve parallelism and ABI isolation; measure their configuration and compilation tradeoffs.
 
 A Staff Engineer splits the app into 100 isolated modules (e.g., `:feature:login`, `:feature:feed`, `:core:network`). 
 - When `compileDebugKotlin` runs, Gradle utilizes all 10 cores of the developer's Macbook to compile 10 independent modules simultaneously in parallel.
-- If you modify `:feature:login`, Gradle only recompiles `:feature:login` and the `:app` wrapper. The other 98 modules are pulled instantly from the cache.
+- A feature edit may recompile affected sources and downstream consumers according to ABI changes. Unchanged task outputs are normally UP-TO-DATE locally; eligible missing outputs may instead be restored FROM-CACHE.
 
 ## Tradeoffs
 
@@ -155,7 +155,7 @@ A Staff Engineer splits the app into 100 isolated modules (e.g., `:feature:login
   *(Fix: Migrate aggressively from KAPT to KSP (Kotlin Symbol Processing), which parses Kotlin AST directly without generating Java stubs, running up to 2x faster).*
 - **Transitive Dependency Conflicts:**
   Module A depends on `Retrofit 2.9`. Module B depends on `Retrofit 2.4`. Gradle silently resolves this by forcing the entire app to use `2.9` (the highest version). If `2.9` introduced a breaking API change, Module B will crash at runtime with a `NoSuchMethodError`.
-  *(Fix: Use a Gradle Version Catalog (`libs.versions.toml`) to centralize all dependencies, or enforce strict dependency resolution strategies).*
+  *(A version catalog centralizes requested coordinates but does not enforce selected conflict versions. Use appropriate constraints/platforms, strict versions, locking or resolution policy, then inspect the resolved graph.)*
 - **Daemon Memory Leaks:**
   The Gradle Daemon is a long-running background Java process. To speed up builds, it keeps the task graph and compilers hot in memory. Over the course of a day, it can easily balloon to 8GB of RAM, starving Android Studio and causing the OS to thrash the swap file, destroying performance.
   *(Fix: Configure `org.gradle.jvmargs` with sensible limits (`-Xmx4g`) and periodically kill the daemon (`./gradlew --stop`) if the machine becomes unresponsive).*
@@ -166,12 +166,12 @@ When auditing a slow build system, a Staff engineer does not guess. They use dat
 
 1.  **Build Scans:** I run `./gradlew assembleDebug --scan`. This uploads the entire build trace to Gradle Enterprise. It provides a visual waterfall chart of exactly which tasks took the longest, which tasks missed the cache (and *why* their inputs changed), and how much time was spent in garbage collection.
 2.  **Configuration Caching:** I enforce `org.gradle.configuration-cache=true`. This feature allows Gradle to serialize the entire Task DAG to disk. On the next build, it skips reading the `build.gradle.kts` files entirely and jumps straight to execution. It shaves 5-10 seconds off every incremental build.
-3.  **Dynamic Versioning is Banned:** I actively reject any PR containing `implementation("com.squareup.retrofit2:retrofit:2.+")`. Dynamic versions force Gradle to constantly hit the network during the Configuration phase to check for new versions, destroying reproducibility and slowing down builds.
+3. **Reproducible dependencies:** Prefer pinned, governed versions. Gradle caches dynamic/changing versions for 24 hours by default; network access follows cache policy and refreshes, not every configuration. Dynamic resolution can still make builds differ over time.
 
 ## Common Misconceptions
 
 - **"Gradle compiles my Kotlin code."** No. The `KotlinCompile` task (provided by the Kotlin Gradle Plugin) invokes the `kotlinc` compiler. Gradle just tells it when to run and hands it the correct folder paths.
-- **"Cleaning the project fixes build errors."** Calling `./gradlew clean` deletes the `build/` directory. This destroys the local build cache. If you have to `clean` to get a successful build, your build graph is mathematically corrupt (a task is failing to declare its inputs or outputs correctly). A Staff Engineer fixes the broken task; they don't accept `clean` as a workflow.
+- **"Cleaning the project fixes build errors."** `./gradlew clean` deletes project build outputs; it does not normally delete the local build cache in Gradle User Home. Gradle can restore eligible outputs from that cache afterward. Repeated clean-only recovery warrants investigating task inputs/outputs, stale generated files, plugin defects or environmental state; it is not proof of one particular cause.
 
 ## Probing Questions
 
@@ -193,11 +193,11 @@ When auditing a slow build system, a Staff engineer does not guess. They use dat
 2. **Explain the fundamental difference between Gradle's "Configuration Phase" and "Execution Phase".**
    The Configuration Phase evaluates all `build.gradle.kts` files to construct the task DAG, executing any top-level code in those scripts. The Execution Phase walks the constructed DAG and actually runs the actions (`doLast`, `doFirst`) of the tasks needed for the build.
 3. **Why is it an architectural disaster to execute network requests or heavy disk I/O directly inside a `build.gradle.kts` configuration block?**
-   Because the Configuration Phase runs every time Gradle is invoked—even for simple commands like `./gradlew tasks` or IDE syncs. Heavy I/O blocks the main build thread, drastically slowing down every interaction with the build system before any real compilation even starts.
+   Configuration work runs when the build needs configuration. A compatible configuration-cache hit reuses its graph; expensive eager I/O still slows misses and can make caching incompatible.
 4. **Describe the exact difference between the `implementation` and `api` dependency configurations regarding module visibility and "Avalanche Compilation".**
-   `api` leaks the dependency to downstream consumers, meaning if the dependency changes, all downstream modules must be recompiled (Avalanche Compilation). `implementation` hides the dependency, strictly limiting the recompilation blast radius to only the module directly declaring it.
+   api exposes a dependency on consumer compile classpaths; implementation hides it. ABI snapshots and affected-source analysis determine actual recompilation, so neither keyword establishes an all-or-nothing cascade for every change.
 5. **How does a Remote Build Cache prevent a developer's laptop from executing the `KotlinCompile` task if a coworker has already compiled the exact same code on another machine?**
-   Gradle hashes the exact inputs of the `KotlinCompile` task (source files, compiler version, classpath). It checks the Remote Build Cache server with this hash; if the server has the compiled outputs, Gradle downloads them instantly and marks the task as `UP-TO-DATE`, skipping local compilation.
+   The cache key covers the declared task inputs and implementation. A compatible restored result is FROM-CACHE; matching existing local outputs are UP-TO-DATE. Neither requires every unchanged module to download anything.
 6. **Explain why breaking a monolithic Android application into 100 smaller modules drastically improves incremental compilation speeds.**
    It splits a massive codebase into independent nodes in the DAG. When a single file changes, Gradle only recompiles that specific module and its direct dependents, pulling the rest instantly from the cache, while also allowing independent modules to compile in parallel across multiple CPU cores.
 7. **What is the `KAPT` (Kotlin Annotation Processing Tool) bottleneck, and how does migrating to `KSP` (Kotlin Symbol Processing) resolve it?**
@@ -205,7 +205,7 @@ When auditing a slow build system, a Staff engineer does not guess. They use dat
 8. **If Gradle resolves a transitive dependency conflict by silently choosing the highest version number (e.g., v2.9 over v2.4), how can this lead to a `NoSuchMethodError` at runtime?**
    If module A expects v2.4 and uses a specific method, but Gradle forces the app to use v2.9 which removed or altered that method (breaking API change), the compiler won't catch it for module A since it was compiled against v2.4. At runtime, the JVM will crash trying to invoke the missing method.
 9. **Why does a Staff Engineer consider the reliance on `./gradlew clean` to be a symptom of a corrupt build architecture rather than a standard development practice?**
-   Because Gradle's incremental build and caching are mathematically designed to be 100% reliable based on inputs/outputs. If `clean` is required to fix a build, it means a task is failing to declare its inputs/outputs correctly, polluting the cache. Fixing the broken task is the real solution.
+   Correct task inputs, outputs and dependencies support reliable incremental builds and cache reuse. Repeated clean-only recovery is a diagnostic signal, not proof of a mathematically corrupt graph: investigate stale outputs, task declarations, plugin defects and environmental differences. Clean removes project outputs, not the shared build cache.
 10. **Describe the purpose of the Gradle Daemon, why it keeps compilers "hot" in memory, and how it can negatively impact OS performance over a long workday.**
     The Daemon is a long-lived background JVM process that keeps the build graph, task history, and JIT-optimized compilers (like Kotlin) hot in memory to avoid JVM startup overhead on every build. Over time, memory leaks in plugins or heavy allocations cause its heap to balloon, starving the OS and IDE of RAM and triggering system-wide swap thrashing.
 
@@ -215,3 +215,11 @@ When auditing a slow build system, a Staff engineer does not guess. They use dat
 - [`app-size-and-r8.md`](../performance/app-size-and-r8.md) — The specific AGP task that executes during the Release build pipeline to shrink the APK.
 - [Gradle Documentation: The Build Lifecycle](https://docs.gradle.org/current/userguide/build_lifecycle.html)
 - [Migrate to built-in Kotlin](https://developer.android.com/build/migrate-to-built-in-kotlin) — AGP 9 migration and temporary opt-out guidance.
+
+### Official verification references
+
+- [Primary documentation or owning implementation](https://docs.gradle.org/current/userguide/build_cache.html)
+- [Primary documentation or owning implementation](https://docs.gradle.org/current/userguide/configuration_cache.html)
+- [Primary documentation or owning implementation](https://docs.gradle.org/current/userguide/dependency_caching.html)
+- [Primary documentation or owning implementation](https://docs.gradle.org/current/userguide/version_catalogs.html)
+- [Primary documentation or owning implementation](https://kotlinlang.org/docs/gradle-compilation-and-caches.html)

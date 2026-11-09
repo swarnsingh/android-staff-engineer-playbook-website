@@ -299,7 +299,7 @@ When reviewing data persistence, a Staff engineer focuses on access patterns:
 7. **How does `DataStore` guarantee that multiple coroutines attempting to write data simultaneously do not corrupt the file? (Hint: Think about `edit()`).**
    Under the hood, DataStore uses a Kotlin `Mutex`. When multiple coroutines call `edit()` concurrently, the mutex queues the updates sequentially, ensuring that each read-modify-write cycle is atomic.
 8. **When observing a `DataStore` flow in a Repository, why is it critical to include a `.catch { }` block? What specific `Exception` are you looking for?**
-   It is critical to catch `IOException`. This exception is thrown if the file is corrupted, unreadable, or not found on disk. Catching it allows you to gracefully emit an empty/default preference object instead of crashing the app.
+   Handle IOException from actual I/O/read failures according to the application's recovery policy. An absent file normally yields the serializer defaultValue rather than a file-not-found failure. A serializer can throw CorruptionException for invalid bytes; do not treat every storage problem as a reason to silently replace authoritative data.
 9. **Explain the concept of "Migration" in DataStore and how you can seamlessly transfer existing `SharedPreferences` data into a new DataStore file.**
    DataStore accepts a `SharedPreferencesMigration` object during creation. On the first read, DataStore intercepts the call, copies the specified keys from the legacy XML file into the new DataStore file, saves it, deletes the old XML file, and proceeds, ensuring a safe, one-shot transition.
 10. **Why does storing a massive list of 10,000 strings in `DataStore` cause significant memory and performance issues compared to storing them in `Room`?**
@@ -310,3 +310,7 @@ When reviewing data persistence, a Staff engineer focuses on access patterns:
 - [`room.md`](room.md) — The tool for complex, relational data.
 - [`flow.md`](../architecture/flow.md) — The reactive stream that powers DataStore reads.
 - [Android Developers: DataStore](https://developer.android.com/topic/libraries/architecture/datastore)
+
+### Official verification references
+
+- [Primary documentation or owning implementation](https://raw.githubusercontent.com/androidx/androidx/androidx-main/datastore/datastore-core/src/jvmAndAndroidMain/kotlin/androidx/datastore/core/FileStorage.kt)

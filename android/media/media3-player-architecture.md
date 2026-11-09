@@ -39,11 +39,11 @@ Design both against the same cache instance so a completed download also serves 
 
 ## 4. DRM
 
-Widevine ships in two effective flavors: **L1** (hardware-backed pipeline — required by licensors for HD/UHD) and **L3** (software — typically capped to SD by content policy). `DefaultDrmSessionManager` handles license acquisition and renewal; your decisions are policy:
+Widevine security levels describe protection capabilities, not a universal resolution entitlement. ExoPlayer integrates with Android MediaDrm; license, content-provider, device and output-protection policies determine what may play.
 
-- **Fallback:** on devices where L1 is broken or unavailable, do you fall back to L3 at reduced resolution or fail playback? (Almost always: fall back, cap the track selection, log the device.)
+- **Fallback:** Establish whether the provider permits software-protected playback, a lower rendition, or no playback. Implement only the licensed policy; do not assume L3 fallback is always permitted.
 - **Offline licenses:** downloaded content needs persistent licenses with their own expiry — renewal is a background-work problem (WorkManager), and a library full of downloaded video with expired licenses is a support-ticket generator.
-- The pairing of DRM level and track selection is enforced in the `TrackSelector`: don't offer 1080p renditions to an L3 session.
+- Track-selection constraints can enforce an application's selected rendition policy, but entitlement and secure-decoder/output requirements also involve the DRM session, license and device pipeline. TrackSelector alone does not grant playback rights.
 
 ## 5. Adaptive Streaming
 
@@ -51,7 +51,7 @@ DASH and HLS support is native; the player's ABR logic shifts renditions with th
 
 ## 6. Player-as-Platform: the Single-Instance Question
 
-Decoders are a constrained hardware resource; every live `ExoPlayer` holds one or more. The standard scaled architecture is a small **player pool** (often size 1–2) owned by a playback module:
+Decoders are constrained resources, but allocation depends on player state, tracks and configuration. Constructing an ExoPlayer does not imply a fixed active decoder count. A bounded player pool can control ownership; choose its size from measured device/content needs and release players at the ownership boundary.
 
 - Feed autoplay acquires a pooled player, binds it to the visible tile, releases on scroll-away.
 - Full-screen playback *transfers* the same player (position, buffered data, and state travel with it) instead of re-preparing — this is what makes tile→full-screen transitions instant.
@@ -71,3 +71,10 @@ Media3 1.10 added a Compose UI layer split across two artifacts: **`media3-ui-co
 - [Media3 releases](https://developer.android.com/jetpack/androidx/releases/media3) — current versions and release notes
 - [Media3 1.10 announcement](https://android-developers.googleblog.com/2026/03/media3-110-is-out.html) — Compose playback widgets, dynamic scheduling
 - [YouTube / Video Streaming design](../../mobile-system-design/youtube-video-streaming.md) — the system-design view this file implements
+
+### Official verification references
+
+- [Primary documentation or owning implementation](https://developer.android.com/media/media3/exoplayer/drm)
+- [Primary documentation or owning implementation](https://developer.android.com/media/media3/exoplayer/track-selection)
+- [Primary documentation or owning implementation](https://developer.android.com/reference/androidx/media3/exoplayer/ExoPlayer#setForegroundMode(boolean))
+- [Primary documentation or owning implementation](https://developers.google.com/widevine/drm/overview)

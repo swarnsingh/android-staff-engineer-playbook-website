@@ -16,7 +16,7 @@ Structured Concurrency mathematically eliminates Zombie Tasks.
 
 ## Historical Context
 
-The concept of Structured Concurrency didn't originate in Kotlin; it was heavily popularized by Martin Sústrik (the creator of ZeroMQ) and implemented in languages like Go and Python (to a degree). 
+Structured concurrency scopes concurrent work so the enclosing operation waits for its children and defines cancellation/error propagation. Kotlin provides coroutineScope and supervisorScope; Python offers task groups. Go's bare go statement does not impose this lifetime structure, although libraries such as errgroup.WithContext support scoped patterns.
 
 The premise is simple: just as `goto` statements in early programming languages made control flow impossible to trace (leading to "Spaghetti Code"), "fire and forget" threads made asynchronous flow impossible to trace. Structured Concurrency brings `try/catch/finally` block-level scoping to asynchronous threads.
 
@@ -129,13 +129,18 @@ By default, Structured Concurrency is ruthless. If one child fails, the whole fa
     - *Use Case:* Uploading 5 independent photos. If Photo 3 fails, you still want Photos 1, 2, 4, and 5 to finish uploading.
 
 ```kotlin
-// SupervisorScope Example
 viewModelScope.launch {
     supervisorScope {
-        // These are completely independent now!
-        val upload1 = launch { api.uploadPhoto(1) } // Fails!
-        val upload2 = launch { api.uploadPhoto(2) } // Succeeds!
-    }
+        for (photoId in listOf(1, 2)) launch {
+            try {
+                api.uploadPhoto(photoId)
+            } catch (cancelled: CancellationException) {
+                throw cancelled
+            } catch (failure: IOException) {
+                reportUploadFailure(photoId, failure)
+            }
+        }
+    } // waits for both children; each expected failure has an owner
 }
 ```
 
@@ -211,3 +216,9 @@ When reviewing concurrency code, a Staff engineer looks for rogue execution and 
 - [`viewmodel.md`](viewmodel.md) — The owner of `viewModelScope`.
 - [`flow.md`](flow.md) — How Structured Concurrency applies to infinite streams of data.
 - [Kotlin Docs: Coroutine Context and Dispatchers](https://kotlinlang.org/docs/coroutine-context-and-dispatchers.html)
+
+### Official verification references
+
+- [Primary documentation or owning implementation](https://go.dev/ref/spec#Go_statements)
+- [Primary documentation or owning implementation](https://kotlinlang.org/docs/exception-handling.html)
+- [Primary documentation or owning implementation](https://pkg.go.dev/golang.org/x/sync/errgroup)

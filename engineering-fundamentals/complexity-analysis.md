@@ -10,11 +10,11 @@ Mobile devices are highly constrained environments. A desktop backend can often 
 
 ## Historical Context
 
-Big-O notation originated in mathematics (formally introduced by Paul Bachmann in 1894 and popularized by Edmund Landau). Donald Knuth introduced it to computer science in the 1970s. It remains the universal language of performance analysis, allowing engineers to discuss the efficiency of an approach independent of language, compiler, or processor speed.
+Big-O notation originated in mathematics (formally introduced by Paul Bachmann in 1894 and popularized by Edmund Landau). Knuth's 1976 paper clarified the use of O, Omega and Theta notation in algorithm analysis. It remains the universal language of performance analysis, allowing engineers to discuss the efficiency of an approach independent of language, compiler, or processor speed.
 
 ## First Principles
 
-1.  **Focus on the Growth Rate:** Complexity is about *scaling*, not absolute speed. An $O(N^2)$ algorithm might be faster than an $O(N)$ algorithm for $N=10$, but the $O(N)$ algorithm will always win as $N \rightarrow \infty$.
+1.  **Focus on the Growth Rate:** Complexity describes scaling, not measured speed. Big-O is an asymptotic upper bound, so an algorithm with linear growth is also $O(N^2)$. Compare tight bounds, such as $\Theta(N)$ and $\Theta(N^2)$, before claiming that one eventually grows more slowly.
 2.  **Worst-Case Matters Most:** While average-case is useful, mobile engineering heavily weights the worst-case scenario. If the worst case blocks the main thread for 200ms, you will drop frames.
 3.  **Space vs. Time Tradeoff:** You can often reduce Time Complexity by increasing Space Complexity (e.g., using a Hash Map to cache lookups), or vice versa.
 
@@ -30,8 +30,8 @@ The standard complexity classes encountered in mobile engineering:
 
 | Notation | Name | Description | Common Android Example |
 | :--- | :--- | :--- | :--- |
-| **$O(1)$** | Constant | Time does not depend on input size. | `HashMap.get()`, reading an array index. |
-| **$O(\log N)$** | Logarithmic | Time increases slowly; input is halved each step. | Binary search, looking up a record in an indexed SQLite table. |
+| **$O(1)$** | Constant | Time does not depend on input size. | Average `HashMap.get()` with well-distributed hashes; reading an array index. |
+| **$O(\log N)$** | Logarithmic | Time increases slowly; input is halved each step. | Binary search; locating an indexed key before accounting for matching output rows. |
 | **$O(N)$** | Linear | Time increases directly with input size. | Iterating over a `RecyclerView.Adapter` list, parsing a JSON array. |
 | **$O(N \log N)$**| Linearithmic | slightly worse than linear. | Sorting a list (`Collections.sort()`). |
 | **$O(N^2)$** | Quadratic | Time explodes as input grows. Double loops. | Comparing every item in a list against every other item. |
@@ -80,11 +80,11 @@ graph TD
 
 **Diffing Lists for RecyclerView**
 
-Before `DiffUtil`, updating a `RecyclerView` often meant calling `notifyDataSetChanged()`, forcing the entire list to re-render: $O(N)$ layout passes.
+`notifyDataSetChanged()` invalidates the data set; RecyclerView must rebind and relayout visible views, not perform one layout pass for every item in the full list.
 
-To be smarter, you could compare the old list and new list to find the exact insertions and deletions. If you do this naively (nested loops comparing every old item to every new item), it's $O(N^2)$. For a list of 10,000 items, that's 100,000,000 operations—a guaranteed ANR.
+A naive old-by-new comparison can perform N×M comparisons. At 10,000 items on each side that is 100,000,000 comparisons; whether this causes an ANR depends on the work, calling thread and elapsed time.
 
-Android's `DiffUtil` uses Eugene Myers' difference algorithm to calculate the minimal number of updates in $O(N + D^2)$ time (where $N$ is total items and $D$ is the number of modifications). By offloading this to a background thread, the UI thread only receives the exact updates, keeping the render pass $O(D)$.
+`DiffUtil` documents $O(N)$ space and expected $O(N + D^2)$ time for its Myers-based difference calculation. Move detection can add $O(M \times N)$ work for added and removed items. Calculate large diffs off the main thread; precise adapter updates do not guarantee $O(D)$ layout or drawing time.
 
 ## Android Example
 
@@ -104,7 +104,7 @@ data class User(
     @ColumnInfo(name = "last_name") val lastName: String
 )
 ```
-By adding an index in Room, SQLite builds a B-Tree. The exact same query now executes in $O(\log N)$ time. For 1 million users, instead of 1,000,000 reads, it takes roughly 20 reads to find the data.
+The index lets SQLite seek the matching key range. If K rows match, it must still visit and return those rows; a non-covering index also fetches table records. SQLite models this example as roughly (K + 1) log N work, not a fixed 20 disk reads. Inspect the actual query plan and selectivity.
 
 ## Tradeoffs
 
@@ -119,7 +119,7 @@ By adding an index in Room, SQLite builds a B-Tree. The exact same query now exe
 ## Failure Modes
 
 - **The N+1 Query Problem:** Fetching a list of $N$ items (1 query), then looping through the list and executing another database query for each item ($N$ queries). You've turned a simple data fetch into an $O(N)$ network/disk bottleneck. (Fix: Use `JOIN` or `IN` clauses to fetch everything in $O(1)$ queries).
-- **String Concatenation in Loops:** Strings are immutable in Kotlin/Java. Doing `str += "a"` in a loop of size $N$ doesn't just take $O(N)$ time; it creates a new string object and copies the characters every iteration, making it $O(N^2)$ time and $O(N^2)$ space (garbage collection nightmare). (Fix: Use `StringBuilder`).
+- **String Concatenation in Loops:** Repeatedly appending a fixed-size fragment to an immutable String can copy 1 + 2 + … + N characters: $O(N^2)$ total copying and allocation. Peak live storage can remain $O(N)$ if older strings are not retained. Use a StringBuilder to avoid copying the full prefix on every append.
 - **Assuming standard library functions are O(1):** Assuming `list.removeAt(0)` is fast. On an `ArrayList`, removing the first element requires shifting every other element left. It is an $O(N)$ operation. In a loop, it becomes $O(N^2)$.
 
 ## Staff Engineer Thinking
@@ -127,7 +127,7 @@ By adding an index in Room, SQLite builds a B-Tree. The exact same query now exe
 When reviewing code, a Staff engineer focuses on the hidden multipliers:
 
 1.  **What is the maximum bound of N?** If $N$ is the number of tabs a user can open, it might be capped at 10. $O(N^2)$ is fine. If $N$ is the number of rows in a local chat database, it could be 5,000,000. Any $O(N)$ operation on the main thread is a ticking time bomb.
-2.  **Are we crossing boundaries inside the loop?** An $O(N)$ algorithm that just adds integers is microsecond-fast. An $O(N)$ algorithm that makes an IPC call (like reading `SharedPreferences` or querying the `ContentResolver`) on each iteration will freeze the app. The *cost of the constant* matters.
+2.  **Are we crossing boundaries inside the loop?** An $O(N)$ algorithm that just adds integers is microsecond-fast. An $O(N)$ loop that performs ContentResolver IPC or repeated storage work can have a large elapsed cost. SharedPreferences reads normally use an in-process map, although they can wait for its initial load; they are not themselves Binder IPC. The *cost of the constant* matters.
 3.  **Is Space Complexity killing Time Complexity?** Allocating huge numbers of temporary objects inside a tight loop might have good theoretical time complexity, but the Garbage Collector will pause the app (Stop-The-World) to clean up the mess, causing extreme jank.
 
 ## Common Misconceptions
@@ -151,7 +151,7 @@ When reviewing code, a Staff engineer focuses on the hidden multipliers:
 ## Answer Key
 
 1. **Explain why appending to a `StringBuilder` in a loop is $O(N)$, but appending to a standard `String` is $O(N^2)$.**
-   `StringBuilder` modifies an underlying character array directly ($O(1)$ per append), whereas `String` is immutable, meaning every append creates a new copy of the entire string up to that point ($O(K)$ per iteration), leading to an $O(N^2)$ total runtime.
+   For fixed-size fragments, a growing StringBuilder has amortized constant append cost; a resize can copy the buffer. Repeated immutable-string concatenation copies the growing prefix, giving $O(N^2)$ total copied characters for this loop. Appending a fragment of length K still costs at least $O(K)$.
 2. **What is the time complexity of searching for an item in a `HashSet`? What happens in the worst-case scenario (hash collision)?**
    Average time complexity is $O(1)$. In the worst-case scenario with extreme hash collisions, elements are stored in a linked list or tree within the same bucket, degrading performance to $O(N)$ or $O(\log N)$.
 3. **Why is `DiffUtil` calculated on a background thread if its complexity is heavily optimized?**
@@ -163,11 +163,11 @@ When reviewing code, a Staff engineer focuses on the hidden multipliers:
 6. **How does the underlying data structure of Kotlin's `List` (e.g., `ArrayList` vs `LinkedList`) affect the time complexity of `get(index)` and `add(0, item)`?**
    For `ArrayList`, `get` is $O(1)$ but `add(0)` is $O(N)$ because elements must be shifted. For `LinkedList`, `get` is $O(N)$ (requires traversal) but `add(0)` is $O(1)$ (just updating a pointer).
 7. **What is the time complexity of `SharedPreferences.apply()` vs `SharedPreferences.commit()`?**
-   Both perform disk I/O. `apply()` does it asynchronously in the background (returning instantly, appearing $O(1)$ to the calling thread), while `commit()` does it synchronously, blocking the thread until disk I/O completes ($O(1)$ disk operation but with massive constant-time overhead).
+   Both first apply edits to the in-memory preferences. apply() schedules persistence asynchronously and does not report a disk-write result; commit() waits for persistence and returns success. Neither API promises $O(1)$ caller work or an instant return: cost depends on edits, map size, synchronization and persistence work.
 8. **Why is it dangerous to perform an $O(N)$ operation inside `onDraw()` of a custom View?**
    `onDraw()` is called very frequently (up to 60 or 120 times per second). An $O(N)$ operation here can easily blow past the 16ms frame budget, causing severe frame drops.
 9. **Explain the concept of "Amortized Time Complexity" using the resizing of an `ArrayList` as an example.**
-   Adding an element to an `ArrayList` is usually $O(1)$. When it hits capacity, it must copy all elements to a new array ($O(N)$). However, because it doubles in size, this expensive operation happens rarely, so the *average* cost per addition over time remains $O(1)$.
+   Appending is amortized $O(1)$: occasional growth copies existing elements, but a sequence of N appends takes $O(N)$ total work. The Java API does not specify a doubling growth factor. Amortized cost is a bound over a sequence, not a probabilistic average-case claim.
 10. **Can an algorithm have a great theoretical Big-O but terrible real-world performance on a mobile CPU? Provide an example.**
     Yes, if it has a massive constant factor or terrible cache locality. For example, traversing a linked list ($O(N)$) can be significantly slower than traversing a contiguous array ($O(N)$) because jumping around the heap ruins CPU cache lines.
 
@@ -177,3 +177,17 @@ When reviewing code, a Staff engineer focuses on the hidden multipliers:
 
 - [`performance.md`](../mobile-system-design/performance.md) — How complexity translates to frame drops.
 - [`caching.md`](caching.md) — The ultimate tradeoff: increasing Space Complexity to reduce Time Complexity.
+
+### Official verification references
+
+The corrections in this chapter were checked against the following primary references.
+
+- [xlinux.nist.gov: bigOnotation.html](https://xlinux.nist.gov/dads/HTML/bigOnotation.html)
+- [docs.oracle.com: HashMap.html](https://docs.oracle.com/en/java/javase/25/docs/api/java.base/java/util/HashMap.html)
+- [www.sqlite.org: queryplanner.html](https://www.sqlite.org/queryplanner.html)
+- [github.com: DiffUtil.java](https://github.com/androidx/androidx/blob/androidx-main/recyclerview/recyclerview/src/main/java/androidx/recyclerview/widget/DiffUtil.java)
+- [developer.android.com: diagnose-and-fix-anrs](https://developer.android.com/topic/performance/anrs/diagnose-and-fix-anrs)
+- [docs.oracle.com: StringBuilder.html](https://docs.oracle.com/en/java/javase/25/docs/api/java.base/java/lang/StringBuilder.html)
+- [android.googlesource.com: SharedPreferencesImpl.java](https://android.googlesource.com/platform/frameworks/base/+/refs/heads/main/core/java/android/app/SharedPreferencesImpl.java)
+- [developer.android.com: SharedPreferences.Editor](https://developer.android.com/reference/android/content/SharedPreferences.Editor)
+- [docs.oracle.com: ArrayList.html](https://docs.oracle.com/en/java/javase/25/docs/api/java.base/java/util/ArrayList.html)

@@ -1,23 +1,16 @@
 # Compose Stability — `@Stable`, `@Immutable`, and Why Your UI Recomposes
 
-> Skippable recomposition is the difference between a buttery 60fps Compose UI and a stuttery one. The compiler decides what's skippable based on **stability**. Most perf bugs in production Compose apps trace to a single unstable parameter forcing an entire sub-tree to recompose every frame. Staff-level mastery is reading the Compose compiler metrics, knowing exactly which types are inferred stable, knowing when to annotate `@Immutable` vs `@Stable`, and using `ImmutableList` for collections — all without breaking the cache.
+> Compose can skip eligible work when inputs compare unchanged. Stability, identity reuse, state observation and the compiler mode determine that decision. Learn to read compiler reports, choose honest `@Immutable`/`@Stable` contracts and measure the work that actually affects a frame.
 
 ---
 
 ## Why Stability Matters
 
-Compose's smart recomposition decision rule:
+With strong skipping enabled (the default since Kotlin 2.0.20), restartable composables can be skipped even with unstable parameters. Stable arguments compare with `equals()`; unstable arguments compare by reference identity (`===`). An invalidated scope still runs.
 
-> When a parent recomposes, for each child `@Composable` call:
-> 1. Are all parameters **stable** types?
-> 2. If yes — compare each with `equals()` to its previous value.
-> 3. If none changed — **skip** the child's body entirely.
-> 4. If any parameter is unstable — **always re-run** the child, regardless.
+A list recreated on each parent recomposition is a different reference even when its contents are equal. Reusing an unchanged instance can permit skipping; it does not make mutation observable. Under the older non-strong-skipping model, unstable parameters made a composable unskippable.
 
-That last point is the killer. **One unstable parameter forces every recomposition.** A `LazyColumn` with 1000 rows that pass an unstable `List` will recompose every row, every frame, every time anything changes.
-
-Smart recomposition is what makes Compose performant. Stability is what unlocks it. Get this wrong and Compose performs worse than the View system you migrated from.
-
+Use compiler reports and runtime measurements to distinguish input changes, state invalidation and expensive work. Stability alone does not establish a frame-rate outcome.
 ---
 
 ## The Skipping Decision — Compose Compiler Output
@@ -39,13 +32,13 @@ Every `@Composable` function ends up in one of these classifications (visible in
 
 | Classification | Re-runs when parent recomposes? | Re-runs when own state changes? |
 |---|---|---|
-| **Restartable + Skippable** | Only if any input changed via `equals` | Yes |
+| **Restartable + Skippable** | When required by invalidation or changed inputs (stable: `equals`; unstable with strong skipping: `===`) | Yes |
 | **Restartable, NOT Skippable** | **Always** (any time parent runs) | Yes |
 | **Not Restartable / Inline** | When call site recomposes | n/a — inlined into parent |
 
 The goal: **every `@Composable` with parameters should be both restartable AND skippable**.
 
-A function is **not skippable** if any parameter is unstable.
+Without strong skipping, an unstable parameter makes the composable unskippable. With strong skipping, restartable composables remain eligible for skipping, subject to invalidation and argument comparison.
 
 ---
 
@@ -67,7 +60,7 @@ The Compose compiler classifies these as stable **without any annotation**:
 @Composable fun Button(onClick: () -> Unit) { /* depends */ }
 ```
 
-Lambda expressions compile to stable types, and the Compose compiler **automatically memoizes** a lambda — wraps it in `remember`, keyed on its captures — when everything it captures is stable. So `{ vm.processIntent(it) }` reuses the same instance across recompositions as long as `vm` is stable. If a lambda captures a `var` or an unstable value, it can't be memoized (before Strong Skipping) and a fresh instance is allocated per recomposition, breaking skipping in every child it's passed to.
+Lambda types are stable. With strong skipping enabled, the compiler remembers lambdas inside composables using stable captures with equality and unstable captures with identity. Older compiler modes had narrower memoization rules. Audit captures and toolchain mode rather than assuming callback syntax determines allocation.
 
 What matters is **what the lambda captures**, not lambda-vs-reference syntax. Method references (`vm::processIntent`) behave equivalently on current compilers — but note they were historically the *buggy* case: the Compose compiler failed to memoize (adapted) function references until fixes landed in Compose compiler 1.5.1 and 1.5.5, so on older toolchains `vm::processIntent` allocated a new instance every recomposition while the equivalent lambda did not. If you're on a pre-1.5.5 compiler, prefer lambdas; on anything current, pick whichever reads better and audit the captures instead.
 
@@ -100,13 +93,13 @@ The state holders themselves are annotated `@Stable`. Their wrapped values are t
 ### Interfaces and abstract types
 
 ```kotlin
-@Composable fun ItemRow(items: List<Item>) { /* NOT skippable ❌ */ }
-@Composable fun Lookup(map: Map<String, User>) { /* NOT skippable ❌ */ }
+@Composable fun ItemRow(items: List<Item>) { /* unstable; identity compared with strong skipping */ }
+@Composable fun Lookup(map: Map<String, User>) { /* unstable; identity compared with strong skipping */ }
 ```
 
 The compiler can't see the implementation of `List`, `Map`, `Set`. Anything could be a mutable subclass. Conservatively classified as unstable.
 
-This is the **#1 source of unintentional unstable params**. Every `LazyColumn(items: List<T>)` you write is potentially the unstable parameter killing your perf.
+An unstable collection type affects how arguments are compared. With strong skipping, passing the same unchanged instance can skip a child; rebuilding an equal list changes identity. Measure the actual workload before attributing a performance problem to the type alone.
 
 ### `var` properties
 
@@ -126,9 +119,9 @@ data class Cart(val items: MutableList<Item>)   // NOT stable
 
 ### Types from other modules (sometimes)
 
-If `User` is defined in `:core:model` and Compose Compiler hasn't seen it yet when compiling `:feature:cart:impl`, it may be conservatively treated as unstable depending on the Compose compiler version.
+If User is defined in a separate module that was not processed by the Compose compiler, its stability may not be inferred in the UI module. This concerns compiler participation and the type's actual contract, not which module happened to compile first.
 
-Most apps fix this by annotating exported types in `:core:model` with `@Immutable` so the stability decision doesn't depend on compilation order.
+Options include processing the model module with the Compose compiler, wrapping genuinely immutable models at the UI boundary, or using a narrowly justified stability declaration/configuration. Verify the contract before adding an annotation; under strong skipping an unstable parameter can still skip by identity.
 
 ### Lambda that captures unstable
 
@@ -137,10 +130,10 @@ Most apps fix this by annotating exported types in `:core:model` with `@Immutabl
 fun Row(item: Item, onClick: () -> Unit) { /* depends on onClick */ }
 
 // At call site:
-Row(item, onClick = { items.add(it); save() })   // captures `items` (mutable) → onClick unstable
+Row(item, onClick = { items.add(item); save() }) // function type is stable; captures affect memoization
 ```
 
-Refactor: pass the necessary stable state through other params; keep lambdas tiny and free of mutable captures.
+Under strong skipping, this callback is remembered using its captures, including identity for unstable captures. Audit capture identity and observable mutation; do not rewrite a correct callback solely to remove a mutable capture.
 
 ---
 
@@ -212,7 +205,7 @@ The `===` detail is the practical catch: a structurally-equal-but-freshly-alloca
 
 ## Collections: `ImmutableList` and `PersistentList`
 
-`kotlinx.collections.immutable` provides truly immutable collection types that Compose treats as fully stable:
+kotlinx.collections.immutable provides immutable collection structure. Compose recognizes its supported collection types, but generic element stability and the surrounding model's other properties still matter. An immutable container does not make mutable elements stable:
 
 ```kotlin
 import kotlinx.collections.immutable.ImmutableList
@@ -243,7 +236,7 @@ dependencies {
 }
 ```
 
-For `:core:model` types, use `ImmutableList` in `data class` properties. Now the entire class is fully stable without `@Immutable` annotation.
+For core model properties, an immutable collection can remove one source of uncertain stability. The full class still needs an honest mutability contract and stable/observable member types; verify the compiler report rather than assuming the collection settles the whole class.
 
 ---
 
@@ -322,16 +315,16 @@ restartable skippable scheme("[androidx.compose.ui.UiComposable]") fun Greet(
   stable name: String
 )
 
-restartable fun CartScreen(   ← NOT skippable!
-  unstable cart: Cart            ← culprit
+restartable skippable fun CartScreen(   ← representative strong-skipping output
+  unstable cart: Cart            ← compared by identity with strong skipping
 )
 ```
 
-The audit is mechanical: find every `restartable fun X(` that's missing the `skippable` keyword. Each one is a perf opportunity.
+Inspect the actual compiler mode and reports. A missing skippable marker needs investigation, but it is not by itself proof of a performance defect or an unstable-parameter cause. Measure invalidation and expensive work on representative call paths.
 
 ### `<module>-module.json`
 
-Aggregate metrics: number of composables, % skippable, % stable classes. Track this over time as a build-output. A regression means someone introduced an unstable parameter.
+Track composable counts and stability/skipping classifications across comparable toolchains. A changed count can reflect compiler mode, source changes or report format; inspect the diff before attributing it to an unstable parameter.
 
 ---
 
@@ -395,10 +388,10 @@ Crude but effective. Or use the stability config file.
 
 | Symptom | Cause | Fix |
 |---|---|---|
-| LazyColumn re-renders every row on any change | `items` parameter is `List<T>` (unstable) | `ImmutableList<T>` or `@Immutable` wrapper |
-| Compose metrics show "NOT skippable" everywhere | All public APIs use `List` / `Map` | Migrate to `ImmutableList`; annotate model types |
+| Rows execute more often than expected | Changed arguments, observed-state invalidation, or work in the row | Inspect actual comparison/identity rules and traces before changing collection APIs |
+| Compose metrics show unexpected non-skippable functions | Compiler mode, non-restartable functions or API shape | Check compiler reports and strong-skipping configuration; measure affected call sites |
 | Frame rate drops after upgrading Compose Compiler | New stability rules made previously-stable types unstable | Re-run metrics; check `var` properties and 3rd-party deps |
-| `@Immutable` annotation has no effect | Class has a `var` somewhere | Cannot mix `@Immutable` and `var`; refactor to `val` |
+| UI stays stale after an @Immutable object mutates | The annotation promise was violated | Use an actually immutable object graph or observable mutable state; annotations do not enforce immutability |
 | Performance regression after migrating to `kotlinx.collections.immutable` | Excessive copying when building lists | Use `PersistentList` builder pattern |
 | Compose metrics output is empty | Plugin args not added to module's kotlinc | Verify `freeCompilerArgs` in build-logic |
 | Strong Skipping Mode doesn't kick in | Compiler version/configuration too old | Use Kotlin 2.0.20+ or explicitly enable it on an older supported compiler |
@@ -408,7 +401,7 @@ Crude but effective. Or use the stability config file.
 | `derivedStateOf` doesn't reduce recomposition | Block accessed mutable state outside it | Move all reads inside `derivedStateOf { }` |
 | `@Composable` with `Modifier` param recomposes every frame | Custom modifier creates new instance per recomposition | Use `Modifier.composed { }` carefully; `remember { }` static modifiers |
 | Cross-module type shows unstable | `@Immutable` not present on the model | Annotate in the `:api` module or use stability config |
-| `Composable` lambda parameter shows unstable | Lambda captures unstable state | Hoist captures; pass needed state as parameters |
+| Callback identity changes unexpectedly | Captures or compiler configuration changed | Inspect remembered captures and toolchain mode; do not infer lambda type stability from its captures |
 
 ---
 
@@ -472,6 +465,10 @@ Crude but effective. Or use the stability config file.
 - [`../architecture/mvvm-vs-mvi.md`](../architecture/mvvm-vs-mvi.md) — UI state design with stability in mind.
 - [Compose Compiler — Stability documentation](https://developer.android.com/jetpack/compose/performance/stability) — official.
 - [Strong Skipping Mode](https://developer.android.com/develop/ui/compose/performance/stability/strongskipping) — official behavior and configuration.
-- [Chris Banes — Composable metrics](https://chris.banes.dev/composable-metrics/) — practitioner's audit guide.
+- [Chris Banes — Composable metrics](https://chrisbanes.me/posts/composable-metrics/) — practitioner's audit guide.
 - [kotlinx.collections.immutable](https://github.com/Kotlin/kotlinx.collections.immutable) — `ImmutableList` / `PersistentList`.
 - [Compose stability guide](https://developer.android.com/develop/ui/compose/performance/stability) — current compiler stability model and remediation guidance.
+
+### Official verification references
+
+- [Primary documentation or owning implementation](https://developer.android.com/develop/ui/compose/performance/stability/fix)

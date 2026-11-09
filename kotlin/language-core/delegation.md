@@ -38,7 +38,7 @@ val heavyDb: Db by lazy { Room.databaseBuilder(...).build() }
 - `by hiltNavGraphViewModels(R.id.graph)` — scoped to a nav graph.
 - `by remember { mutableStateOf(...) }` — Compose state holder.
 - `var name by rememberSaveable { mutableStateOf("") }` — persists across config change.
-- Hilt's `@Inject lateinit var`, Compose's `LocalContext.current`, navArgs() — delegation under the hood.
+- `by navArgs()` uses a property delegate. Hilt field injection (`@Inject lateinit var`) and CompositionLocal reads (`LocalContext.current`) are different mechanisms.
 
 Knowing the delegate vocabulary is required to read Android code fluently.
 
@@ -65,7 +65,7 @@ interface Logger {
 
 class FileLogger(private val file: File) : Logger {
     override fun log(msg: String) = file.appendText("$msg\n")
-    override fun flush() = file.flush()
+    override fun flush() = Unit // appendText opens/closes its stream per call.
 }
 
 class TimestampedLogger(private val real: Logger) : Logger by real {
@@ -235,7 +235,7 @@ class Settings(prefs: SharedPreferences) {
 }
 ```
 
-Reading `settings.theme` triggers `getValue`; writing it triggers `setValue`. **But:** every read hits disk synchronously — see the failure mode below.
+Reading `settings.theme` triggers `getValue`; writing triggers `setValue`. SharedPreferences normally reads an in-memory map after initial loading; that initial load can block, so avoid assuming getters are always cheap.
 
 You can also write raw `operator fun getValue` / `setValue` without implementing the interface — works the same, but the interface form is clearer and IDE-discoverable.
 
@@ -244,7 +244,7 @@ You can also write raw `operator fun getValue` / `setValue` without implementing
 If your delegate needs `KProperty` info at init time (e.g., to register the property name with a system), implement `provideDelegate`:
 
 ```kotlin
-class Required<T>(private val source: Map<String, Any?>) : ReadOnlyProperty<Any?, T> {
+class Required<T : Any>(private val source: Map<String, Any?>) : ReadOnlyProperty<Any?, T> {
     private lateinit var value: T
 
     operator fun provideDelegate(
@@ -308,7 +308,7 @@ Two delegates stacked:
 
 ### `by rememberSaveable { mutableStateOf("") }`
 
-Same as `remember`, but the value is restored after process death via `SavedStateHandle`.
+Unlike remember alone, rememberSaveable restores supported UI values through the saved-instance-state/SaveableStateRegistry mechanism. SavedStateHandle is a separate state-holder API.
 
 ### `by argument()`, `by navArgs()`
 
@@ -388,13 +388,13 @@ private val title: TextView = itemView.findViewById(R.id.title)
 | Symptom | Cause | Fix |
 |---|---|---|
 | Delegated method calls stale instance | Delegated to a `var`; instance was reassigned | Use `val`; or manual forwarder if dynamic re-bind is needed |
-| `ConcurrentModificationException` on `lazy` initialization | Default `SYNCHRONIZED` mode + reentrant access from same thread | Restructure to avoid re-entrance; or use `PUBLICATION` |
+| Stack overflow or repeated initialization | Lazy initializer recursively reads its own uninitialized value | Remove the evaluation cycle; PUBLICATION does not resolve it |
 | UI jank when reading a property | Custom delegate does blocking I/O on the getter | Move I/O to a suspend function; name explicitly |
-| `IllegalArgumentException: Class is missing` after rotation | `by viewModels()` used without proper factory for constructor args | Provide a `ViewModelProvider.Factory` or use Hilt's `by hiltViewModel()` |
+| `IllegalArgumentException: Class is missing` after rotation | `by viewModels()` used without proper factory for constructor args | Provide a `ViewModelProvider.Factory` or the appropriate Hilt ViewModel integration (`by viewModels()` for an @AndroidEntryPoint Fragment; `hiltViewModel()` in Compose) |
 | Two Fragments don't share state | Used `by viewModels()` instead of `by activityViewModels()` | Scope correctly |
 | Compose recomposes infinitely | `by mutableStateOf` used inside `remember` block reading it back | Move read out of the side-effect closure |
 | `lateinit` won't compile for `Int` | `lateinit` doesn't support primitives | Use `Delegates.notNull<Int>()` |
-| `UninitializedPropertyAccessException` on `Delegates.notNull` | Property read before being set | Initialize before first read; or use `lateinit`-style alternative |
+| `IllegalStateException` on `Delegates.notNull` | Property read before being set | Initialize before first read |
 | Memory leak in singleton `by lazy { Application }` | Held context reference for app lifetime | Pass `Application` context, not `Activity`; or scope the delegate |
 | Custom delegate name doesn't match property name | Forgot `provideDelegate` to capture `KProperty` | Implement `provideDelegate` to wire name |
 
@@ -405,7 +405,7 @@ private val title: TextView = itemView.findViewById(R.id.title)
 When reviewing delegation usage, I look for:
 
 1. **`BaseViewModel` / `BaseFragment` / `BaseActivity`.** Inheritance is fragile. Push to interface + class delegation. Most "base" classes are 2-3 cross-cutting concerns that should be composed in.
-2. **Custom delegate with hidden I/O.** A custom `by Preference(...)` that reads disk every time the property is accessed is a UI-jank bomb. Either move to coroutines, cache, or name explicitly (`preferencesSync` not `preferences`).
+2. **Custom delegate with hidden blocking.** Inspect what its getter actually does. SharedPreferences usually serves loaded values from memory, while initial loading or a different delegate may block. Keep such work out of UI hot paths.
 3. **`by lazy` for cheap values.** `val x by lazy { 5 }` allocates a `Lazy` wrapper to defer a trivial computation. Push for direct assignment.
 4. **`by lazy` in ViewHolders / hot paths.** Adds N allocations for N items. Eager-init or use binding.
 5. **`by viewModels()` vs `by activityViewModels()` confusion.** Shared state across fragments needs activity scope. Misuse causes mysterious state-reset bugs on tab switch.
@@ -453,7 +453,7 @@ When reviewing delegation usage, I look for:
 4. **Why is `class Screen(var tracker: Analytics) : Analytics by tracker` a bug? Walk through the failure scenario.**
    The compiler captures the reference to `tracker` at construction time and stores it in a hidden, immutable delegate field. If you later reassign `screen.tracker = NewAnalytics()`, the `tracker` property changes, but the hidden delegate field routing the interface methods does not. Calls to `Analytics` methods on `screen` will silently continue to route to the original `tracker` instance.
 5. **Custom delegate: implement `ReadWriteProperty<Any?, String>` for a SharedPreferences-backed string. What's the perf concern in production?**
-   The performance concern is that every time the property is read (e.g., `settings.theme`), it triggers a synchronous disk read (`prefs.getString(...)`). If accessed in a tight loop or a UI hot path (like `onDraw` or Compose recomposition), this will cause severe UI jank. I/O should not be hidden behind innocent-looking property getters.
+   SharedPreferences getters can block waiting for initial loading, but subsequent reads normally use an in-memory map. Keep blocking initialization out of UI hot paths and measure delegate cost; do not assume each getString call rereads disk.
 6. **Compare `by viewModels()` vs `by activityViewModels()` vs `by hiltNavGraphViewModels()`. When do you pick each?**
    `by viewModels()` scopes the ViewModel to the current Fragment/Activity. `by activityViewModels()` scopes it to the host Activity, making it a shared singleton for all Fragments in that Activity (useful for communicating between Fragments). `by hiltNavGraphViewModels(id)` scopes it to a specific Navigation Graph, keeping the ViewModel alive as long as the graph is on the back stack (useful for multi-screen flows).
 7. **Why does `by lazy { 5 }` for a single `Int` field harm performance vs `val x = 5`?**
@@ -483,4 +483,15 @@ When reviewing delegation usage, I look for:
 - [Kotlin Docs — Delegation](https://kotlinlang.org/docs/delegation.html) — class delegation reference.
 - [Kotlin Docs — Delegated properties](https://kotlinlang.org/docs/delegated-properties.html) — property delegation reference.
 - [Effective Java Item 18](https://www.amazon.com/Effective-Java-Joshua-Bloch/dp/0134685997) — "Favor composition over inheritance" — the canonical argument.
-- [Roman Elizarov — "Delegates and property delegates"](https://elizarov.medium.com/) — Kotlin lead engineer's notes on the design.
+- [Kotlin docs — Delegated properties](https://kotlinlang.org/docs/delegated-properties.html) — official language reference.
+
+### Official verification references
+
+- [Primary documentation or owning implementation](https://android.googlesource.com/platform/frameworks/base/+/refs/heads/main/core/java/android/app/SharedPreferencesImpl.java)
+- [Primary documentation or owning implementation](https://developer.android.com/develop/ui/compose/compositionlocal)
+- [Primary documentation or owning implementation](https://developer.android.com/develop/ui/compose/state-saving)
+- [Primary documentation or owning implementation](https://developer.android.com/training/dependency-injection/hilt-jetpack)
+- [Primary documentation or owning implementation](https://github.com/JetBrains/kotlin/blob/v2.2.21/libraries/stdlib/jvm/src/kotlin/util/LazyJVM.kt)
+- [Primary documentation or owning implementation](https://kotlinlang.org/api/core/kotlin-stdlib/kotlin.io/append-text.html)
+- [Primary documentation or owning implementation](https://kotlinlang.org/api/core/kotlin-stdlib/kotlin.properties/-delegates/not-null.html)
+- [Primary documentation or owning implementation](https://kotlinlang.org/docs/properties.html)

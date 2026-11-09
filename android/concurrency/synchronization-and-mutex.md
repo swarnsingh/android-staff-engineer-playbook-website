@@ -29,7 +29,7 @@ To understand synchronization, we must understand the three problems of concurre
 ## The Toolbelt
 
 ### 1. `@Volatile` (Visibility Only)
-Adding `@Volatile` to a variable forces the JVM to skip the CPU cache and read/write directly to main RAM.
+A volatile write happens-before a subsequent volatile read of the same field. This establishes visibility and ordering in the JVM memory model; it does not bypass CPU caches or make a compound read-modify-write atomic.
 - **Solves:** Visibility and Ordering.
 - **Does NOT solve:** Atomicity. `count++` is still broken with `@Volatile`.
 - **Use Case:** A simple boolean flag (e.g., `isShuttingDown`) read by many threads but written by one.
@@ -99,40 +99,33 @@ graph TD
 Imagine an analytics tracker that batches events before sending them to the network. Multiple threads might try to add events simultaneously.
 
 ```kotlin
-class AnalyticsTracker {
-    // 1. Thread-safe Mutex for Coroutines
-    private val mutex = Mutex()
+class AnalyticsTracker(private val uploadBatch: suspend (List<Event>) -> Unit) {
+    private val batchMutex = Mutex()
+    private val uploadMutex = Mutex()
     private val batch = mutableListOf<Event>()
 
-    // 2. Thread-safe Atomic Boolean for a simple flag
-    private val isUploading = AtomicBoolean(false)
-
     suspend fun trackEvent(event: Event) {
-        val snapshotToUpload = mutex.withLock {
-            batch.add(event)
-            // Snapshot the batch inside the lock, but DO NOT upload here!
-            // Suspending inside a Mutex is a massive anti-pattern that blocks all other callers.
-            if (batch.size >= 50 && isUploading.compareAndSet(false, true)) {
-                val copy = batch.toList()
-                batch.clear()
-                copy
-            } else {
-                null
-            }
-        }
-
-        // Upload OUTSIDE the lock
-        snapshotToUpload?.let { 
-            uploadBatch(it) 
-            isUploading.set(false)
-        }
+        val ready = batchMutex.withLock { batch.add(event); batch.size >= 50 }
+        if (ready) flush()
     }
 
-    private suspend fun uploadBatch(events: List<Event>) {
-        // ... network call ...
+    suspend fun flush() = uploadMutex.withLock {
+        val snapshot = batchMutex.withLock { batch.toList().also { batch.clear() } }
+        if (snapshot.isNotEmpty()) {
+            try {
+                uploadBatch(snapshot)
+            } catch (failure: Throwable) {
+                withContext(NonCancellable) {
+                    batchMutex.withLock { batch.addAll(0, snapshot) }
+                }
+                throw failure
+            }
+        }
     }
 }
 ```
+
+The caller owns flush completion, cancellation and retries, including flushing a final batch smaller than 50. The upload mutex intentionally serializes uploads while the batch mutex remains available to new events. Failure restores the in-memory batch and releases upload ownership; this does not survive process death. Use a durable outbox and server idempotency when retries must tolerate partial acceptance or process loss.
 
 ## Tradeoffs
 
@@ -170,7 +163,7 @@ suspend fun add() = withContext(singleThreadDispatcher) {
   ```
   *(Fix: Kotlin `Mutex` is NOT Reentrant by default. If a coroutine holds a lock and tries to acquire it again, it deadlocks. You must architect your code so locks do not nest, or pass the lock state explicitly).*
 - **Using `synchronized` in a Coroutine:**
-  If you use `synchronized(this) { networkCall() }` inside a `Dispatchers.Main` coroutine, the moment the network call suspends, the coroutine yields the thread, BUT it still holds the JVM `synchronized` monitor! No other code can enter that block, potentially freezing the UI thread permanently. *(Fix: Never suspend inside a `synchronized` block).*
+  Current Kotlin rejects a suspension point inside synchronized: a thread-owned monitor cannot safely span a coroutine suspension. A short non-suspending synchronized block can be valid, but a contended monitor blocks its thread; use Mutex when the protected operation must suspend.
 
 ## Staff Engineer Thinking
 
@@ -207,7 +200,7 @@ When reviewing synchronization code, a Staff engineer looks for performance bott
 3. **Describe the exact difference between a JVM `synchronized` block and a Kotlin `Mutex`. What happens to the underlying OS thread in both scenarios?**
    `synchronized` physically halts the OS thread at the kernel level until the lock is released. `Mutex` suspends the coroutine, freeing the OS thread to do other work while the coroutine waits in a queue.
 4. **Why is it extremely dangerous to call a `suspend` function from inside a `synchronized` block?**
-   When the coroutine suspends, the OS thread is freed to run other tasks, but the physical `synchronized` monitor lock is still held, potentially freezing any other threads trying to enter the block.
+   Current Kotlin rejects the suspension point inside synchronized. The monitor belongs to a thread, whereas a coroutine can resume on another thread. Use Mutex for a suspending critical section, or keep a short monitor-protected section non-suspending.
 5. **What is a "Check-Then-Act" race condition, and how does the `Compare-And-Swap` (CAS) instruction solve it?**
    It happens when you check a condition (e.g., `if (val == 5)`) and act on it (`set(6)`), but the value changes between the check and act. CAS solves this by doing both as a single, uninterrupted atomic CPU instruction.
 6. **Explain the concept of Single-Thread Confinement as an alternative to using `Mutex` locks.**
@@ -226,3 +219,8 @@ When reviewing synchronization code, a Staff engineer looks for performance bott
 - [`coroutines-under-the-hood.md`](../concurrency/coroutines-under-the-hood.md) — How the Mutex utilizes the Continuation state machine to yield threads.
 - [`shared-flow-and-state-flow.md`](shared-flow-and-state-flow.md) — How `StateFlow` acts as a thread-safe atomic reference for UI state.
 - [Kotlin Docs: Shared mutable state and concurrency](https://kotlinlang.org/docs/shared-mutable-state-and-concurrency.html)
+
+### Official verification references
+
+- [Primary documentation or owning implementation](https://docs.oracle.com/javase/specs/jls/se17/html/jls-17.html#jls-17.4.5)
+- [Primary documentation or owning implementation](https://kotlinlang.org/docs/coroutines-cancellation.html#run-non-cancelable-blocks)

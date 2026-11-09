@@ -62,15 +62,15 @@ A SHA-256 hash is always 256 bits (32 bytes), regardless of input size. A 1-byte
 
 If you map infinite possible inputs to finite outputs (say, 2^256 possible outputs for SHA-256), there must be inputs that collide. The pigeonhole principle is unavoidable.
 
-For SHA-256, there are 2^256 possible outputs — more than the number of atoms in the observable universe. Practical collisions are computationally infeasible. For a weaker hash like a 32-bit `hashCode()`, there are only 4 billion outputs; collisions happen frequently in real data sets.
+For SHA-256, there are 2^256 possible outputs — about 10^77, close to common estimates of the number of atoms in the observable universe (about 10^78 to 10^82). Practical collisions are computationally infeasible. For a weaker hash like a 32-bit `hashCode()`, there are only 4 billion outputs; collisions happen frequently in real data sets.
 
 ### 4. Avalanche property
 
 A good hash function exhibits the **avalanche effect**: a one-bit change in input flips ~50% of output bits. This is what makes hashes "look random."
 
 ```
-hash("hello") = 5d41402abc4b2a76b9719d911017c592
-hash("hellp") = 1f6f4862cf94bdcc83c8bf2017a85d4f
+md5("hello") = 5d41402abc4b2a76b9719d911017c592
+md5("hellp") = c983190483df167d2a3841463c2a9341
 ```
 
 One letter change, completely different output. This property is what prevents predictability and clustering.
@@ -129,7 +129,7 @@ fun String.javaHashCode(): Int {
 
 `31` is chosen because it's an odd prime — multiplying by it has good bit-spreading properties and is one less than a power of two (32), so the JVM can compile `31 * h` as `(h << 5) - h`. The result is a signed 32-bit integer (~4 billion possible values).
 
-For most strings, distribution is reasonable. But the function is *not* cryptographic — given a target hash, an attacker can construct a string that produces it, which historically led to **hash-flooding DoS** attacks on web servers (POST a JSON body with thousands of colliding keys, brick the parser). Modern JVMs randomize `String.hashCode()` (since Java 8) or use treeified bins in `HashMap` (since Java 8 also) to mitigate this.
+For most strings, distribution is reasonable. But the function is *not* cryptographic — given a target hash, an attacker can construct a string that produces it, which historically led to **hash-flooding DoS** attacks on web servers (POST a JSON body with thousands of colliding keys, brick the parser). `String.hashCode()` is not randomized; its formula is part of the Java specification. Java 7 updates briefly added an alternative String hashing mode for hash maps, but Java 8 removed it and instead turns heavily collided `HashMap` bins into balanced trees to mitigate this.
 
 ### MurmurHash3 (non-cryptographic, fast, well-distributed)
 
@@ -188,7 +188,7 @@ When two keys hash to the same slot in a hash table, you need a strategy:
 - **Separate chaining**: each slot is a list (or, in modern JDK `HashMap`, a tree when the list grows large). New collisions append to the list.
 - **Open addressing**: probe a sequence of alternate slots until you find an empty one.
 
-JDK's `HashMap` uses separate chaining with treeification: chains of length > 8 are converted to red-black trees, giving O(log n) worst-case lookup even under collision attacks.
+JDK's `HashMap` uses separate chaining with treeification: a bin becomes a red-black tree once it holds more than 8 entries, provided the table has at least 64 slots (smaller tables resize instead). Lookups in that bin are then O(log n) when the colliding keys are `Comparable`, as `String` keys are.
 
 ### Load factor and resizing
 
@@ -317,7 +317,7 @@ App Links verify ownership by hashing the app's signing certificate and comparin
 }]
 ```
 
-When the user taps a link, Android hashes the installed app's certificate using SHA-256 and compares to the published fingerprint. If they match, the link opens the app directly; if not, the disambiguation dialog appears. This prevents a malicious app from claiming ownership of someone else's domain.
+When the app is installed (Android 6.0 and later), the system fetches `assetlinks.json` and compares the SHA-256 fingerprint of the app's signing certificate with the published ones. If verification succeeds, links open the app directly. If it fails, on Android 12 and later a generic web link opens in the user's default browser unless the user has approved the app for that domain. This prevents a malicious app from claiming ownership of someone else's domain.
 
 ### Certificate pinning
 
@@ -333,7 +333,7 @@ val client = OkHttpClient.Builder()
     .build()
 ```
 
-During TLS handshake, OkHttp checks that one of the certificates in the chain has a SHA-256 hash matching the pin. If not, the connection is rejected. This defends against compromised CAs issuing rogue certs.
+During the TLS handshake, OkHttp checks that one of the certificates in the chain has a public key (its Subject Public Key Info) whose SHA-256 hash matches the pin. If not, the connection is rejected. This defends against compromised CAs issuing rogue certs.
 
 ### Idempotency keys
 
@@ -351,7 +351,7 @@ LazyColumn {
 }
 ```
 
-The `key` function tells Compose how to identify items across recompositions. Internally, Compose stores items in a hash-keyed slot table. If `key` is not stable (e.g., uses the index), reordering causes wrong items to be recomposed, animated, or recycled. The Compose key contract is exactly `hashCode()` + `equals()` — the same contract as `HashMap`.
+The `key` function tells Compose how to identify items across recompositions. Without a key, each item's state is keyed by its position, so reordering can attach remembered state to the wrong item. Keys must be stable and unique, and on Android their type must be one that `Bundle` can store, so `rememberSaveable` state inside the item can be restored.
 
 ---
 
@@ -386,9 +386,9 @@ The `key` function tells Compose how to identify items across recompositions. In
 
 **Hash collisions cluster the table.** If two heavily-used keys hash to the same slot, the linked list/tree at that slot grows. `HashMap.get(key)` degrades from O(1) to O(log n) or worse. Mitigation: use cryptographic hashes for adversarial inputs; or use Java 8+ which treeifies long chains.
 
-**Hash-flooding DoS.** Attacker sends inputs that all hash to the same slot, making the hash map quadratic. Killed servers running PHP, Java, Python, Ruby until ~2012. Mitigation: randomized seeds (JDK does this), treeified bins (JDK 8+), or cryptographic hash for the lookup table.
+**Hash-flooding DoS.** Attacker sends inputs that all hash to the same slot, making the hash map quadratic. Killed servers running PHP, Java, Python, Ruby until ~2012. Mitigation: keyed or randomly seeded hash functions (Python and Rust use SipHash), treeified bins (JDK 8+, which does not randomize `String` hashing), or limits on how many untrusted keys one request may add.
 
-**Resize stutter.** A hash table at 99% load factor blocks while resizing, copying all entries. UI thread stutter. Mitigation: presize the map when you know the count; use `HashMap(expectedSize)`.
+**Resize stutter.** A large hash table blocks while resizing, copying all entries (`HashMap` resizes once it passes its 0.75 load factor). UI thread stutter. Mitigation: presize the map when you know the count; use `HashMap(expectedSize)`.
 
 **MD5/SHA-1 for security.** Both are cryptographically broken — attackers can construct collisions. Using either for any security purpose (signatures, certificates, file integrity against tampering) is dangerous. Mitigation: use SHA-256 minimum; prefer BLAKE3 for new code.
 
@@ -427,7 +427,7 @@ The `key` function tells Compose how to identify items across recompositions. In
 - **Hash sensitive identifiers before logging.** If a user ID appears in logs, hashing it (with a server-side salt) preserves correlation while preventing log mining.
 - **Subject to side-channel attacks in HMAC verification.** Use constant-time comparison (`MessageDigest.isEqual()` in Java, or hand-rolled XOR-and-OR pattern) when comparing security-sensitive hashes; `String.equals()` is timing-variable and leaks information.
 - **Don't reuse the same hash for different security purposes.** Hashing for password storage, for session tokens, and for signature verification are three different jobs with different algorithms (Argon2, secure random, HMAC).
-- **Hash collisions in security contexts have outsized impact.** A single SHA-1 collision proved sufficient to break the Git ecosystem's security model for repositories using SHA-1. Migrate fully to SHA-256.
+- **Hash collisions in security contexts have outsized impact.** After the 2017 SHAttered collision, Git 2.13 and later switched to a hardened SHA-1 that is not vulnerable to that attack. Git is still moving to SHA-256 because SHA-1 remains weak; for new security designs, use SHA-256 or stronger.
 
 ---
 
@@ -467,7 +467,7 @@ The `key` function tells Compose how to identify items across recompositions. In
 
 **"MD5 is fine for non-security uses."** Generally yes, but be cautious — if an attacker can submit inputs and observe your behavior, MD5 collisions can be weaponized in surprising ways. Use a non-cryptographic hash explicitly designed for the use case (xxHash, MurmurHash) where possible.
 
-**"`hashCode()` collisions are rare."** For 32-bit hashes over arbitrary input, collisions are surprisingly common — about 1 in 65,000 for random pairs (birthday bound). Real-world clustered data is worse.
+**"`hashCode()` collisions are rare."** For 32-bit hashes over arbitrary input, collisions are surprisingly common. One random pair collides with probability about 1 in 4.3 billion, but by the birthday bound a set of only about 77,000 values is more likely than not to contain a collision. Real-world clustered data is worse.
 
 **"A bigger hash is always more secure."** Bigger helps against collision attacks but doesn't help against weak algorithms. SHA-1 with 160 bits is broken; truncated SHA-256 to 64 bits is also broken; full SHA-256 is currently secure.
 

@@ -30,7 +30,7 @@ Java architects chose Type Erasure in 2004 to maintain backward compatibility wi
 
 ## First Principles
 
-1.  **Reified means "Made Real":** A reified type parameter is not erased. It remains a real, queryable class at runtime.
+1.  **Reified means available at the call site:** The Kotlin compiler substitutes the concrete type into operations in the inlined body. `T::class` yields a class token without nested type arguments; `typeOf<T>()` can represent a statically known parameterised type. Generic objects on the JVM still obey erasure.
 2.  **Must be Inline:** The `reified` keyword absolutely requires the function to be marked `inline`. The magic does not work without it.
 3.  **No Java Interop:** Because `reified` is a Kotlin compiler hack, Java code cannot call Kotlin functions that use `reified` types.
 
@@ -103,7 +103,7 @@ Now compile a second call site: `isType<Int>(123)`. You'll get a separate `test2
      7: instanceof    #19 // class java/lang/Integer
 ```
 
-Same `isType<>` source function, two different bytecode call sites, two different hardcoded class references. The "function" doesn't exist at runtime; only its specialised copies do.
+The inlined call site can contain the concrete type check. A generic method artifact with reification markers may still be emitted in the class file; it is not a normal Java-callable implementation of the reified operation. Exact instructions, including constant folding, depend on the compiler version and input.
 
 **This is what makes `reified` impossible without `inline`.** A normal function compiles to one method body shared across all type parameters. The JVM can't preserve `T` for that single body — type erasure. With `inline`, there is no shared body; every call site gets its own bytecode with `T` already substituted. The JVM never has to "remember" `T` because the compiler already wrote it down.
 
@@ -169,7 +169,7 @@ val user: User = gson.fromJson(json) // T is inferred from the return type!
 When reviewing code, a Staff engineer looks for API ergonomics:
 
 1.  **Kill the `Class<T>`:** If I see a Kotlin function signature `fun doWork(clazz: Class<*>)`, I will immediately ask for a refactor to `inline fun <reified T> doWork()`. We are writing Kotlin, not Java 6. We should use language features to make the call-sites as clean as possible for product engineers.
-2.  **The Wrapper Rule:** I strictly enforce that `inline reified` functions are only used as tiny wrappers. They exist solely to extract `T::class.java` and pass it to a private, non-inline worker function. This prevents bytecode bloat while keeping the public API clean.
+2.  **The Wrapper Rule:** Keep a reified wrapper small when it delegates substantial work, but reified operations also support `is T`, casts, and richer type tokens. A public inline wrapper cannot call a private worker: use a suitable public helper or an `internal @PublishedApi` helper and account for its binary compatibility contract.
 3.  **Java Interop:** If we are writing a core SDK that might be consumed by legacy Java code, I will enforce writing *both* versions. A standard `Class<T>` version for Java, and an `inline reified` extension function for Kotlin users.
 
 ## Common Misconceptions
@@ -180,7 +180,7 @@ When reviewing code, a Staff engineer looks for API ergonomics:
 ## Probing Questions
 
 1.  What is the specific limitation of JVM Generics (Type Erasure) that the `reified` keyword was invented to solve?
-2.  Why is the `reified` keyword mathematically impossible to implement without also using the `inline` keyword?
+2.  Why does Kotlin allow `reified` only on `inline` functions?
 3.  If you decompile a Kotlin function that uses `T::class.java` (where `T` is reified) back into Java, what does the Java code look like?
 4.  Why can't Java code call a Kotlin function that uses a `reified` type parameter?
 5.  Explain the architectural danger of putting 100 lines of complex logic inside an `inline fun <reified T>` function.
@@ -194,7 +194,7 @@ When reviewing code, a Staff engineer looks for API ergonomics:
 
 1. **What is the specific limitation of JVM Generics (Type Erasure) that the `reified` keyword was invented to solve?**
    The JVM erases generic type parameters at compile time. At runtime, `List<String>` is just a `List`, and a function `fun <T> checkType(item: Any)` has no way to know what `T` is, making it impossible to do `item is T` or `T::class.java`.
-2. **Why is the `reified` keyword mathematically impossible to implement without also using the `inline` keyword?**
+2. **Why does Kotlin allow `reified` only on `inline` functions?**
    Without `inline`, the compiler generates a single method body for the generic function, forcing the JVM to use type erasure. With `inline`, the compiler copies the method body directly to every call site. At the call site, the concrete type is known, allowing the compiler to hardcode the exact class (e.g., replacing `T` with `String`) in the bytecode, bypassing erasure entirely.
 3. **If you decompile a Kotlin function that uses `T::class.java` (where `T` is reified) back into Java, what does the Java code look like?**
    There are no generics or `Class<T>` variables. The Java code shows a hardcoded reference to the specific class used at the call site, such as `String.class` or `item instanceof String`.
@@ -206,8 +206,8 @@ When reviewing code, a Staff engineer looks for API ergonomics:
    The compiler infers the type from the context of the call, typically the variable assignment's type. For example, in `val user: User = gson.fromJson(json)`, the compiler knows the return type must be `User`, so it infers `T = User` automatically.
 7. **Write a tiny `inline reified` wrapper function that delegates to a massive non-inline parsing function to prevent bytecode bloat.**
    `inline fun <reified T> parse(json: String): T = parseReal(json, T::class.java)`
-8. **Why is it impossible to apply the `reified` keyword to the generic type parameter of a `class`?**
-   A `class` definition lives on the heap and its bytecode is generated once. It cannot be `inline` (copied and pasted to call sites). Therefore, it must obey standard JVM Type Erasure, making reification impossible.
+8. **Why can't a Kotlin class declare a `reified` type parameter?**
+   Kotlin permits `reified` on inline function type parameters, not class parameters. JVM generic instances do not automatically retain their type arguments. A class that needs runtime type information can receive an explicit type token or factory; class definitions themselves are not heap instances of the declared class.
 9. **Describe an Android specific API (like Intents or SharedPreferences) that is drastically improved by creating a `reified` wrapper.**
    `Context.startActivity()` requires passing a `Class` object: `startActivity(Intent(this, ProfileActivity::class.java))`. A reified wrapper `inline fun <reified T: Activity> Context.startActivity()` allows the drastically cleaner `startActivity<ProfileActivity>()`.
 10. **If C# does not use Type Erasure, does C# need a `reified` keyword? Why or why not?**
@@ -217,3 +217,9 @@ When reviewing code, a Staff engineer looks for API ergonomics:
 
 - [`generics.md`](../type-system/generics.md) — The fundamental rules of Type Erasure.
 - [`inline-functions.md`](inline-functions.md) — The copy/paste mechanism that makes reified types possible.
+
+### Official verification references
+
+- [Primary documentation or owning implementation](https://kotlinlang.org/api/core/kotlin-stdlib/kotlin.reflect/type-of.html)
+- [Primary documentation or owning implementation](https://kotlinlang.org/docs/generics.html)
+- [Primary documentation or owning implementation](https://kotlinlang.org/docs/inline-functions.html)

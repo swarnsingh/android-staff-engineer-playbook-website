@@ -95,4 +95,4 @@ Do not install a second uncaught-exception handler as a blanket fix for missing 
 - [Staged rollout rules](https://support.google.com/googleplay/android-developer/answer/6346149).
 - [Pre-launch reports](https://support.google.com/googleplay/android-developer/answer/9842757).
 - [In-app update integration](https://developer.android.com/guide/playcore/in-app-updates/kotlin-java).
-- [Crashlytics ANR diagnosis](https://firebase.google.com/docs/crashlytics/troubleshooting#android-support).
+- [Crashlytics ANR diagnosis](https://firebase.google.com/docs/crashlytics/troubleshooting#anr-requires-android-11-plus).

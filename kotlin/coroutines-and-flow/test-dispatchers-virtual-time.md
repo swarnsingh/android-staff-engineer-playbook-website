@@ -47,7 +47,7 @@ fun retriesAfterDelay() = runTest {
 }
 ```
 
-`delay(1.minutes)` does not sleep for one real minute. The scheduler advances instantly when the test tells it to.
+`delay(1.minutes)` on a test dispatcher uses virtual time. The scheduler can advance explicitly through the time-control APIs or automatically when the test suspends waiting for scheduled work. Delays on real IO/Default dispatchers are not skipped.
 
 ## The Test Scheduler
 
@@ -292,28 +292,30 @@ No `Thread.sleep`. No real 300 ms delay.
 Cancellation behavior is a first-class requirement.
 
 ```kotlin
+@OptIn(ExperimentalCoroutinesApi::class)
 @Test
 fun oldSearchIsCancelledWhenNewQueryArrives() = runTest {
+    val queryFlow = MutableSharedFlow<String>()
     val cancelledQueries = mutableListOf<String>()
-
-    val results = queryFlow
-        .flatMapLatest { query ->
-            flow {
-                try {
-                    awaitCancellation()
-                } finally {
-                    cancelledQueries += query
-                }
+    val results = queryFlow.flatMapLatest { query ->
+        flow<Unit> {
+            try {
+                awaitCancellation()
+            } finally {
+                cancelledQueries += query
             }
         }
-
+    }
     backgroundScope.launch { results.collect() }
+    runCurrent() // Subscribe before a replay-zero flow emits.
 
     queryFlow.emit("old")
+    runCurrent() // Ensure the old inner operation has actually started.
     queryFlow.emit("new")
-    advanceUntilIdle()
+    runCurrent() // Run cancellation/cleanup before asserting.
 
     assertEquals(listOf("old"), cancelledQueries)
+    // backgroundScope cancels the new operation at test end.
 }
 ```
 
@@ -350,7 +352,7 @@ Or use `UnconfinedTestDispatcher(testScheduler)` for collectors that must subscr
 viewModel.uiState.toList()
 ```
 
-This hangs because `StateFlow` never completes. Use Turbine, `first`, `take`, or `backgroundScope`.
+This collection never completes normally because `StateFlow` is hot. Inside `runTest`, uncompleted foreground work eventually fails at the test timeout; it does not wait forever by default. Use a bounded assertion (`first`, `take`, Turbine) or a collector in `backgroundScope`.
 
 ### Testing implementation details
 
@@ -382,3 +384,8 @@ Avoid asserting that a specific dispatcher method was called. Assert observable 
 - [`coroutines-debugging-and-profiling.md`](coroutines-debugging-and-profiling.md) - diagnosing runtime behavior.
 - [kotlinx-coroutines-test API](https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-test/)
 - [Turbine](https://github.com/cashapp/turbine)
+
+### Official verification references
+
+- [Primary documentation or owning implementation](https://developer.android.com/kotlin/coroutines/test)
+- [Primary documentation or owning implementation](https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-test/kotlinx.coroutines.test/-test-scope/background-scope.html)

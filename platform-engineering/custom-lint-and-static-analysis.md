@@ -58,17 +58,30 @@ The platform-leverage move is both: internal enforcement via `lintChecks` in the
 Lint rules are code; untested rules rot into false-positive generators that teach engineers to `@Suppress` reflexively. The `lint-tests` artifact makes tests declarative:
 
 ```kotlin
+// Lint tests don't see your app's classpath: declare stubs for the library
+// signatures the detector resolves, or the call never reaches visitMethodCall.
+private val coroutinesStub = kotlin("""
+    package kotlinx.coroutines
+    interface CoroutineScope
+    interface Job
+    object GlobalScope : CoroutineScope
+    fun CoroutineScope.launch(block: suspend CoroutineScope.() -> Unit): Job = TODO()
+""").indented()
+
 lint().files(
+    coroutinesStub,
     kotlin("""
         import kotlinx.coroutines.GlobalScope
+        import kotlinx.coroutines.launch
         fun leak() = GlobalScope.launch { }
     """).indented()
 ).issues(GlobalScopeDetector.ISSUE)
  .run()
- .expect("src/test.kt:2: Error: GlobalScope launches outlive their screen…")
+ .expectErrorCount(1)
+ .expectContains("GlobalScope launches outlive their screen")
 ```
 
-Test the negative cases as hard as the positive ones — every false positive costs org-wide trust in the whole rule set. And provide **quick fixes** (`LintFix`) wherever mechanical: a rule that fixes itself in the IDE gets adopted; a rule that only complains gets suppressed.
+`expect(...)` compares the full report text exactly, including the source excerpt and the closing `1 errors, 0 warnings` line; use it once the output is settled. Test the negative cases as hard as the positive ones — every false positive costs org-wide trust in the whole rule set. And provide **quick fixes** (`LintFix`) wherever mechanical: a rule that fixes itself in the IDE gets adopted; a rule that only complains gets suppressed.
 
 ## 5. Rollout: the Severity Ratchet
 
@@ -77,13 +90,13 @@ Turning a new rule on as `error` across a large codebase with 400 existing viola
 1. **Baseline** the existing violations (`baseline = file("lint-baseline.xml")`) — new code is held to the rule, old code is grandfathered debt.
 2. Ship at `warning` (or `informational`) for a release cycle; watch the false-positive reports.
 3. Ratchet to `error` once the signal is proven; burn down the baseline as touched files get cleaned (never let the baseline file grow — that's the ratchet direction check for CI).
-4. Severity overrides live in the `lint {}` DSL / `lint.xml`, so app teams can escalate faster than the platform default but not below it — encode the floor in the convention plugin.
+4. Severity overrides live in the `lint {}` DSL / `lint.xml`. Set the platform default in the convention plugin; app teams can escalate faster. Lint itself does not stop a module from lowering a severity in its own `lint {}` block or `lint.xml`, so add a CI check that rejects downgrades of platform-owned issue IDs if the floor must hold.
 
 `checkDependencies = true` on app modules makes the report span the module graph, which is what you want for the org dashboard: violations per module over time is the platform team's adoption metric.
 
 ## 6. The Broader Static-Analysis Portfolio
 
-Lint is one layer. A staff engineer places each tool where it's strongest: **Kotlin compiler warnings as errors** (`allWarningsAsErrors`, per-module escape hatches) for language misuse; **detekt** for Kotlin-idiom and complexity budgets when you want non-Android JVM coverage; **Konsist or module-graph assertions in unit tests** for architecture rules that are about the dependency graph rather than call sites; **KSP architectural linting** for enforcing structural rules at compile time (failing fast on misused annotations or DI contract violations before the Lint pass even runs); **binary-compatibility-validator** for public API surface of published libraries ([Binary Compatibility & API Evolution](../android/kotlin-multiplatform/binary-compatibility-api-evolution.md)). The failure mode to avoid is three overlapping tools flagging the same thing with different severities — one owner, one rule per concern, one place engineers look for the "why" (the `explanation` field, which should link the ADR that motivated it).
+Lint is one layer. A staff engineer places each tool where it's strongest: **Kotlin compiler warnings as errors** (`allWarningsAsErrors`, per-module escape hatches) for language misuse; **detekt** for Kotlin-idiom and complexity budgets when you want non-Android JVM coverage; **Konsist or module-graph assertions in unit tests** for architecture rules that are about the dependency graph rather than call sites; **KSP architectural linting** for enforcing structural rules at compile time (failing fast on misused annotations or DI contract violations before the Lint pass even runs); **ABI validation** (the Kotlin Gradle plugin's experimental `abiValidation`, or the binary-compatibility-validator plugin, now in maintenance mode) for public API surface of published libraries ([Binary Compatibility & API Evolution](../android/kotlin-multiplatform/binary-compatibility-api-evolution.md)). The failure mode to avoid is three overlapping tools flagging the same thing with different severities — one owner, one rule per concern, one place engineers look for the "why" (the `explanation` field, which should link the ADR that motivated it).
 
 ## Further Reading
 

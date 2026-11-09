@@ -15,7 +15,7 @@ This file covers the four practical complexity dimensions Staff engineers monito
 Three observations forced system complexity to become a first-class engineering concern:
 
 1. **Software lifetime cost dominates.** Studies (Boehm, Brooks, McConnell) consistently show maintenance is 60-80% of total software cost. Code is read 10x more than it's written. Complexity that slows reading multiplies the lifetime cost.
-2. **Defects scale super-linearly with complexity.** Empirical work by Capers Jones, NIST, and others shows defect rates correlate strongly with complexity metrics. A function with cyclomatic complexity 20 has roughly 4x the defect rate of one with complexity 5 — not 4x, exponentially worse.
+2. **Defects scale super-linearly with complexity.** Empirical work by Capers Jones, NIST, and others shows defect rates correlate strongly with complexity metrics. The size of that effect varies between studies, so treat any single ratio with caution.
 3. **Onboarding scales with complexity.** A codebase a new engineer can productively contribute to in a week vs three months has dramatically different system complexity. For mobile teams with rotation, this directly drives velocity.
 
 The mobile-specific layer: Android codebases face unique complexity drivers. Multiple architecture patterns (MVVM, MVI, Clean) get mixed. Multiple platforms (XML + Compose). Multiple lifecycle systems (Activity, Fragment, ViewModel, Composable). Multiple async paradigms (Threads, RxJava, Coroutines). Each historical layer adds complexity that survives long after it's needed. A 5-year-old Android app often has 8 different ways to load images and 4 different DI systems.
@@ -35,7 +35,7 @@ Without explicit measurement and policy, complexity accretes silently. By the ti
 7. **Adam Tornhill, *Your Code as a Crime Scene* (2015).** Statistical analysis showing complexity hotspots (high churn + high complexity) predict ~80% of bugs.
 8. **G. Ann Campbell, *"Cognitive Complexity"* (2018, SonarSource).** New metric specifically measuring human readability, distinct from cyclomatic. Standard in modern lint tools.
 9. **Modern dependency-graph linting (Konsist, ArchUnit, Detekt).** Tools that enforce module-level architectural constraints to bound coupling.
-10. **Industry evidence (Forsgren et al., *Accelerate*, 2018).** Engineering productivity research showing low-complexity, fast-feedback codebases produce 2-4x more output than complexity-burdened ones.
+10. **Industry evidence (Forsgren et al., *Accelerate*, 2018).** Research on software delivery performance (deployment frequency, lead time, change failure rate and time to restore) that identifies loosely coupled architecture as one of the capabilities that predict it.
 
 The arc: from single-metric measures (McCabe 1976) to multi-dimensional analysis (cyclomatic + cognitive + architectural) and from individual-file metrics to whole-codebase analysis with churn-weighted complexity.
 
@@ -64,7 +64,7 @@ Practical thresholds:
 - **11–20**: complex, requires careful review.
 - **20+**: untestable in practice; refactor.
 
-Detekt's default threshold is 15 for functions and 600 for files.
+By default, Detekt flags functions with cyclomatic complexity above 14 and classes longer than 600 lines.
 
 ### 2. Cognitive complexity
 
@@ -81,7 +81,7 @@ fun process(input: Input): Result {
     }
     return Result(results)
 }
-// Cognitive complexity: 7 (higher than cyclomatic ~3 because of nesting)
+// Cognitive complexity: 7 (higher than cyclomatic 4 because of nesting)
 ```
 
 The metric is more aligned with how hard the code feels to read. SonarQube reports both metrics.
@@ -149,11 +149,11 @@ Detekt computes this for every function in your codebase and reports the worst o
 ### Cognitive complexity computation
 
 For each control-flow statement:
-- Add 1 for each break-in-flow (`if`, `else`, `for`, `while`, `try`, `catch`, `switch`).
-- Add 1 extra for each level of nesting beyond the first.
+- Add 1 for each break in flow (`if`, `else if`, `else`, `for`, `while`, `catch`, `switch`/`when`); `try` and `finally` add nothing.
+- A nested structure also adds its nesting level: 1 inside one structure, 2 inside two.
 - Add 1 for non-`if/else` aggregating logical operators (`&&`, `||` in a single condition).
 - Recursion adds 1.
-- Lambdas without nested control flow add 0.
+- Lambdas and nested functions add nothing themselves, but they increase the nesting level of the code inside them.
 
 ```kotlin
 fun foo(x: Int): Int {
@@ -171,7 +171,7 @@ Designed to weight readability over rigor.
 
 ### Coupling and cohesion analysis tools
 
-**Detekt** reports per-module coupling via `:detektMetrics`. **Konsist** lets you write tests that enforce architectural constraints:
+**Detekt** reports complexity metrics such as cyclomatic and cognitive complexity, but not module coupling. **Konsist** lets you write tests that enforce architectural constraints:
 
 ```kotlin
 @Test fun `feature modules don't depend on each other`() {
@@ -188,7 +188,7 @@ Designed to weight readability over rigor.
 
 ### Module-graph depth
 
-Gradle's `:moduleDependencies` task and `--scan` reveal the module-dependency DAG. Tools like Gradle Dependency Analysis Plugin highlight unused dependencies and graph anomalies.
+Gradle's `dependencies` task and build scans reveal the module-dependency DAG. Tools like Gradle Dependency Analysis Plugin highlight unused dependencies and graph anomalies.
 
 ### Identifying complexity hotspots
 
@@ -315,10 +315,10 @@ Cyclomatic drops to ~6 per function. Cognitive drops to ~10. Tests become small 
     val featurePaths = listOf("/feature/checkout/", "/feature/profile/", "/feature/home/")
     Konsist.scopeFromProduction()
         .files
-        .filter { it.path in featurePaths }
+        .filter { file -> featurePaths.any { file.path.contains(it) } }
         .assertFalse { file ->
             featurePaths.any { feature ->
-                feature != file.path && file.imports.any { it.name.contains(feature.replace("/", ".")) }
+                !file.path.contains(feature) && file.imports.any { it.name.contains(feature.replace("/", ".")) }
             }
         }
 }
@@ -356,7 +356,7 @@ Detekt runs in CI and as a pre-commit hook. New code violating thresholds fails 
 
 ### Reducing recompositions via composable simplicity
 
-A composable with cognitive complexity 30 (many conditionals, mutable state, side effects) is hard to verify for correctness *and* it causes broader recompositions because Compose's analysis can't determine stability. Simplifying:
+A composable with cognitive complexity 30 (many conditionals, mutable state, side effects) is hard to verify for correctness *and* it is harder to split so that state reads stay local. Skipping depends on whether parameters are stable and unchanged, not on how complex the function body is. Simplifying:
 
 ```kotlin
 @Composable
@@ -373,7 +373,7 @@ fun CheckoutButton(state: CheckoutState, onSubmit: () -> Unit) {
 }
 ```
 
-The validation logic is pulled into a `remember` block. The button itself has cognitive complexity 1. The compose runtime can confidently skip recomposition when `state` is unchanged.
+The validation logic is pulled into a `remember` block. The button itself has cognitive complexity 1. If `CheckoutState` is stable, or with strong skipping (the default since Kotlin 2.0.20, which compares unstable parameters by instance), the runtime can skip recomposition when `state` is unchanged.
 
 ### Module graph at the right depth
 
@@ -453,7 +453,7 @@ Anti-pattern: 100 micro-modules with 15 levels of depth. Tools spend more time e
 
 ## Reliability Considerations
 
-- **Defect rates correlate with cyclomatic complexity.** Empirical industry data shows ~exponential relationship past complexity 10.
+- **Defect rates correlate with cyclomatic complexity.** Studies report a positive correlation; its shape and strength vary by codebase.
 - **Complex code resists testing.** Coverage targets are easier to hit on simple code; difficult code often has token tests that don't actually verify behavior.
 - **Onboarding-failure rate correlates with system complexity.** A new engineer who never gets productive is a hidden but enormous cost.
 - **MTBF (mean time between failures) decreases with complexity.** Operational reliability requires comprehensible code.

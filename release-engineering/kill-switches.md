@@ -378,7 +378,7 @@ End-to-end: flip a kill switch in the staging flag service; assert the productio
 
 - [Martin Fowler — Feature Toggles taxonomy](https://martinfowler.com/articles/feature-toggles.html) — categorization: release, ops, experiment, permission.
 - [GrowthBook](https://www.growthbook.io/) — open-source flag platform with kill-switch path.
-- [LaunchDarkly — Kill switches](https://launchdarkly.com/blog/) — vendor patterns.
+- [LaunchDarkly — Kill switch flags](https://launchdarkly.com/docs/home/flags/killswitch) — vendor patterns.
 - [feature-flags-and-remote-config.md](../mobile-system-design/feature-flags-and-remote-config.md) — the underlying flag architecture.
 - [push-notifications.md](../mobile-system-design/push-notifications.md) — FCM-driven flag refresh.
 

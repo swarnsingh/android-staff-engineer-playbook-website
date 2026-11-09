@@ -48,18 +48,23 @@ def check():
         raise ValueError('Amended proposal IDs differ from the triage')
     prose = (review/'corrections-with-edits.md').read_text()
     occupied = {}
+    snapshot = json.loads((ROOT/'source-snapshot.json').read_text())
     for fix in proposals:
         raw = (ROOT/fix['path']).read_text()
-        if raw.count(fix['old']) != 1:
-            raise ValueError('Original must occur once: '+fix['id'])
-        start = raw.index(fix['old']);end = start+len(fix['old'])
-        for earlier_start, earlier_end in occupied.setdefault(fix['path'],[]):
-            if start < earlier_end and earlier_start < end:
-                raise ValueError('Overlapping proposal: '+fix['id'])
-        occupied[fix['path']].append((start,end))
+        if snapshot.get(fix['path'].split('/')[0]+'_provenance'):
+            # The tree was resynced from merged source, which replaced the reviewed original wording.
+            if fix['old'] in raw:
+                raise ValueError('Reviewed original wording survives the source resync: '+fix['id'])
+        else:
+            if raw.count(fix['old']) != 1:
+                raise ValueError('Original must occur once: '+fix['id'])
+            start = raw.index(fix['old']);end = start+len(fix['old'])
+            for earlier_start, earlier_end in occupied.setdefault(fix['path'],[]):
+                if start < earlier_end and earlier_start < end:
+                    raise ValueError('Overlapping proposal: '+fix['id'])
+            occupied[fix['path']].append((start,end))
         if fix['old'].strip() not in prose or fix['new'].strip() not in prose:
             raise ValueError('Markdown/JSON wording differs: '+fix['id'])
-    snapshot = json.loads((ROOT/'source-snapshot.json').read_text())
     verified = 0
     for tree in ('kotlin', 'android', 'engineering-fundamentals', 'computer-science', 'principles', 'patterns', 'reference-architectures','leadership','career', 'platform-engineering', 'mobile-system-design', 'observability', 'distributed-systems', 'backend-for-mobile', 'security', 'release-engineering'):
         hashes = snapshot[tree+'_sha256']

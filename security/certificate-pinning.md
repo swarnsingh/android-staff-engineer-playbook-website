@@ -6,7 +6,7 @@
 
 ## 1. The Threat Model
 
-TLS authenticates a server by checking its certificate chain against trusted CAs. A compromised trusted CA, or an explicitly trusted inspection CA, can make an attacker's certificate appear valid. Android apps targeting API 24 or higher [trust system CAs by default but not user-added CAs](https://developer.android.com/privacy-and-security/security-config#customize-trusted-cas); older targets and apps with custom trust settings can differ.
+TLS authenticates a server by checking its certificate chain against trusted CAs. A compromised trusted CA, or an explicitly trusted inspection CA, can make an attacker's certificate appear valid. Android apps targeting API 24 or higher [trust system CAs by default but not user-added CAs](https://developer.android.com/privacy-and-security/security-config#CustomTrust); older targets and apps with custom trust settings can differ.
 
 Pinning collapses the trust set from "any CA Android trusts" to "the specific certificate(s) we provisioned." Even with a perfectly forged cert, the connection fails.
 
@@ -360,7 +360,7 @@ Integration test on a real device against staging with intentionally wrong pin �
 - [Android Developers — Network Security Configuration](https://developer.android.com/training/articles/security-config) — official guide.
 - [OkHttp CertificatePinner API](https://github.com/square/okhttp/blob/master/okhttp/src/commonJvmAndroid/kotlin/okhttp3/CertificatePinner.kt) — programmatic API.
 - [OWASP — Certificate and Public Key Pinning](https://owasp.org/www-community/controls/Certificate_and_Public_Key_Pinning) — threat model and tradeoffs.
-- [HPKP retrospective (Mozilla)](https://blog.mozilla.org/security/2018/10/09/) — why HTTP Public Key Pinning failed on the web (relevant context for mobile pinning).
+- [Mozilla bug 1412438 — removing HPKP from Firefox](https://bugzilla.mozilla.org/show_bug.cgi?id=1412438) — why HTTP Public Key Pinning failed on the web (relevant context for mobile pinning).
 - [Cronet PublicKeyPins API](https://developer.android.com/develop/connectivity/cronet) — for Cronet-based stacks.
 
 ---

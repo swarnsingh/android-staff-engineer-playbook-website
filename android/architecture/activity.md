@@ -30,7 +30,7 @@ Think of an Activity as a **Rented Hotel Room**.
 - **`onCreate()`:** You sign the lease and bring your luggage (UI components) into the room.
 - **`onStart()`:** You unlock the door. People in the hallway can see inside, but you aren't talking to them yet.
 - **`onResume()`:** You are actively standing in the doorway talking to a guest (the user).
-- **`onPause()`:** The guest steps away to answer a phone call (a transparent dialog appears over your app). You pause the conversation, but you keep the door open.
+- **`onPause()`:** The guest steps back while another translucent Activity takes the foreground, but remains visible. An ordinary dialog in the same window does not itself dispatch Activity pause/resume.
 - **`onStop()`:** The guest leaves. You close the door. You are still in the room, but no one can see you. You should put heavy things away (stop animations, release the camera).
 - **`onDestroy()`:** The hotel manager kicks you out to give the room to someone else. You must pack up everything and leave.
 
@@ -45,7 +45,7 @@ The lifecycle is often memorized but rarely understood. A Staff engineer focuses
 
 ### 2. `onPause()` vs `onStop()` (The Teardown)
 This is the most misunderstood transition in Android.
-- **`onPause()`:** The Activity loses Input Focus, but is *still partially visible*. Example: A system permission dialog pops up, or the user opens Android's split-screen mode. You must pause video playback here, but you *should not* do heavy teardown (like closing a database), because the user might just dismiss the dialog and instantly return to `onResume()`.
+- **`onPause()`:** The Activity is leaving the resumed state but may remain visible, for example beneath another translucent Activity. Entering split-screen is not a reliable pause example on Android 10+, which supports multiple resumed activities. Choose resource ownership from the required lifecycle state; use top-resumed callbacks for exclusive resources.
 - **`onStop()`:** The Activity is *100% invisible*. The user pressed the Home button or navigated to a completely different Activity. This is where you release heavy resources.
 
 ### 3. Configuration Changes
@@ -67,8 +67,8 @@ stateDiagram-v2
     Created --> Visible : onStart()
     Visible --> Active : onResume()
     
-    Active --> Visible : onPause() (e.g. Dialog appears)
-    Visible --> Active : onResume() (Dialog dismissed)
+    Active --> Visible : onPause() (e.g. translucent Activity takes foreground)
+    Visible --> Active : onResume() (foreground Activity finishes)
     
     Visible --> Hidden : onStop() (e.g. Home button)
     Hidden --> Visible : onRestart() -> onStart()
@@ -167,7 +167,7 @@ When reviewing Activity code, a Staff engineer focuses on isolation:
 
 ## Answer Key
 
-1. `onPause()` means the Activity has lost focus but can remain visible, such as behind a permission dialog or in multi-window mode; `onStop()` means it is no longer visible. Keep `onPause()` brief and defer visibility-dependent cleanup to `onStop()`.
+1. `onPause()` leaves the resumed state but the Activity can remain visible, for example beneath another translucent Activity. Multi-window on Android 10+ can keep multiple activities resumed; an ordinary in-window dialog is not itself a new Activity. `onStop()` means the Activity is no longer visible. Keep lifecycle callbacks brief and release resources according to their required ownership state.
 2. A single Activity avoids repeated OS-managed Activity launches and centralizes navigation, shared screen scope, and transitions. The tradeoff is that navigation and deep-link routing must be kept modular so the host Activity does not become a god object.
 3. A non-static inner object captures its outer Activity. If a thread, callback queue, or singleton outlives that Activity, the reference chain keeps the destroyed Activity and its View tree reachable; cancellation, lifecycle-aware scopes, or a non-capturing object breaks the chain.
 4. Rotation is a configuration change, so Android recreates the Activity to let it load resources and layouts for the new configuration. Durable screen state belongs in a `ViewModel`, while the minimum restorable UI state belongs in saved-state APIs.
@@ -186,3 +186,7 @@ When reviewing Activity code, a Staff engineer focuses on isolation:
 - [Android Developers: Tasks and the back stack](https://developer.android.com/guide/components/activities/tasks-and-back-stack)
 - [Android Developers: Recommendations for Android architecture](https://developer.android.com/topic/architecture/recommendations)
 - [Android Developers: Save UI states](https://developer.android.com/topic/libraries/architecture/saving-states)
+
+### Official verification references
+
+- [Primary documentation or owning implementation](https://developer.android.com/develop/ui/views/layout/support-multi-window-mode)

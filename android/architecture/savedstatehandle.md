@@ -125,7 +125,7 @@ class CheckoutViewModel @Inject constructor(
 
 **What goes in the Handle vs the Database?**
 
-The `SavedStateHandle` is bound by Android's strict `TransactionTooLargeException` limits (1MB across the *entire* OS IPC system).
+The `SavedStateHandle` participates in saved-instance-state Bundles. Binder has a currently 1 MB transaction buffer shared by the process's in-flight transactions, not a separate allowance per Activity and not a system-wide pool. Keep saved state small; store identifiers and restore larger data from persistence.
 
 **Store in `SavedStateHandle`:**
 - Primitive IDs (`userId`, `productId`)
@@ -199,3 +199,7 @@ When reviewing state management, a Staff engineer focuses on recovery paths:
 - [`process-death-and-state-restoration.md`](process-death-and-state-restoration.md) — The brutal OS mechanism that makes `SavedStateHandle` necessary.
 - [`viewmodel.md`](viewmodel.md) — The container where `SavedStateHandle` lives.
 - [Android Developers: Saved State module for ViewModel](https://developer.android.com/topic/libraries/architecture/viewmodel/viewmodel-savedstate)
+
+### Official verification references
+
+- [Primary documentation or owning implementation](https://developer.android.com/guide/components/activities/parcelables-and-bundles)

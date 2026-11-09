@@ -184,10 +184,10 @@
   },
   {
     "path": "platform-engineering/sdk-distribution",
-    "diagram": "9724565d53eb4479",
+    "diagram": "790fbc5c84b0c01e",
     "number": 1,
     "title": "What an Android archive carries",
-    "caption": "An AAR is a package boundary around bytecode, Android resources, metadata and optional native code. Its published dependency information is supplied separately as Maven metadata.",
+    "caption": "An AAR is a package boundary around bytecode, Android resources, metadata, optional lint checks and optional native code. Its published dependency information is supplied separately as Maven metadata.",
     "sources": [
       "https://developer.android.com/studio/projects/android-library",
       "https://developer.android.com/build/publish-library"
@@ -222,7 +222,7 @@
         "id": "libs",
         "title": "libs/",
         "role": "storage",
-        "detail": "bundled JARs"
+        "detail": "bundled local JARs"
       },
       {
         "id": "native",
@@ -240,7 +240,19 @@
         "id": "symbols",
         "title": "R.txt",
         "role": "storage",
-        "detail": "resource symbols"
+        "detail": "resource symbol table"
+      },
+      {
+        "id": "publicres",
+        "title": "public.txt",
+        "role": "storage",
+        "detail": "resources declared public"
+      },
+      {
+        "id": "lint",
+        "title": "lint.jar",
+        "role": "storage",
+        "detail": "published lint checks"
       }
     ],
     "groups": [
@@ -255,7 +267,9 @@
           "libs",
           "native",
           "proguard",
-          "symbols"
+          "symbols",
+          "publicres",
+          "lint"
         ]
       }
     ],

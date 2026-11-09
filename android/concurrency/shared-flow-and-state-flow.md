@@ -309,16 +309,19 @@ In Compose:
 val state by viewModel.uiState.collectAsStateWithLifecycle()
 ```
 
-For one-off collection in Compose, use `LaunchedEffect` and lifecycle-aware flow collection when needed.
+For UI effects that should be collected only while the screen is started, combine a composition-owned effect with `repeatOnLifecycle`. Collection stops below STARTED and restarts on re-entry. A replay-zero SharedFlow can lose events while there is no subscriber; represent important user outcomes as acknowledged UI state when that loss is unacceptable.
 
 ```kotlin
-LaunchedEffect(viewModel) {
-    viewModel.effects.collect { effect ->
-        when (effect) {
-            is UiEffect.ShowToast -> snackbarHostState.showSnackbar(effect.message)
+val lifecycleOwner = LocalLifecycleOwner.current // androidx.lifecycle.compose
+LaunchedEffect(viewModel, lifecycleOwner, snackbarHostState) {
+    lifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
+        viewModel.effects.collect { effect ->
+            when (effect) {
+                is UiEffect.ShowToast -> snackbarHostState.showSnackbar(effect.message)
+            }
         }
     }
-}
+} // imports: androidx.lifecycle.Lifecycle, androidx.lifecycle.repeatOnLifecycle
 ```
 
 In Views/Fragments:

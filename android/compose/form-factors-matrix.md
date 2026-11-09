@@ -9,7 +9,7 @@
 | **Wear OS** | Compose for Wear (`androidx.wear.compose:compose-material3` 1.7.0, stable) | Glanceable, seconds-long sessions; rotary input; round screens | ViewModels, domain, data sync — **not** UI | A real second app, smaller but complete |
 | **TV** | Compose for TV (`androidx.tv:tv-material` 1.1.0, stable) | D-pad + focus; 10-foot UI; lean-back | Domain + playback stack ([Media3](../media/media3-player-architecture.md)) | Medium — mostly a new UI shell over shared playback |
 | **Auto / Automotive OS** | Car App Library (`androidx.car.app`) templates for driving; approved parked categories can use free-form UI | Driver-distraction-constrained; category-gated | Media session/library and domain logic; template-mapped flows for supported categories | Low for basic media; medium for templated media or navigation/POI; unavailable outside allowed categories |
-| **Home-screen widgets** | Glance (`androidx.glance:glance-appwidget` 1.2.0 stable) | Glanceable, tap-through; no scrolling sessions | Data layer; rendering is RemoteViews-translated | Low — days to weeks |
+| **Home-screen widgets** | Glance | Glanceable interactions and supported scrollable collections | Shared data layer; RemoteViews or the documented rendering path | Budget from the actual layout and interactions |
 
 ## 2. What Each Surface Really Demands
 
@@ -36,7 +36,7 @@ Work through these in order; most "build it everywhere" proposals die at step 2:
 - Does the proposal name the *session* the new surface owns, or just the surface?
 - Is the shared-module boundary drawn so the new surface consumes domain/data without forking it?
 - Is anyone proposing mobile-Compose components on Wear, or free-form UI in a drivable car category? Both are platform-rule violations, not style choices.
-- Widget designs that assume live interactivity or scrolling content — RemoteViews won't deliver them.
+- Widget designs that assume arbitrary app-style animation or unrestricted UI behavior. Glance LazyColumn supports a scrollable collection, subject to its rendering path and collection restrictions; verify the supported interactions instead of assuming all scrolling is unavailable.
 - Is there an owner and a test-matrix line item for the new surface, or only a launch plan?
 
 ## Further Reading
@@ -47,3 +47,7 @@ Work through these in order; most "build it everywhere" proposals die at step 2:
 - [Android for Cars overview](https://developer.android.com/training/cars) — Auto vs Automotive OS, category matrix, Car App Library
 - [Jetpack Glance](https://developer.android.com/develop/ui/compose/glance) — widget architecture and constraints
 - [Glance releases](https://developer.android.com/jetpack/androidx/releases/glance) — current stable artifact versions
+
+### Official verification references
+
+- [Primary documentation or owning implementation](https://developer.android.com/develop/ui/compose/glance/build-ui)

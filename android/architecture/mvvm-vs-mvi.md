@@ -53,11 +53,11 @@ class CheckoutViewModel : ViewModel() {
 
 ### Three failure modes
 
-1. **Tearing / race conditions.** Between `_promoCode.value = code` and `_totalPrice.value = …`, observers can see the *new* promo with the *old* total. Microseconds, but visible during fast user interaction (e.g., typing into a field while a previous request resolves).
+1. **Non-atomic combined observations.** Separate StateFlows do not provide a transaction across their values. An independent concurrent collector can observe a new promo with an old total between writes. The shown adjacent Main-thread writes do not by themselves prove a rendered frame between them; UI scheduling and collection behavior must be measured.
 2. **State explosion.** Add free shipping, taxes, gift cards, loyalty points — each becomes another `MutableStateFlow`. The ViewModel grows; the relationships between streams aren't enforced anywhere.
 3. **No audit trail.** When the UI renders an impossible combination, you can't replay the sequence that got there. The ViewModel's mutations are scattered across many methods.
 
-For simple screens — settings toggles, profile edit forms — this doesn't matter. For a checkout flow, a real-time feed, or a video player, every microsecond of inconsistency is a customer-visible bug.
+Separate streams can be adequate for independent fields. When a checkout, feed or player needs a consistent combination, encode and update that combination as one state transition; do not infer visible frame timing from the number of field assignments.
 
 ---
 
@@ -205,8 +205,8 @@ private fun CheckoutContent(
 
 Two perf-critical details:
 
-1. **`collectAsStateWithLifecycle`** (not `collectAsState`) — stops collecting when the lifecycle stops; restarts on resume. Saves CPU and battery for off-screen tabs.
-2. **Pass `onIntent` as a stable lambda** — `vm::processIntent` is a method reference; stable, recomposition-friendly. Avoid `{ vm.processIntent(it) }` which allocates a new lambda each composition.
+1. **`collectAsStateWithLifecycle`** collects at STARTED or above by default, stops below that state and restarts on re-entry. This is lifecycle gating, not a promise of one collection per onResume.
+2. **Choose a clear callback and audit captures** — under strong skipping, enabled by default since Kotlin 2.0.20, lambdas inside composables are remembered using their captures. Neither `{ vm.processIntent(it) }` nor `vm::processIntent` is universally faster; avoid assuming a fresh allocation on every recomposition.
 
 The Composable becomes a pure function: `UiState → UI`. Snapshot testing (Paparazzi) is trivial: pass a `CheckoutState`, capture the bitmap.
 
@@ -271,7 +271,7 @@ A mixed codebase is normal — most apps have ~10 MVI screens and the rest MVVM.
 |---|---|---|---|
 | [Orbit](https://orbit-mvi.org/) | Low | Yes | Reducer + side effects as suspend; popular |
 | [MVIKotlin](https://github.com/arkivanov/MVIKotlin) | Medium | Yes | KMP-first; strong testing story |
-| [Mavericks](https://airbnb.io/projects/mavericks/) | Low | No (Async wrapper) | Airbnb's lib; opinionated for large teams |
+| [Mavericks](https://mavericks.airbnb.tech/) | Low | No (Async wrapper) | Airbnb's lib; opinionated for large teams |
 | Roll your own | None | n/a | Most teams end up here after evaluating libs |
 
 For most Android teams: **roll your own.** MVI is small enough that a library mostly costs you flexibility. A 30-line ViewModel base class plus `StateFlow` + `Channel<Effect>` gets you 80% of any library.
@@ -282,13 +282,13 @@ For most Android teams: **roll your own.** MVI is small enough that a library mo
 
 | Symptom | Cause | Fix |
 |---|---|---|
-| Toast re-fires after rotation | One-off event modeled as state | Move to `Channel<Effect>` |
+| Toast re-fires after rotation | A consumed outcome is still represented as pending, or an event was replayed | Define acknowledgement in state for important outcomes; choose an event primitive only after specifying loss/replay/consumer requirements |
 | Multiple `Spinner`s flicker between requests | Multiple `MutableStateFlow`s updated sequentially | Single `_state.update { it.copy(...) }` |
 | Test asserts pass but UI looks wrong | MVVM with cross-stream invariants | Migrate to MVI; assertions become exhaustive |
 | `_state.update` lambda blocks recursively | Doing work inside the reducer | Reducer must be pure; do work in `processIntent` before calling `update` |
 | State god-object with 30 fields | Single screen doing too much | Split into composed sub-states |
 | Excessive Compose recomposition | Unstable params (e.g., `List`) inside state | `@Immutable` annotation; use `ImmutableList` |
-| Effect channel grows unbounded | Buffered too generously, consumer slow | Use `Channel.RENDEZVOUS` (default) or rate-limit at source |
+| Effect producer outpaces the consumer | A bounded Channel.BUFFERED eventually suspends senders; UNLIMITED can grow | Choose an explicit capacity and overflow policy, inspect failed trySend calls, and bound producer work |
 | `viewModelScope.launch` races overlap | Two intents racing for the same field | Use `Mutex` inside ViewModel or model as a sequential queue |
 | Compose recomposes the entire screen on tiny field change | Whole state passed to every composable | Split: `CheckoutContent(items, total, onIntent)` instead of `(state, onIntent)` |
 | `LaunchedEffect(state) { … }` runs constantly | Recomputed on every state change | Key on the specific field, not whole state |
@@ -358,3 +358,10 @@ For most Android teams: **roll your own.** MVI is small enough that a library mo
 - [Android Developers — Architecture recommendations](https://developer.android.com/topic/architecture/recommendations) — current ViewModel and UDF guidance.
 - [Orbit MVI documentation](https://orbit-mvi.org/) — battle-tested library reference.
 - [Cash App — Turbine](https://github.com/cashapp/turbine) — flow testing tool MVI tests live on.
+
+### Official verification references
+
+- [Primary documentation or owning implementation](https://developer.android.com/develop/ui/compose/performance/stability/strongskipping)
+- [Primary documentation or owning implementation](https://developer.android.com/kotlin/flow/stateflow-and-sharedflow)
+- [Primary documentation or owning implementation](https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines.channels/-channel/-factory/-b-u-f-f-e-r-e-d.html)
+- [Primary documentation or owning implementation](https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines.flow/-state-flow/)

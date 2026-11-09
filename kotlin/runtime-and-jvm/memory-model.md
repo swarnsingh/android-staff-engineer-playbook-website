@@ -49,7 +49,7 @@ fun computeArea() {
 ```
 
 - **Local primitives** (like variables in a function) may live on the stack or in registers. Non-null primitives *inside objects* live on the heap as part of their parent object.
-- **All object references** live on the stack or in registers; the actual objects they point to live on the heap.
+- **Local references** can live in stack frames or registers; references stored in object fields or arrays live in the heap with those containers. Referenced objects are managed heap objects unless optimized away.
 - **Closures** that capture a `var` cause that variable to live on the heap (so it can outlive the call).
 
 ### Boxing — the silent perf killer
@@ -63,7 +63,7 @@ val c: List<Int> = listOf(1, 2, 3)   // each Int boxed into Integer — heap × 
 val d: IntArray = intArrayOf(1, 2, 3)   // raw int[] — single heap allocation
 ```
 
-For perf-critical code, prefer `IntArray` / `LongArray` / `FloatArray` over `List<Int>` / `List<Long>` / `List<Float>`. The difference is huge: a `List<Int>` of 100k items is **100k+1** heap objects; an `IntArray` of 100k items is **1** heap object holding contiguous ints.
+For numeric buffers, primitive arrays avoid reference storage and boxing. `IntArray(100_000)` stores 100,000 primitive ints in one array. A typical `ArrayList<Int>` also has a list object, backing reference array, and boxed values; wrapper caching and shared values mean the object count is not universally 100,001. Measure retained bytes for the actual data/runtime.
 
 ### Coroutines and the Heap
 
@@ -100,7 +100,7 @@ How an object becomes reachable matters. There are four reference strengths:
 | **Strong** (default `val x = Foo()`) | Yes | Normal references |
 | **Soft** (`SoftReference<T>`) | Until memory pressure | In-memory caches that can be regenerated |
 | **Weak** (`WeakReference<T>`) | No (cleared on next GC) | Listener back-references, observers, caches keyed by lifecycle |
-| **Phantom** (`PhantomReference<T>`) | No (cleared even before finalize) | Native-resource cleanup hooks |
+| **Phantom** (`PhantomReference<T>`) | No; referent cannot be retrieved and post-mortem processing uses a reference queue | Native-resource cleanup hooks |
 
 ### Strong references — the default trap
 
@@ -161,18 +161,18 @@ Mostly seen in framework code (Coil, Glide, FFmpeg bindings) that needs to know 
 | Dalvik (pre-Android 5) | ART (Android 5+) |
 |---|---|
 | Just-in-time only | AOT (5/6) -> AOT + JIT PGO (7+) |
-| Mark-and-sweep GC | Concurrent generational GC (Android 8+) |
+| Mark-and-sweep GC | Concurrent Copying by default from Android 8; generational CC from Android 10 |
 | Long stop-the-world pauses (~50ms+) | Sub-5ms pauses typically |
 | ~1ms allocation cost | ~100ns allocation cost (TLAB) |
-| No Large Object Space | Separate LOS for Bitmaps |
+| Large-object handling depends on Dalvik version | Large-object handling depends on ART collector/version; bitmap pixels are not universally managed-heap LOS objects |
 
-ART introduced **generational GC** — most objects die young (short-lived locals), so the GC sweeps a small "young generation" frequently and the long-lived "old generation" rarely. Bitmaps go to a separate Large Object Space.
+Modern ART can use generational collection to reclaim short-lived objects separately from a full-heap collection. Concurrent Copying became the default in Android 8 and gained generational mode in Android 10. Bitmap pixel storage follows its own API-level/configuration rules; it is not generally a managed-heap Large Object Space allocation.
 
 What this means for your code:
 
 - **Allocations are cheap in modern ART.** Don't micro-optimize away every `String` concatenation.
 - **GC pauses are short** but still measurable. A burst of allocations during a list scroll can stack pauses and drop frames.
-- **Bitmaps still hurt.** They're large, often go to LOS, and frequently allocated to native heap (`Bitmap.Config.HARDWARE`) where the GC can't see them at all.
+- **Bitmaps still hurt.** Large pixel buffers consume process memory even when outside the managed heap. From Android 8, bitmap pixels use native storage; hardware bitmaps use graphics-backed storage. Their Java wrappers can participate in cleanup, but that does not remove the need for a memory budget.
 
 ---
 
@@ -220,7 +220,7 @@ override fun onDestroy() {
 }
 ```
 
-Or better: use `viewModelScope.launch` with `delay(60_000)`, which auto-cancels.
+For this Activity UI callback, use its `lifecycleScope` with `delay(60_000)` so cancellation follows Activity destruction. Do not move an Activity-capturing lambda into `viewModelScope`, whose ViewModel can outlive that Activity during a configuration change.
 
 ### 3. Listener registered, never unregistered
 
@@ -340,7 +340,7 @@ For leaks LeakCanary misses (non-Activity/Fragment leaks), or for OOM debugging:
 2. Reproduce the scenario several times (open screen → close → repeat 5x).
 3. Click "Force GC" → "Capture heap dump."
 4. Filter by your app's package.
-5. Sort by "Allocations" — anything with 5+ instances after a Force GC of a screen-scoped class is a leak.
+5. Inspect retained instances and their paths to GC roots. Repeated growth after the intended lifecycle ends is evidence to investigate; an arbitrary count such as five instances does not prove a leak.
 6. Click the instance → Reference tab → walk up to a GC root.
 
 ---
@@ -351,7 +351,7 @@ The JMM defines what one thread sees of another thread's writes. Critical primit
 
 | Primitive | Effect |
 |---|---|
-| `@Volatile` | Reads/writes have happens-before semantics across threads; no caching in CPU registers |
+| `@Volatile` | Atomic backing-field reads/writes and visibility/order guarantees; does not make compound read-modify-write atomic or promise to bypass CPU caches |
 | `synchronized` / `Mutex.withLock` | Mutual exclusion + memory barrier |
 | `AtomicReference` / `AtomicInteger` | Lock-free atomic ops + memory barrier |
 | `final` fields | Safely published after constructor completes |
@@ -410,7 +410,7 @@ Some objects live outside the JVM heap:
 - **NDK code** allocations.
 - **Cursor and SQLite handles** — kernel resources.
 
-The GC can't see these. Leaking them shows up as "the app uses 800 MB according to RSS but only 80 MB heap." Profile with the **Native Memory Profiler** (Android Studio) or `dumpsys meminfo <pkg>`.
+Managed-heap size does not include all native, graphics, mapped-file, or shared-page costs. Some Java wrappers arrange native cleanup, while other resources require explicit closing. A large RSS-to-managed-heap gap is a reason to inspect `dumpsys meminfo`, native allocations, and graphics accounting; it is not by itself proof of a leak.
 
 ---
 
@@ -457,7 +457,7 @@ When reviewing for memory:
 - **"WeakReference solves all leaks."** No. Leaks live deeper — a strong reference somewhere holds the chain.
 - **"`System.gc()` will fix my leak."** No. Force-GC reproduces the bug; it doesn't fix the reference chain. Real leak = something points where it shouldn't.
 - **"OOM means out of memory."** Not exactly — Android limits app heap; you can OOM with the device having 4GB free.
-- **"Bitmaps are in the Java heap."** Pre-Oreo: yes. Post-Oreo: native heap by default (Glide/Coil exploit this).
+- **"Bitmap pixels always live in the Java heap."** Pixel data used native memory through API 10, managed memory on API 11–25, and native memory again from API 26; hardware configuration adds graphics-backed restrictions. The managed Bitmap wrapper remains a separate object.
 - **"The Memory Profiler shows everything."** It shows the Java/Kotlin heap. Native memory needs the Native Memory Profiler. NDK code needs different tooling entirely.
 
 ---
@@ -481,13 +481,14 @@ When reviewing for memory:
 ## Answer Key
 
 1. **Walk through what happens at the JVM level when you write `val x: Int? = 5`. Where does `5` live?**
-   Because `x` is nullable (`Int?`), the primitive `5` must be boxed into a `java.lang.Integer` object. The reference `x` lives on the stack, while the `Integer` object containing `5` is allocated on the heap.
+   On the JVM, nullable `Int?` uses an `Integer` reference. Boxing `5` normally reuses a cached wrapper rather than creating a fresh object. The local reference can be held in a stack frame/register; object fields and arrays can also hold such references. Optimizers may eliminate unused values.
 2. **`List<Int>` of 100,000 items vs `IntArray` of 100,000 items — concretely, what's the memory footprint difference?**
-   `List<Int>` allocates 100,001 objects on the heap: one list object, plus 100,000 boxed `java.lang.Integer` objects. `IntArray` allocates exactly 1 object on the heap: a contiguous array of primitives. The `List<Int>` takes massively more memory and triggers much more GC pressure.
+   `IntArray(100_000)` has about 400,000 bytes of primitive payload plus an array header/alignment. A typical `ArrayList<Int>` adds a list object, a backing array of references, and boxed values; cached/reused wrappers change allocation counts. Exact bytes depend on capacity, pointer compression, headers, values, and runtime. Primitive arrays avoid those reference/boxing costs.
 3. **Explain the four reference strengths. Give one real Android use case for each (except phantom).**
    - **Strong**: Default reference; prevents GC entirely (e.g., `val view = View()`).
    - **Soft**: Kept alive until the system is under memory pressure; useful for large replaceable caches (though `LruCache` is preferred).
-   - **Weak**: Does not prevent GC; cleared immediately on the next pass. Useful for listeners or back-references (e.g., a bus holding observers).
+   - **Weak**: Does not keep an otherwise weakly reachable object alive; the collector clears the weak reference when it detects that reachability state. Collection timing is not guaranteed. Useful for optional back-references.
+   - **Phantom**: Cannot retrieve its referent (`get()` returns null); a reference queue can support cleanup after the object becomes phantom reachable. Prefer deterministic resource closing for timely release.
 4. **A user reports the app "slowly gets sluggish over the day, then crashes." Walk through your first 30 minutes of investigation.**
    This describes a classic memory leak leading to OOM. First, look at Crashlytics for `OutOfMemoryError` stack traces to confirm. Next, run a debug build with LeakCanary, navigate through the app's core screens repeatedly, and check the reports. If LeakCanary finds nothing, use the Android Studio Memory Profiler to take a heap dump after forcing GC, filter for app classes, and look for unexpectedly retained `Activity`, `Fragment`, or `Bitmap` instances.
 5. **LeakCanary points to MainActivity held by `ActivityThread.mActivities → ArrayMap → LocalActivityRecord`. How do you decide whether to fix it or mark as platform bug?**
@@ -495,11 +496,11 @@ When reviewing for memory:
 6. **Why is `BitmapFactory.decodeResource(huge_image)` dangerous? What's the safer pattern?**
    It decodes the full original resolution of the image into memory, easily consuming 30+ MB and causing an OOM. The safer pattern is using an image loading library (Coil/Glide) that automatically downsamples the image to the target View's exact pixel dimensions before decoding, or passing `inSampleSize` manually via `BitmapFactory.Options`.
 7. **Walk through a textbook double-checked locking singleton. Why does `@Volatile` matter?**
-   Double-checked locking checks for null, acquires a lock, checks for null again, and then instantiates. `@Volatile` ensures the newly created object's fields are fully initialized and flushed to main memory *before* the `INSTANCE` reference is made visible to other threads. Without it, instruction reordering could allow another thread to see a non-null `INSTANCE` pointing to an uninitialized object.
+   Double-checked locking reads the reference, acquires a lock on the slow path, checks again and initializes once. A volatile publication establishes the visibility and ordering needed for readers to observe preceding initialization writes. Describe this as a happens-before guarantee, not literal CPU-cache bypass or a universal physical RAM flush.
 8. **Singleton DI vs activity-scoped DI — why does scope matter for memory?**
    A Singleton DI component lives for the lifetime of the application process. If it holds state or references (like an Activity or View), those objects will never be garbage collected, causing a massive memory leak. Activity-scoped DI components are destroyed when the Activity is destroyed, allowing the GC to reclaim everything tied to that screen.
 9. **`GlobalScope.launch` vs `viewModelScope.launch` — what's the memory difference?**
-   `GlobalScope.launch` creates a coroutine that runs until completion or process death. If it captures a reference to an Activity or View, it will leak them if the screen closes before the coroutine finishes. `viewModelScope.launch` is tied to the ViewModel's lifecycle; it automatically cancels running coroutines when the ViewModel is cleared, breaking the reference chain and preventing the leak.
+   `GlobalScope.launch` has no screen owner; an unfinished coroutine can retain a captured Activity/View after destruction. `viewModelScope` requests cancellation when the ViewModel is cleared, but a retained ViewModel survives configuration changes and cancellation must still be observed. Keep View/Activity captures out of ViewModels; use the view/Activity lifecycle owner for UI-specific work.
 10. **A Fragment's `View` is destroyed in `onDestroyView` but the Fragment isn't. Why is `_binding = null` necessary?**
     The Fragment instance outlives its View hierarchy (e.g., when placed on the back stack). If the Fragment retains a strong reference to the ViewBinding, the entire View tree (and any associated Bitmaps) cannot be garbage collected, causing a heavy memory leak until the Fragment itself is finally destroyed.
 11. **ART generational GC: explain "young generation" vs "old generation" and what it means for your code.**
@@ -522,6 +523,17 @@ When reviewing for memory:
 - [`../android/os-internals/art-and-dalvik.md`](../../android/os-internals/art-and-dalvik.md) — ART runtime internals.
 - [Android Developers — Manage your app's memory](https://developer.android.com/topic/performance/memory) — official guide.
 - [LeakCanary docs](https://square.github.io/leakcanary/) — the tool every Android app should ship.
-- [Pierre-Yves Ricau — "A small leak will sink a great ship"](https://medium.com/square-corner-blog/) — LeakCanary author's deep-dive.
-- [JEP 197 — Segmented Code Cache](https://openjdk.org/jeps/197) — JIT / generational GC background.
-- [Romain Guy — "Memory and tracing"](https://www.curious-creature.com/) — long-time Android graphics engineer's profiling notes.
+- [Pierre-Yves Ricau — "LeakCanary: Detect all memory leaks!"](https://developer.squareup.com/blog/leakcanary-detect-all-memory-leaks/) — LeakCanary author's introduction.
+- [AOSP — Debug ART garbage collection](https://source.android.com/docs/core/runtime/gc-debug) — collector modes, generational CC, and diagnostics. [JEP 197 — Segmented Code Cache](https://openjdk.org/jeps/197) concerns JVM compiled-code cache organisation, not generational heap collection.
+- [Android Developers — Overview of memory management](https://developer.android.com/topic/performance/memory-overview) — how ART and Android manage app memory.
+
+### Official verification references
+
+- [Primary documentation or owning implementation](https://developer.android.com/studio/profile/capture-heap-dump)
+- [Primary documentation or owning implementation](https://developer.android.com/topic/libraries/architecture/coroutines)
+- [Primary documentation or owning implementation](https://developer.android.com/topic/performance/graphics/manage-memory)
+- [Primary documentation or owning implementation](https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/lang/Integer.html#valueOf(int))
+- [Primary documentation or owning implementation](https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/lang/ref/PhantomReference.html)
+- [Primary documentation or owning implementation](https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/lang/ref/WeakReference.html)
+- [Primary documentation or owning implementation](https://docs.oracle.com/javase/specs/jvms/se21/html/jvms-2.html)
+- [Primary documentation or owning implementation](https://kotlinlang.org/api/core/kotlin-stdlib/kotlin.concurrent/-volatile/)

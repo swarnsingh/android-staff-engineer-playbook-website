@@ -472,7 +472,7 @@ See the [Firebase Dynamic Links deprecation FAQ](https://firebase.google.com/sup
 - [Android Developers — Navigation deep links](https://developer.android.com/guide/navigation/design/deep-link) — explicit and implicit deep links and the back stack they build.
 - [Digital Asset Links spec](https://developers.google.com/digital-asset-links/v1/getting-started) — the assetlinks.json format.
 - [Install Referrer API](https://developer.android.com/google/play/installreferrer) — deferred deep link basics.
-- [Branch.io — deferred deep linking](https://help.branch.io/) — vendor for full attribution.
+- [Branch.io — deferred deep linking](https://www.branch.io/glossary/deferred-deep-linking/) — vendor for full attribution.
 
 ---
 

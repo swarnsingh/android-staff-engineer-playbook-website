@@ -157,7 +157,7 @@ Across the whole screen:
 
 ```mermaid
 graph TD
-  Repository["Repository<br/>data source"] -->|Flow.collectAsState| VM["ViewModel<br/>screen state holder"]
+  Repository["Repository<br/>data source"] -->|Flow mapped or shared in ViewModel| VM["ViewModel<br/>screen state holder"]
   VM -->|StateFlow| UI["Composable<br/>renders state"]
   UI -->|events / intents| VM
   VM -->|suspend calls| Repository
@@ -245,7 +245,7 @@ Restriction: `rememberSaveable` requires the value to be `Parcelable`, `Serializ
 
 ## `SavedStateHandle` — Process-Death Survival
 
-When the OS kills your app for memory reasons (Doze, low memory, user backgrounded long enough), the process dies but the system records "you had this Activity open." When the user returns, Android restores it — but your ViewModel is gone.
+When Android kills a background process to reclaim memory, the task may remain restorable even though its ViewModel objects are gone. Doze defers CPU/network work to save power; it is not a memory-kill mechanism. Restore small UI inputs from saved state and durable data from persistence.
 
 `SavedStateHandle` rescues a small amount of state across that gap:
 
@@ -401,7 +401,7 @@ sealed interface FeedUiState {
 }
 
 @HiltViewModel
-class FeedViewModel(repo: FeedRepository) : ViewModel() {
+class FeedViewModel @Inject constructor(repo: FeedRepository) : ViewModel() {
     val uiState: StateFlow<FeedUiState> = repo.observePosts()
         .map { FeedUiState.Success(it.toImmutableList()) as FeedUiState }
         .catch { emit(FeedUiState.Error(it.message.orEmpty(), retryable = true)) }
@@ -418,7 +418,9 @@ data class CheckoutUiState(
 )
 
 @HiltViewModel
-class CheckoutViewModel : ViewModel() {
+class CheckoutViewModel @Inject constructor(
+    private val api: CheckoutApi,
+) : ViewModel() {
     private val _uiState = MutableStateFlow(CheckoutUiState())
     val uiState = _uiState.asStateFlow()
 
@@ -471,7 +473,7 @@ UI-only state, testable, reusable.
 
 ```kotlin
 @HiltViewModel
-class CheckoutWizardViewModel(
+class CheckoutWizardViewModel @Inject constructor(
     handle: SavedStateHandle,
 ) : ViewModel() {
     val shipping: StateFlow<String> = handle.getStateFlow("shipping", "")
@@ -505,8 +507,8 @@ State persists across the three wizard pages and survives process death.
 | `LiveData` value is `null` initially even with `MutableLiveData<T>` initialized | LiveData's value can race vs first observer | Prefer `StateFlow<T>` which has a guaranteed initial value |
 | ViewModel state grows to 30 fields | God-state | Decompose into composed sub-state classes |
 | `@Composable` recomposes whole tree on small state change | Whole state passed to deep tree | Pass only the slice the Composable needs |
-| `viewModelScope.launch { ... }` overlaps races on same field | Two intents fire concurrently | Mutex, or model as event-sourced; or `MutableSharedFlow.update` |
-| `SavedStateHandle` value not persisted across process death | Set after `onStop` (savings already flushed) | Set values eagerly, not in `onDestroy` paths |
+| Concurrent intents update the same state | A read-modify-write is not atomic | Use a pure MutableStateFlow.update transform for one state value; use a Mutex or explicit serialized owner for multi-step work |
+| SavedStateHandle change is missing after recreation | It was not included in the owner's saved-state capture | Write UI state as it changes; updates made while stopped require another start/stop save cycle. Do not use saved state as durable storage |
 | Compose recomposes when `LiveData` value changes but should be observed via lifecycle | `observeAsState` bypasses lifecycle | Use `collectAsStateWithLifecycle` (and `StateFlow`) |
 | Cross-fragment shared ViewModel resets when navigating away | Used `viewModels()` instead of `activityViewModels()` / `hiltNavGraphViewModels` | Match scope to required lifetime |
 
@@ -579,4 +581,12 @@ State persists across the three wizard pages and survives process death.
 - [Android Developers — State and Jetpack Compose](https://developer.android.com/develop/ui/compose/state) — official.
 - [Android Developers — UI Layer guidance](https://developer.android.com/topic/architecture/ui-layer) — official.
 - [Android Developers — State holders](https://developer.android.com/topic/architecture/ui-layer/stateholders) — official.
-- [Manuel Vivo — State holders and state production](https://medium.com/androiddevelopers/) — Google DevRel writeups.
+- [Android Developers — State holders and UI state](https://developer.android.com/topic/architecture/ui-layer/stateholders) — official guidance.
+
+### Official verification references
+
+- [Primary documentation or owning implementation](https://dagger.dev/hilt/view-model.html)
+- [Primary documentation or owning implementation](https://developer.android.com/develop/ui/compose/state#use-other-types-of-state-in-jetpack-compose)
+- [Primary documentation or owning implementation](https://developer.android.com/topic/libraries/architecture/viewmodel/viewmodel-savedstate)
+- [Primary documentation or owning implementation](https://developer.android.com/training/monitoring-device-state/doze-standby)
+- [Primary documentation or owning implementation](https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines.flow/update.html)

@@ -9,12 +9,13 @@
       "https://developer.android.com/training/dependency-injection/hilt-android",
       "https://raw.githubusercontent.com/square/okhttp/master/okhttp/src/commonJvmAndroid/kotlin/okhttp3/Authenticator.kt"
     ],
-    "status": "approved",
+    "status": "superseded-by-merged-source",
     "approval": "Owner merged source PR #72 and instructed publication, 2026-11-01.",
     "source_pr": 72,
     "source_commit": "7666569cf77db7616d43f05cf041c438cb947035",
     "source_sha256": "afca875949cadd43308f7a653d9b7c50dac1cf7825a8dea10ac3d8e57ddf3691",
-    "validation": "Exact post-correction chapter matches the merged source bytes; source sample probes and publication browser evidence are recorded in the Observability report."
+    "validation": "Exact post-correction chapter matches the merged source bytes; source sample probes and publication browser evidence are recorded in the Observability report.",
+    "superseded_by": "source-snapshot.json android_provenance"
   },
   {
     "id": "OBS72-anrs",
@@ -25,12 +26,13 @@
     "sources": [
       "https://developer.android.com/topic/performance/vitals/anr"
     ],
-    "status": "approved",
+    "status": "superseded-by-merged-source",
     "approval": "Owner merged source PR #72 and instructed publication, 2026-11-01.",
     "source_pr": 72,
     "source_commit": "7666569cf77db7616d43f05cf041c438cb947035",
     "source_sha256": "6b3d8aee786399f64adbe922cb5ba11a76d5af5bc4346216885bdcb6ba5955cb",
-    "validation": "Exact post-correction chapter matches the merged source bytes; source sample probes and publication browser evidence are recorded in the Observability report."
+    "validation": "Exact post-correction chapter matches the merged source bytes; source sample probes and publication browser evidence are recorded in the Observability report.",
+    "superseded_by": "source-snapshot.json android_provenance"
   },
   {
     "id": "OBS72-memory-management-and-leaks",
@@ -41,11 +43,12 @@
     "sources": [
       "https://developer.android.com/training/dependency-injection/hilt-android"
     ],
-    "status": "approved",
+    "status": "superseded-by-merged-source",
     "approval": "Owner merged source PR #72 and instructed publication, 2026-11-01.",
     "source_pr": 72,
     "source_commit": "7666569cf77db7616d43f05cf041c438cb947035",
     "source_sha256": "1b5a03e59f35d46dd2b8047dd47abaa51f59d29c102757d392d60dcc53121ed4",
-    "validation": "Exact post-correction chapter matches the merged source bytes; source sample probes and publication browser evidence are recorded in the Observability report."
+    "validation": "Exact post-correction chapter matches the merged source bytes; source sample probes and publication browser evidence are recorded in the Observability report.",
+    "superseded_by": "source-snapshot.json android_provenance"
   }
 ]

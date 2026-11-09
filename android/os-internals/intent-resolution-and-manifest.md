@@ -93,7 +93,7 @@ sequenceDiagram
     AMS->>Target: launch component via Binder
 ```
 
-For explicit intents, resolution is direct. For implicit intents, PackageManager compares the intent to every visible matching filter and produces candidates. If multiple apps match, Android may show a chooser unless one app is verified/default for the domain or action.
+Resolution matches the intent against eligible filters under the system rules. Caller package visibility restricts query results; it is not a prerequisite for starting an otherwise accessible activity.
 
 ---
 
@@ -219,7 +219,7 @@ contentResolver.openInputStream(uri).use { input ->
 | Failure | Cause | Fix |
 |---|---|---|
 | Malicious deep link opens private screen | Router trusts URI | Validate + auth gate |
-| `ActivityNotFoundException` | No app resolves implicit intent | Check `resolveActivity` or use chooser |
+| ActivityNotFoundException | No accessible handler for the actual start | Attempt startActivity and catch ActivityNotFoundException. A visibility-filtered resolveActivity null does not by itself prove no handler exists |
 | Resolver shows wrong app | Over-broad intent filter | Narrow action/data/category |
 | Internal screen launched by another app | `exported=true` accidentally | Set exported false |
 | PendingIntent hijack | Mutable pending intent | Use immutable flags |
@@ -254,7 +254,7 @@ contentResolver.openInputStream(uri).use { input ->
 1. **What is the difference between explicit and implicit intents?**
    Explicit intents specify the exact component class to launch and are used for internal app navigation. Implicit intents specify an action and data, allowing the OS to find and launch any app that has declared an intent filter capable of handling that request.
 2. **How does Android match an implicit intent to an activity?**
-   The `PackageManagerService` compares the implicit intent's action, data (URI scheme, host, path, MIME type), and category against the intent filters declared in the manifests of all installed and visible apps.
+   The system resolves eligible intent filters. Query APIs such as resolveActivity are constrained by caller visibility, while startActivity does not require that query visibility; attempt the start and handle ActivityNotFoundException.
 3. **Why does `CATEGORY_BROWSABLE` matter for web links?**
    It signals to the OS that the activity is safe to be launched directly from a web browser. Without this category, links clicked inside a browser will not resolve to your app, even if the scheme and host match.
 4. **What does `android:exported` protect?**
@@ -277,3 +277,7 @@ contentResolver.openInputStream(uri).use { input ->
 - [Android Developers: Intents and intent filters](https://developer.android.com/guide/components/intents-filters)
 - [Android Developers: App manifest overview](https://developer.android.com/guide/topics/manifest/manifest-intro)
 - [Android Developers: Package visibility](https://developer.android.com/training/package-visibility)
+
+### Official verification references
+
+- [Primary documentation or owning implementation](https://developer.android.com/training/package-visibility/use-cases)

@@ -121,7 +121,7 @@ class CheckoutViewModel(
 
 **What to Save vs What to Re-fetch**
 
-The OS `Bundle` is incredibly constrained. It is sent over the Binder (IPC limit of 1MB total across all apps). If you try to shove a 2MB downloaded Image or a 500-item JSON list into the `Bundle`, your app will crash with a `TransactionTooLargeException`.
+A saved-state `Bundle` crosses Binder. The currently 1 MB transaction buffer is shared by in-flight transactions in the app process; it is not a system-wide allowance or a safe target size for one Bundle. Large images or JSON payloads can trigger `TransactionTooLargeException`; persist the data and save a small identifier.
 
 **The Tradeoff:**
 - **Store in Bundle:** Tiny UI state. Scroll positions, navigation IDs, draft text input, selected filter tabs.
@@ -154,7 +154,7 @@ The OS `Bundle` is incredibly constrained. It is sent over the Binder (IPC limit
 
 When reviewing code, a Staff engineer aggressively audits for Process Death survival:
 
-1.  **Do we test for it?** Junior developers almost never test Process Death. They test configuration changes (rotation). I will enforce that QAs test feature flows using the "Don't keep activities" developer option, or by explicitly killing the process via ADB.
+1. **Test the actual boundary.** Background the app, kill its background process with `adb shell am kill <package>`, then restore its task from Recents and inspect restored state. “Don't keep activities” tests Activity recreation while the process survives; force-stop changes task/package behavior and is a separate test.
 2.  **Are we relying on singletons for transient state?** If a feature relies on data passed between screens via a global `object` variable, it is fundamentally broken. I will demand the data be passed via Jetpack Navigation SafeArgs (which survive Process Death automatically) or written to a database.
 3.  **Is the "Cold Start" optimized?** When recovering from Process Death, the user expects to instantly see the screen they were on. If the `Application.onCreate()` is bloated with 30 library initializations, the restoration will take 5 seconds. I will aggressively push library initialization to background threads (e.g., using Jetpack App Startup).
 
@@ -195,3 +195,8 @@ When reviewing code, a Staff engineer aggressively audits for Process Death surv
 - [`viewmodel.md`](viewmodel.md) — Understanding what the ViewModel actually does (and does not) protect you from.
 - [Android Developers: Saving UI States](https://developer.android.com/topic/libraries/architecture/saving-states)
 - [Android Developers: Saved State module for ViewModel](https://developer.android.com/topic/libraries/architecture/viewmodel/viewmodel-savedstate)
+
+### Official verification references
+
+- [Primary documentation or owning implementation](https://developer.android.com/guide/components/activities/parcelables-and-bundles)
+- [Primary documentation or owning implementation](https://developer.android.com/guide/components/activities/process-lifecycle)

@@ -1,6 +1,6 @@
 # Platform Engineering: Build Graph Scaling & Profiling
 
-> A 10-minute local build forces 6 compiles per hour. Sixty engineers × 6 builds × 10 min = 60 engineer-hours destroyed per day. The build graph is the single highest-leverage system a Platform Engineer owns: every second cut compounds across every engineer for every commit forever.
+> A 10-minute local build caps an engineer at 6 compiles per hour. If sixty engineers each wait on six 10-minute builds a day, that is 60 × 6 × 10 min = 60 engineer-hours of waiting per day. The build graph is the single highest-leverage system a Platform Engineer owns: every second cut compounds across every engineer for every commit forever.
 
 ---
 
@@ -8,8 +8,8 @@
 
 Gradle is a JVM program that:
 
-1. **Configures** every `build.gradle.kts` in the project to assemble a `Project` tree (the "configuration phase").
-2. **Resolves** the dependency graph between modules — a Directed Acyclic Graph (DAG) — and the dependency graph between tasks within each module.
+1. **Initializes** the build: reads `settings.gradle.kts` to find the projects and included builds that participate (the "initialization phase").
+2. **Configures** those projects' `build.gradle.kts` files, registers their tasks, and builds the task graph — a Directed Acyclic Graph (DAG) whose edges include the dependencies between modules (the "configuration phase").
 3. **Executes** the task graph, scheduling tasks onto worker threads, respecting dependencies, and reusing outputs from caches.
 
 Think of it as a small distributed scheduler running on your laptop. Like any scheduler, three things kill it:
@@ -50,17 +50,17 @@ graph LR
   Feat3 --> App
 ```
 
-Critical path: 3. All three features compile in parallel on three cores. The Platform team's job is to keep `:core` thin (interfaces, no implementation) and push behavior down into peer feature modules.
+Critical path: 3. All three features can compile in parallel on three cores once parallel execution is on (`org.gradle.parallel=true`, or the configuration cache, which runs tasks in parallel by default). The Platform team's job is to keep `:core` thin (interfaces, no implementation) and push behavior down into peer feature modules.
 
 ### Diagnose the graph
 
 ```bash
 ./gradlew :app:dependencies --configuration releaseRuntimeClasspath
-./gradlew projectDependencyGraph   # via the dependency-graph plugin
-./gradlew :app:buildEnvironment
+./gradlew generateProjectDependencyGraph   # via the dependency-graph-generator plugin
+./gradlew :app:buildEnvironment            # build-script (plugin) classpath
 ```
 
-For a visual graph, the [`dependency-graph-generator`](https://github.com/savvasdalkitsis/module-dependency-graph) plugin produces a Mermaid or DOT file that you can paste straight into a PR description when proposing a refactor.
+For a visual graph, the [`dependency-graph-generator`](https://github.com/vanniktech/gradle-dependency-graph-generator-plugin) plugin writes the module graph as DOT, PNG and SVG files under `build/reports/project-dependency-graph/`; attach the image to a PR description when proposing a refactor.
 
 ---
 
@@ -69,33 +69,33 @@ For a visual graph, the [`dependency-graph-generator`](https://github.com/savvas
 ```kotlin
 // :feature:cart/build.gradle.kts
 dependencies {
-    api(project(":core"))            // BAD: leaks :core types into :feature:cart's ABI
+    api(project(":core"))            // BAD unless :core types appear in :feature:cart's public API
     implementation(project(":network")) // GOOD: :network is an internal detail
 }
 ```
 
 The distinction:
 
-- **`api`** — the dependency is part of the module's public ABI. Anyone who depends on `:feature:cart` transitively sees `:core`'s types. A change to `:core`'s public API forces a recompile of every transitive consumer.
-- **`implementation`** — the dependency is hidden inside the module. Consumers don't see it. A change to `:network` triggers a recompile of `:feature:cart` only, not of `:app`.
+- **`api`** — the dependency is exposed to consumers: it lands on the compile classpath of anyone who depends on `:feature:cart`, so they transitively see `:core`'s types. A change to `:core`'s public API forces a recompile of every consumer that has it on its compile classpath.
+- **`implementation`** — the dependency is hidden inside the module and stays off consumers' compile classpath. A change to `:network` recompiles `:feature:cart`; `:app` recompiles only if `:feature:cart`'s own ABI changes.
 
 The default should be `implementation`. `api` is a deliberate ABI commitment. Catch leaks with:
 
 ```kotlin
-// settings.gradle.kts
+// settings.gradle.kts — the settings-level plugin ID is build-health
 plugins {
-    id("com.autonomousapps.dependency-analysis") version "1.+"
+    id("com.autonomousapps.build-health") version "3.20.2"
 }
 // ./gradlew buildHealth
 ```
 
-The Dependency Analysis plugin flags every `api` usage that should be `implementation` and every transitive dep that should be declared directly. Run it in CI.
+The Dependency Analysis plugin flags every `api` usage that should be `implementation`, unused dependencies, and every transitive dep that should be declared directly. If the project uses Kotlin or Android, those plugins must also be on the settings classloader. Run it in CI and make violations fail with `dependencyAnalysis { issues { all { onAny { severity("fail") } } } }` in the root build script.
 
 ---
 
 ## Module Type Taxonomy
 
-Codify three module shapes so engineers don't invent their own:
+Codify four module shapes so engineers don't invent their own:
 
 | Type | Contents | Depends on | Depended on by |
 |---|---|---|---|
@@ -132,21 +132,17 @@ class AndroidLibraryConventionPlugin : Plugin<Project> {
             // AGP 9+ supplies built-in Kotlin for Android modules.
         }
         extensions.configure<LibraryExtension> {
-            compileSdk = 34
+            compileSdk = 36
             defaultConfig.minSdk = 26
             compileOptions {
                 sourceCompatibility = JavaVersion.VERSION_17
                 targetCompatibility = JavaVersion.VERSION_17
             }
         }
-        tasks.withType<KotlinCompile>().configureEach {
-            kotlinOptions {
-                jvmTarget = "17"
-                freeCompilerArgs += listOf(
-                    "-Xexplicit-api=strict",
-                    "-opt-in=kotlin.RequiresOptIn",
-                )
-            }
+        // kotlinOptions {} is an error since Kotlin 2.2; use compilerOptions/the kotlin extension.
+        // With built-in Kotlin, jvmTarget defaults to compileOptions.targetCompatibility.
+        extensions.configure<KotlinAndroidProjectExtension> {
+            explicitApi()   // strict mode, same as -Xexplicit-api=strict
         }
     }
 }
@@ -176,8 +172,8 @@ buildCache {
         url = uri("https://gradle-cache.yourorg.internal/cache/")
         isPush = System.getenv("CI") == "true"   // only CI pushes; devs pull
         credentials {
-            username = providers.gradleProperty("cacheUser").get()
-            password = providers.gradleProperty("cachePassword").get()
+            username = providers.gradleProperty("cacheUser").orNull
+            password = providers.gradleProperty("cachePassword").orNull
         }
     }
 }
@@ -187,14 +183,14 @@ The mental model: CI computes the cache; engineers download from it.
 
 - CI builds `main` → uploads `:feature:cart` output keyed by hash of inputs.
 - Engineer pulls `main`, runs build → local Gradle hashes the same inputs, finds the entry, downloads pre-compiled bytecode.
-- A 10-minute clean build collapses to network download time.
+- On a full cache hit, a 10-minute clean build shrinks to configuration, download time and whatever tasks are not cacheable.
 
 ### Cache key fragility
 
 The cache hits depend on the inputs hashing identically across machines. Common breakers:
 
-- **Absolute paths embedded in generated code.** Hilt, Glide, and earlier KAPT versions did this. The fix is the `relocate-paths` plugin or upgrading.
-- **Timestamps in build outputs.** Set `archivesBaseName` without timestamps; configure `Jar` tasks with `preserveFileTimestamps = false` and `reproducibleFileOrder = true`.
+- **Absolute paths in task inputs or generated code.** Declare path sensitivity on custom task inputs (`@PathSensitive(PathSensitivity.RELATIVE)`), and upgrade or report any processor or plugin that writes machine-specific paths into its outputs.
+- **Timestamps in build outputs.** Since Gradle 9, archive tasks (`Jar`, `Zip`, …) produce reproducible archives by default (fixed file order and timestamps); on Gradle 8 set `isPreserveFileTimestamps = false` and `isReproducibleFileOrder = true`. Keep timestamps out of `base { archivesName }` and generated sources (`archivesBaseName` was removed in Gradle 9).
 - **`Locale` / time-zone differences.** Force `LC_ALL=C.UTF-8` and `TZ=UTC` in CI.
 - **Hostname / username** anywhere in outputs.
 
@@ -204,21 +200,23 @@ Track hit rate per task in Develocity (Gradle Enterprise) and gate the build-log
 
 ## Configuration Cache
 
-Gradle 8+ ships configuration caching as production-ready.
+The configuration cache has been stable since Gradle 8.1, and Gradle 9 makes it the preferred (not yet default) mode of execution.
 
 ```properties
 # gradle.properties
 org.gradle.configuration-cache=true
+# Incubating: stores cache entries in parallel (loading is always parallel)
 org.gradle.configuration-cache.parallel=true
 ```
 
-What it does: serializes the configured task graph to disk. On the next build, if nothing about the configuration changed, Gradle skips configuration entirely and jumps to execution. Typical savings: 8-25 seconds per build on a 100-module project.
+What it does: serializes the configured task graph to disk. On the next build, if nothing about the configuration changed, Gradle skips configuration entirely and jumps to execution. It also lets tasks run in parallel, even within the same project. The saving is roughly your configuration time per build; measure it with a build scan rather than assuming a number.
 
 What breaks it:
 
 - Tasks reading `project.foo` during execution.
 - Plugins capturing `Project` references in task action closures.
-- `System.getenv()` reads outside declared providers.
+
+What invalidates it: environment variables, system properties and files read at configuration time become cache inputs, so a value that changes on every build (a timestamp, a CI build number) forces reconfiguration every time. Read such values through `providers.environmentVariable()` wired into a task property, so they resolve at execution time instead.
 
 ```kotlin
 // BAD — captures `project` at execution time
@@ -264,29 +262,33 @@ A scan uploads detailed timing to `scans.gradle.com` (or self-hosted Develocity)
 
 ## KAPT → KSP Migration
 
-KAPT (Kotlin Annotation Processing Tool) runs a Java stub-generation step before Kotlin compilation. It is single-threaded, breaks incremental compilation in old versions, and adds 30-90s on large modules.
+KAPT (Kotlin Annotation Processing Tool) generates Java stubs from Kotlin sources and then runs Java annotation processors over them. The stub step is extra work on every processed module; measure its cost in your own build scans.
 
-KSP (Kotlin Symbol Processing) is 2× faster and incremental.
+KSP (Kotlin Symbol Processing) analyzes Kotlin directly; Android's migration guide says it is up to 2× faster than KAPT.
 
 Migration cheat sheet:
 
 | Annotation processor | KSP support |
 |---|---|
-| Hilt | KSP since Hilt 2.48 |
-| Room | KSP since Room 2.5 |
-| Moshi | KSP since 1.13 |
-| Glide | Use KSP fork or Coil 3 |
-| Dagger (non-Hilt) | KSP since 2.48 (dagger-compiler) |
+| Hilt | Stable with Dagger/Hilt 2.60+ and KSP 2.3.9+ |
+| Room | Since Room 2.3.0 (experimental at first) |
+| Moshi | KSP since 1.13 (`moshi-kotlin-codegen`) |
+| Glide | `com.github.bumptech.glide:ksp` (no generated `GlideApp` API), or Coil 3 |
+| Dagger (non-Hilt) | Stable with Dagger 2.60+ and KSP 2.3.9+ (dagger-compiler) |
+
+```toml
+# gradle/libs.versions.toml
+[plugins]
+ksp = { id = "com.google.devtools.ksp", version = "2.3.12" }   # KSP2 versions no longer encode the Kotlin version
+hilt = { id = "com.google.dagger.hilt.android", version = "2.60.1" }
+```
 
 ```kotlin
-// libs.versions.toml
-[plugins]
-ksp = { id = "com.google.devtools.ksp", version = "1.9.22-1.0.17" }
-
 // :feature:cart/build.gradle.kts
 plugins {
     id("yourorg.android.library")
     alias(libs.plugins.ksp)
+    alias(libs.plugins.hilt)
 }
 dependencies {
     implementation(libs.hilt.android)
@@ -314,7 +316,7 @@ kotlin.daemon.jvmargs=-Xmx4g
 
 Rules of thumb:
 
-- `workers.max` ≈ number of physical cores. Hyperthreading rarely helps for JVM compilers.
+- `workers.max` defaults to the number of CPU processors. Set it explicitly only when you have measured a reason, such as memory pressure on CI runners.
 - `-Xmx` high enough that GC time < 5% of build time. Too high and you waste RAM that should go to the IDE; too low and GC dominates.
 - Kotlin daemon gets its own heap — tune separately.
 
@@ -325,9 +327,9 @@ Rules of thumb:
 | Symptom | Likely cause | Fix |
 |---|---|---|
 | CI 3× slower than local | No remote cache push, or it's network-blocked | Verify `isPush = CI`, check cache server logs |
-| Cache hit rate dropped overnight | Compiler upgrade changed bytecode, or new plugin embedding paths | Bisect plugin list; `--scan` cache report |
+| Cache hit rate dropped overnight | A compiler or plugin upgrade changed the plugin classpath in every affected task's cache key (expected misses until CI repopulates the cache), or a new plugin embeds paths | If misses persist after CI has rebuilt `main`, bisect the plugin list; `--scan` cache report |
 | `Configuration cache problems found` | Plugin reads project state at execution | Upgrade plugin, or quarantine the task |
-| Random "duplicate class" errors | Two modules both bring the same transitive dep | `./gradlew :app:dependencies` → `exclude` or version-align |
+| Random "duplicate class" errors | The same classes arrive through two artifacts (a library that bundles another you also declare, or local and remote copies of one library) | `./gradlew :app:dependencies` → remove the duplicate artifact or `exclude` it |
 | OOM on CI but not locally | CI runner has less RAM | Tune `org.gradle.jvmargs` per env via `~/.gradle/gradle.properties` baked into the image |
 | One module takes 90s to compile | Generated code blow-up (R class, Hilt, Room) | Split the module, or check generated-source size |
 | `Daemon will be stopped at the end of the build` | Daemon OOM or sysprop mismatch | Increase `-Xmx`; standardize JVM across team |
@@ -366,7 +368,7 @@ The rule is simple: if a module taxes every engineer's build, the module owner o
 
 - **Engineers add `api` "to make compile errors go away."** Add a CI check (Dependency Analysis plugin) that fails the build on new `api` usages.
 - **The `:core` module becomes the new monolith.** Anything anyone needs ends up there, so every change rebuilds the world. Enforce a "no business logic in `:core`" rule and split aggressively.
-- **Gradle wrapper version drift.** Some engineers on 8.5, CI on 8.7. Pin the wrapper and add a CI guard that asserts `./gradlew --version` matches.
+- **Gradle version drift.** `./gradlew` always runs the version pinned in `gradle-wrapper.properties`, so drift comes from engineers or IDE settings invoking a locally installed `gradle` instead. Use the wrapper everywhere, and validate the wrapper JAR in CI (for example with Gradle's wrapper-validation GitHub Action).
 - **`./gradlew clean` culture.** "Try clean build first" is a sign cache invalidation is broken. Fix the root cause; don't paper over it with `clean`.
 - **Treating build perf as one engineer's hobby project.** Stand up a Build Platform sub-team with a real headcount. The savings are real engineering hours.
 
@@ -390,9 +392,9 @@ The rule is simple: if a module taxes every engineer's build, the module owner o
 1. **Your build takes 11 minutes locally. Walk through the first 30 minutes of investigation.**
    Run `./gradlew assembleDebug --scan`. Open the build scan and check the "Timeline" to identify critical-path bottlenecks. Check "Performance" for configuration time, cache hit rate, and garbage collection time. Look for KAPT tasks and non-incremental tasks.
 2. **What's the difference between `api` and `implementation` at the bytecode level? Why does ABI matter for incremental builds?**
-   At the bytecode level, they are similar, but Gradle uses them to determine the ABI (Application Binary Interface). `api` leaks the dependency's types into the module's public ABI. If an ABI changes, Gradle must recompile all downstream consumers. `implementation` hides types, so changes only recompile the immediate module.
+   There is no bytecode difference: `api` and `implementation` are Gradle configurations, not compiler output. They decide whether the dependency is exposed on consumers' compile classpath (`api`) or kept on the runtime classpath only (`implementation`). Gradle's compile avoidance recompiles a consumer only when the ABI (Application Binary Interface) of something on its compile classpath changes. With `api`, a dependency's ABI change ripples to every consumer; with `implementation`, it recompiles only the module that declares it, unless that module's own ABI changes.
 3. **The remote cache hit rate dropped from 90% to 40% after a Kotlin compiler upgrade. What's the most likely cause?**
-   The compiler upgrade changed the generated bytecode or metadata, altering the cache keys for all compiled outputs. It could also be that a plugin is embedding non-deterministic data (like absolute paths or timestamps) that surfaced with the new compiler.
+   A task's type and its plugin classpath are part of its cache key, so a new Kotlin Gradle plugin version gives every Kotlin compile task a new key and misses until CI has populated the cache for the new version; the new compiler's output then changes downstream keys too. If the hit rate stays low after CI has rebuilt `main`, look for machines still on the old version or a plugin embedding non-deterministic data (absolute paths, timestamps).
 4. **You enabled configuration caching and 12 plugins broke. How do you prioritize fixing them?**
    Sort by impact: fix custom internal plugins first since you control them. For third-party plugins, check for updates; if unsupported, isolate their tasks or replace them. Prioritize plugins that block the primary `assembleDebug` flow over reporting or publishing plugins.
 5. **A feature team wants to add a 1.2 GB AAR dependency. What questions do you ask before approving?**
@@ -400,7 +402,7 @@ The rule is simple: if a module taxes every engineer's build, the module owner o
 6. **You have a 5-minute configuration phase. What are the three highest-yield places to look?**
    1. Network/Disk I/O during configuration (e.g., fetching git hashes or parsing large files). 2. Heavy logic in `afterEvaluate` blocks. 3. Plugins resolving dependencies prematurely during configuration instead of execution.
 7. **KAPT vs KSP — what does the migration cost, and what does it return?**
-   Cost: Updating processor dependencies, changing Gradle configurations, and potentially refactoring custom annotations. Return: Eliminates Java stubs generation, supports incremental processing natively, and typically speeds up annotation processing by 2x, significantly cutting build times.
+   Cost: Updating processor dependencies, changing Gradle configurations, and potentially refactoring custom annotations. Return: Eliminates Java stubs generation, supports incremental processing natively, and can make annotation processing up to 2x faster; measure the actual saving with before-and-after build scans.
 8. **How do you convince a skeptical Director that 2 engineers on a Build Platform team will pay back in 6 months?**
    Quantify the waste: (Engineers) × (Builds/day) × (Minutes saved/build) × (Loaded hourly rate). If cutting 2 minutes saves 50 engineers 20 minutes a day, that translates to thousands of engineering hours saved annually, far exceeding the cost of two headcount.
 
@@ -414,4 +416,4 @@ The rule is simple: if a module taxes every engineer's build, the module owner o
 - [Gradle — Configuration Cache](https://docs.gradle.org/current/userguide/configuration_cache.html) — full mechanics and constraints.
 - [Develocity (formerly Gradle Enterprise)](https://gradle.com/develocity/) — build scans + remote cache at scale.
 - [Now in Android — `build-logic/`](https://github.com/android/nowinandroid/tree/main/build-logic) — Google's canonical example of convention plugins for a multi-module app.
-- [Square — Gradle build perf at Cash App](https://developer.squareup.com/blog/) — practitioner posts on real numbers.
+- [Square — Evolution of Developer Productivity at Square, Part Two](https://developer.squareup.com/blog/evolution-of-developer-productivity-at-square-part-two/) — practitioner post with real build numbers.

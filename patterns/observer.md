@@ -312,6 +312,6 @@ viewModel.locationUpdates.collect { location ->
 - [SharedFlow broadcast, replay and no-subscriber behavior](https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines.flow/-shared-flow/)
 - [StateFlow equality conflation and initial value](https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines.flow/-state-flow/)
 - [Channel receiveAsFlow fan-out and cancellation limits](https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines.flow/receive-as-flow.html)
-- [Android lifecycle-aware coroutine collection](https://developer.android.com/topic/libraries/architecture/coroutines#restart)
+- [Android lifecycle-aware coroutine collection](https://developer.android.com/topic/libraries/architecture/coroutines#lifecycle-aware-flow-collection)
 - [Android UI events and state](https://developer.android.com/topic/architecture/ui-layer/events)
 - [SKIE Flow bridging contract](https://skie.touchlab.co/features/flows)

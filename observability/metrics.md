@@ -98,7 +98,7 @@ The device aggregates locally and the backend merges compatible observations. Ex
 
 **Firebase Performance Monitoring**
 
-Google provides Firebase Performance Monitoring for Android. Add the [Performance Monitoring SDK](https://firebase.google.com/docs/perf-mon/get-started-android) to collect app lifecycle, startup, and supported screen-rendering traces. Add its Gradle plugin as well to instrument supported HTTP/S requests and `@AddTrace` methods. Automatic network coverage is library-specific: Firebase currently documents OkHttp 3.x, Java `URLConnection`, and Apache HttpClient; use a [custom network trace](https://firebase.google.com/docs/perf-mon/custom-network-traces) for unsupported paths. See the [Firebase troubleshooting guide](https://firebase.google.com/docs/perf-mon/troubleshooting?platform=android#network-request-data).
+Google provides Firebase Performance Monitoring for Android. Add the [Performance Monitoring SDK](https://firebase.google.com/docs/perf-mon/get-started-android) to collect app lifecycle, startup, and supported screen-rendering traces. Add its Gradle plugin as well to instrument supported HTTP/S requests and `@AddTrace` methods. Automatic network coverage is library-specific: Firebase currently documents OkHttp 3.x, Java `URLConnection`, and Apache HttpClient; use a [custom network trace](https://firebase.google.com/docs/perf-mon/custom-network-traces) for unsupported paths. See the [Firebase troubleshooting guide](https://firebase.google.com/docs/perf-mon/troubleshooting?platform=android#missing-network-request-data).
 
 For custom business logic, you can define your own trace metrics:
 

@@ -95,6 +95,8 @@ class DataSyncWorker(
             // If the server returns 500, tell WorkManager to retry later
             // using exponential backoff!
             Result.retry()
+        } catch (cancelled: CancellationException) {
+            throw cancelled
         } catch (e: Exception) {
             // Fatal error, do not retry
             Result.failure()
@@ -140,7 +142,7 @@ fun scheduleSync(context: Context) {
     - *Pros:* Executes *instantly*. Bypasses Doze mode almost completely.
     - *Cons:* Massive developer overhead. Requires user-visible notification. Crashes app on Android 12+ if launched from background.
 
-*Staff Note:* Since Android 12, `WorkManager` introduced **Expedited Jobs** (`setExpedited(true)`). This allows a WorkRequest to instantly execute within seconds, even if the app is in the background. The OS internally grants the app a temporary exemption or automatically converts it to a Foreground Service under the hood.
+*Staff Note:* Request expedited work with `setExpedited(OutOfQuotaPolicy.RUN_AS_NON_EXPEDITED_WORK_REQUEST)` or choose `DROP_WORK_REQUEST` when falling back is inappropriate. Expedited work is quota-limited and not a guarantee of immediate execution. On pre-Android-12 releases WorkManager may use a foreground service for compatibility; supply the required foreground information.
 
 ## Failure Modes
 
@@ -173,7 +175,7 @@ fun scheduleSync(context: Context) {
 2.  How does `WorkManager` guarantee that a task will execute even if the device completely loses power and is rebooted?
 3.  What is `ExistingWorkPolicy`, and why is it critical when enqueuing work from a high-traffic area of your application (like `MainActivity.onCreate`)?
 4.  Describe the 10-minute execution limit of `WorkManager`. What architectural pattern should you use if you need to download a 5GB file?
-5.  What are "Expedited Jobs" in WorkManager, and what specific Android 12+ restriction were they introduced to bypass?
+5. What does an expedited WorkRequest request, and what happens when its quota is unavailable?
 6.  Explain how `WorkManager` handles the concept of "Constraints" and how this differs from manually checking the Wi-Fi state before launching a Coroutine.
 7.  If a `CoroutineWorker` returns `Result.retry()`, how does `WorkManager` decide when to execute the job again?
 8.  Why must you disable the default `WorkManager` initializer in the `AndroidManifest.xml` when using Dependency Injection frameworks like Hilt?
@@ -190,8 +192,8 @@ fun scheduleSync(context: Context) {
    It determines how to handle enqueuing a task with an ID that is already pending. It is critical to use `KEEP` or `REPLACE` to prevent spamming the database with thousands of duplicate tasks.
 4. **Describe the 10-minute execution limit of `WorkManager`. What architectural pattern should you use if you need to download a 5GB file?**
    The OS restricts background execution to ~10 minutes to save battery. For a 5GB file, you should break it into smaller chunked tasks or use a Foreground Service to maintain unbounded execution.
-5. **What are "Expedited Jobs" in WorkManager, and what specific Android 12+ restriction were they introduced to bypass?**
-   They allow immediate, high-priority background execution. They were introduced to bypass Android 12's restriction that prevents apps running in the background from launching Foreground Services.
+5. **What does an expedited WorkRequest request, and what happens when its quota is unavailable?**
+   It requests prompt execution for short, important work within system quota. Use setExpedited with an OutOfQuotaPolicy to choose ordinary-work fallback or dropping the request. It does not guarantee immediate execution or exempt arbitrary background work from platform restrictions.
 6. **Explain how `WorkManager` handles the concept of "Constraints" and how this differs from manually checking the Wi-Fi state before launching a Coroutine.**
    `WorkManager` passes the constraints (e.g., "Requires Unmetered Wi-Fi") to the OS, which wakes up the app *only* when met. A Coroutine manually checking state wastes battery waking the app and handling state changes itself.
 7. **If a `CoroutineWorker` returns `Result.retry()`, how does `WorkManager` decide when to execute the job again?**
@@ -208,3 +210,8 @@ fun scheduleSync(context: Context) {
 - [`services.md`](services.md) — The legacy mechanism WorkManager replaces for 90% of tasks.
 - [`battery-optimizations.md`](battery-optimizations.md) — How the OS decides when to actually run the enqueued WorkRequests.
 - [Android Developers: WorkManager](https://developer.android.com/topic/libraries/architecture/workmanager)
+
+### Official verification references
+
+- [Primary documentation or owning implementation](https://developer.android.com/develop/background-work/background-tasks/persistent/getting-started/define-work#expedited)
+- [Primary documentation or owning implementation](https://kotlinlang.org/docs/cancellation-and-timeouts.html)

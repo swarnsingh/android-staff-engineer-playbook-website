@@ -98,11 +98,11 @@ Without the bound, the compiler defaults to `T : Any?` — including nullable.
 ### `where` clause for multiple bounds
 
 ```kotlin
-fun <T> validate(value: T): Boolean
+fun <T> validate(value: T, minimum: T): Boolean
     where T : Comparable<T>,
           T : CharSequence
 {
-    return value.length > 0 && value > "minimum"
+    return value.isNotEmpty() && value > minimum
 }
 ```
 
@@ -130,9 +130,10 @@ Kotlin runs on the JVM. The JVM erases generic types in bytecode. **At runtime, 
 val strList = listOf("a", "b")
 val intList = listOf(1, 2)
 
-println(strList::class.java)    // class kotlin.collections.EmptyList
-println(intList::class.java)    // class kotlin.collections.EmptyList (same!)
-strList::class.java == intList::class.java   // true
+println(strList::class.java)    // e.g. class java.util.Arrays$ArrayList on JVM
+println(intList::class.java)    // same implementation for these two calls
+strList::class.java == intList::class.java   // true in this example
+// Concrete collection classes depend on the factory, size, and platform.
 ```
 
 ### What you CAN'T do because of erasure
@@ -240,7 +241,7 @@ inline fun <reified VM : ViewModel> Fragment.viewModelFactory(
 
 ## Type Tokens — The Reflection Workaround
 
-If you need *generic-of-generic* type info at runtime (`List<User>` not just `List`), even `reified` isn't enough. You need a type token.
+If you need *generic-of-generic* type info at runtime (`List<User>` not just `List`), `T::class.java` is insufficient because a Class token has no type arguments. A reified wrapper can instead create `typeOf<T>()` or an appropriate library type token; the chosen serializer must support that representation.
 
 ```kotlin
 // Moshi
@@ -256,7 +257,7 @@ val users: List<User> = gson.fromJson(json, type)
 
 ---
 
-## Variance — `in`, `out`, and Why `List<Dog>` Isn't `List<Animal>`
+## Variance — `in`, `out`, and Why `MutableList<Dog>` Isn't `MutableList<Animal>`
 
 Without explicit variance, generic types are **invariant**. `Producer<Dog>` and `Producer<Animal>` are unrelated, even if `Dog : Animal`.
 
@@ -302,7 +303,7 @@ val dogSink: Sink<Dog> = animalSink    // ✅ OK with `in`
 - `MutableList<T>` — read and write, invariant.
 - `Comparator<in T>` — `Comparator<Animal>` works as `Comparator<Dog>`.
 - `Flow<out T>` — covariant; collector receives `T`.
-- `Function1<in P, out R>` — `(Animal) -> Number` works as `(Dog) -> Int`.
+- `Function1<in P, out R>` — `(Animal) -> Int` works as `(Dog) -> Number`; the reverse return-type conversion is unsafe.
 
 Full deep dive in [`variance.md`](variance.md).
 
@@ -405,8 +406,9 @@ val vm: DetailViewModel = viewModel(factory = ...) { factory.create(id) }
 
 ```kotlin
 inline fun <reified T : Any> ServiceLocator.get(): T {
-    return registry[T::class.java] as T
+    val service = registry[T::class.java]
         ?: error("Service ${T::class.java.simpleName} not registered")
+    return service as T // Registry must enforce that each key matches its value.
 }
 
 val analytics: Analytics = locator.get()
@@ -439,7 +441,7 @@ Mostly relevant when shipping a Kotlin SDK that needs clean Java consumption. Se
 ```kotlin
 interface Producer<out T> {
     fun produce(): T
-    fun consume(@UnsafeVariance item: T): Unit   // ← T in 'in' position
+    fun consume(item: @UnsafeVariance T): Unit   // ← T in 'in' position
 }
 ```
 
@@ -459,9 +461,9 @@ Tells the compiler "trust me, I know this looks variance-unsafe, but it's OK in 
 | Gson silently returns `List<LinkedTreeMap>` instead of `List<User>` | Type token lost | Use Moshi (compile-time codegen) or `TypeToken` |
 | Java consumer gets verbose wildcard signatures | Default `out` becomes `? extends T` in bytecode | `@JvmSuppressWildcards` on the API |
 | `inline fun` becomes huge | Body copied at every call site | Smaller body; or extract non-inline helpers |
-| Hilt fails to inject generic type | Erasure — Dagger sees raw `Repo`, not `Repo<User>` | Use `@Qualifier` or non-generic wrapper |
+| Hilt cannot resolve a generic dependency | Missing binding, unresolved type argument, or a Kotlin/Java wildcard mismatch | Provide the exact parameterised binding and inspect generated signatures; qualifiers distinguish multiple bindings of the same type. Dagger does not simply erase every `Repo<User>` binding to raw `Repo`. |
 | `reified` doesn't work | Forgot `inline` | Add `inline` and re-`reified` |
-| Compose recomposes more than expected with generic stable type | Inferred unstable | Annotate the generic class `@Immutable` |
+| Compose recomposes more than expected with generic parameters | Changed inputs, identity, or stability assumptions | Inspect compiler reports and measure. Use `@Immutable` only when its contract is true; under strong skipping, unstable parameters can still skip using identity. |
 | `Bundle` extras with generics | Erasure | Use Parcelize + sealed wrappers, or kotlinx serialization |
 
 ---
@@ -483,12 +485,12 @@ When reviewing generics, I look for:
 
 ## Common Misconceptions
 
-- **"Generics make the app larger or slower."** False on JVM. Type erasure means zero runtime cost. (C++ templates do bloat; the JVM does not.)
-- **"`List<Dog>` is a `List<Animal>` because Dog is an Animal."** **False — that's invariance.** Variance (`in`/`out`) is opt-in.
+- **"Generics make the app larger or slower."** Mostly false on the JVM: erasure means one class serves every type argument, so there is no code bloat (unlike C++ templates). It is not completely free: primitive type arguments are boxed (`List<Int>` holds `Integer` objects) and the compiler inserts casts.
+- **"`List<Dog>` is a `List<Animal>` because Dog is an Animal."** This assignment is valid because Kotlin declares `List<out E>`. `MutableList<Dog>` cannot be assigned to `MutableList<Animal>` because `MutableList` is invariant.
 - **"`reified` works on any generic function."** Only on `inline` functions.
-- **"`<T : Any?>` is the same as `<T>`."** True for bounds, false in practice — `<T : Any>` (no `?`) excludes null.
+- **"`<T : Any?>` is the same as `<T>`."** Correct: `Any?` is the default upper bound. The different bound `<T : Any>` excludes nullable type arguments.
 - **"I can use `T::class.java` in a non-inline generic class."** No. Erasure prevents it. Pass `Class<T>` as a constructor arg.
-- **"`List<*>` and `List<Any?>` are the same."** `List<*>` is read-only at the element type; `List<Any?>` accepts any input. Subtle but important.
+- **"`List<*>` and `List<Any?>` are the same."** Both read-only List views expose elements as `Any?`; neither has `add` or `set`. The important write distinction is `MutableList<*>` versus `MutableList<Any?>`: only the latter accepts arbitrary nullable element values.
 - **"All generic functions should be `reified`."** No. Reified forces inline; inline bloats bytecode if the body is large.
 
 ---
@@ -505,7 +507,7 @@ When reviewing generics, I look for:
 8. Explain `<T> where T : Comparable<T>, T : Iterable<T>`. What does each bound contribute?
 9. Walk through how `object : TypeToken<List<User>>() {}` captures the generic at runtime when normal erasure would lose it.
 10. `inline fun <reified T> Context.start(...)` for starting an Activity — what does this gain over passing `T::class.java`?
-11. Hilt fails to inject `Repo<User>` because Dagger sees the raw type. How do you work around it?
+11. Hilt cannot resolve a `Repo<User>` binding. Which binding and wildcard checks should you make before changing the API?
 12. Compose generic `LazyList<T>` — what makes the inferred stability *correct* vs *wrong* for the parameter `T`?
 
 ## Answer Key
@@ -530,10 +532,10 @@ When reviewing generics, I look for:
    Creating an anonymous subclass of `TypeToken` causes the Java compiler to embed the specific generic superclass signature (`TypeToken<List<User>>`) into the compiled `.class` file's metadata. At runtime, the `TypeToken` base class uses reflection (`getClass().getGenericSuperclass()`) to read this preserved metadata, bypassing standard instance-level type erasure.
 10. **`inline fun <reified T> Context.start(...)` for starting an Activity — what does this gain over passing `T::class.java`?**
     It dramatically cleans up the call site. Instead of writing `start(DetailActivity::class.java)`, the caller simply writes `start<DetailActivity>()`, which is more idiomatic and concise, especially in DSLs.
-11. **Hilt fails to inject `Repo<User>` because Dagger sees the raw type. How do you work around it?**
-    You can use `@Qualifier` annotations to differentiate the bindings, or wrap the generic type in a concrete non-generic class (e.g., `class UserRepo @Inject constructor(...) : Repo<User>`), which Dagger can easily identify and inject.
+11. **Hilt cannot resolve a `Repo<User>` binding. Which binding and wildcard checks should you make before changing the API?**
+    Check that the graph supplies the exact `Repo<User>` key and that Kotlin-generated wildcards match the requested Java signature. Dagger supports parameterised keys. Add qualifiers when selecting among multiple bindings of the same type; use a concrete wrapper only when it carries useful domain meaning.
 12. **Compose generic `LazyList<T>` — what makes the inferred stability *correct* vs *wrong* for the parameter `T`?**
-    If `T` is an interface or from an external module, Compose compiler assumes it is Unstable, causing unnecessary recompositions. If you know `T` is actually immutable or stable, the inferred instability is "wrong" for performance. You fix it by annotating the generic class representing `T` with `@Immutable` / `@Stable`, or by wrapping it in a stable container.
+    Stability depends on the actual type, its observable mutation contract, and compiler configuration. An unstable parameter does not automatically force recomposition under strong skipping: identity can permit skipping. Inspect reports and measure first. Add `@Immutable` or `@Stable` only when the type satisfies the annotation contract; an annotation does not make mutable data safe.
 
 ---
 
@@ -548,6 +550,15 @@ When reviewing generics, I look for:
 - [`../android/architecture/viewmodel.md`](../../android/architecture/viewmodel.md) — generic ViewModel factories.
 - [`../platform-engineering/library-versioning.md`](../../platform-engineering/library-versioning.md) — `@JvmSuppressWildcards` and Java consumer concerns.
 - [Kotlin Docs — Generics](https://kotlinlang.org/docs/generics.html) — official reference.
-- [Roman Elizarov — "Generic variance"](https://elizarov.medium.com/) — Kotlin language team's design notes.
+- [Kotlin docs — Generics: variance](https://kotlinlang.org/docs/generics.html#variance) — official language reference.
 - [Java Generics FAQ — Angelika Langer](https://www.angelikalanger.com/GenericsFAQ/JavaGenericsFAQ.html) — encyclopedic JVM-side reference.
 - [Effective Java Items 26–32](https://www.amazon.com/Effective-Java-Joshua-Bloch/dp/0134685997) — Bloch's chapter on generics.
+
+### Official verification references
+
+- [Primary documentation or owning implementation](https://dagger.dev/semantics/)
+- [Primary documentation or owning implementation](https://developer.android.com/develop/ui/compose/performance/stability/fix)
+- [Primary documentation or owning implementation](https://kotlinlang.org/api/core/kotlin-stdlib/kotlin.reflect/type-of.html)
+- [Primary documentation or owning implementation](https://kotlinlang.org/api/core/kotlin-stdlib/kotlin/-unsafe-variance/)
+- [Primary documentation or owning implementation](https://kotlinlang.org/docs/java-to-kotlin-interop.html#variant-generics)
+- [Primary documentation or owning implementation](https://kotlinlang.org/docs/whatsnew20.html#generation-of-lambda-functions-using-invokedynamic)
