@@ -48,15 +48,21 @@ The diagram separates declared inputs from hidden runtime inputs: make the latte
 
 **Good (Deterministic):**
 ```kotlin
-// Time is passed as an explicitly injected input.
+import java.time.Clock
+import java.time.DayOfWeek
+import java.time.LocalDate
+
+// The injected clock supplies both the instant and the business time zone.
 fun isWeekend(clock: Clock): Boolean {
-    val today = clock.now().dayOfWeek
+    val today = LocalDate.now(clock).dayOfWeek
     return today == DayOfWeek.SATURDAY || today == DayOfWeek.SUNDAY
 }
 
-// In the Unit Test, you pass a FakeClock frozen to a Tuesday.
+// In a test, pass Clock.fixed(instant, businessZone) for a known Tuesday.
 // The clock-dependent behavior is reproducible for this input.
 ```
+
+`java.time` requires API 26 or appropriate core-library desugaring on older Android versions. Choose the time zone explicitly; the same instant can fall on different local dates.
 
 ### 2. The Concurrency Problem
 
@@ -73,7 +79,7 @@ fun increment() {
 // the counter might only increase by 1.
 ```
 
-**Good (Deterministic Thread Safety):**
+**Good (Atomic Increment):**
 ```kotlin
 val counter = AtomicInteger(0)
 
@@ -81,6 +87,8 @@ fun increment() {
     counter.incrementAndGet() // Atomic operation, thread-safe.
 }
 ```
+
+With a fixed number of completed increments and no other writes, the final total is reproducible. Which thread receives each intermediate value still depends on scheduling.
 
 ## Architecture
 
@@ -115,8 +123,8 @@ fun Greeting(name: String) {
     val color = if (Math.random() > 0.5) Color.Red else Color.Blue
     
     Text(text = "Hello $name", color = color)
-    // Every time the screen recomposes (e.g., during a scroll), 
-    // the text will randomly flash red and blue.
+    // A later execution can choose a different color. Scrolling does not
+    // necessarily recompose this function, and random choices can repeat.
 }
 ```
 
@@ -156,7 +164,7 @@ When reviewing code or investigating flaky tests, a Staff engineer hunts for non
 ## Probing Questions
 
 1.  What is a "Pure Function", and why is it desirable in software architecture?
-2.  How does a hidden dependency on `System.currentTimeMillis()` destroy the testability of a function? How do you fix it?
+2.  How does a hidden dependency on `System.currentTimeMillis()` complicate reproducible testing? How do you fix it?
 3.  Why can a data race make an outcome depend on scheduling, and how can synchronization restore a defined ordering?
 4.  Why should composable UI description be idempotent and keep lifecycle-sensitive side effects in effect APIs?
 5.  What is a "Flaky Test", and what are the most common causes of them in Android?
@@ -170,7 +178,7 @@ When reviewing code or investigating flaky tests, a Staff engineer hunts for non
 
 1. **What is a "Pure Function", and why is it desirable in software architecture?**
    A pure function is referentially transparent and has no observable side effects. That makes isolated tests and concurrent evaluation easier, provided its inputs are not concurrently mutated through aliases.
-2. **How does a hidden dependency on `System.currentTimeMillis()` destroy the testability of a function? How do you fix it?**
+2. **How does a hidden dependency on `System.currentTimeMillis()` complicate reproducible testing? How do you fix it?**
    It makes the function's output depend on the exact moment it runs, causing tests to pass or fail randomly based on time. Fix it by injecting a `Clock` interface so you can provide a mocked, frozen time during tests.
 3. **Why can a data race make an outcome depend on scheduling, and how can synchronization restore a defined ordering?**
    Unsynchronized conflicting access can expose different interleavings and visibility across executions. Immutability, confinement, atomics, locks, or another declared synchronization protocol removes or bounds those interleavings; thread safety is related to, but not identical with, functional determinism.
@@ -179,7 +187,7 @@ When reviewing code or investigating flaky tests, a Staff engineer hunts for non
 5. **What is a "Flaky Test", and what are the most common causes of them in Android?**
    A flaky test randomly passes or fails without code changes. In Android, they are usually caused by timing/threading issues, reliance on real network calls, or hidden shared state that isn't cleared between test runs.
 6. **How does passing a Random Number Generator as an argument to a function (Dependency Injection) make the function more deterministic?**
-   It removes the hidden state. By injecting the generator, you can pass a seeded, predictable random generator in your unit tests, ensuring the "random" output is always identical and verifiable during the test.
+   It removes the hidden state. By injecting the generator, you can pass a seeded, predictable random generator in your unit tests, making the sequence reproducible when the generator algorithm/version, initial state, and draw order are also controlled. Injection alone does not fix concurrent draw ordering.
 7. **Why is relying on the iteration order of a standard `HashMap` dangerous?**
    A standard `HashMap` does not guarantee any specific iteration order, and it can change unexpectedly. Relying on it introduces non-determinism; use `LinkedHashMap` or sort the keys if order matters.
 8. **If an API response can fail due to a network timeout, how do you architect the system so the core business logic remains deterministic?**
@@ -196,3 +204,7 @@ When reviewing code or investigating flaky tests, a Staff engineer hunts for non
 - [Pure Functions (Wikipedia)](https://en.wikipedia.org/wiki/Pure_function)
 - [Compose mental model](https://developer.android.com/develop/ui/compose/mental-model) — Recomposition, idempotence, and side-effect guidance.
 - [`../android/testing/testing-strategy.md`](../android/testing/testing-strategy.md) — Ownership and quarantine policy for flaky tests.
+- [Java Clock](https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/time/Clock.html)
+- [LocalDate.now(Clock)](https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/time/LocalDate.html#now(java.time.Clock))
+- [Android core-library desugaring](https://developer.android.com/studio/write/java8-support#library-desugaring)
+- [Kotlin Random](https://kotlinlang.org/api/core/kotlin-stdlib/kotlin.random/-random.html)

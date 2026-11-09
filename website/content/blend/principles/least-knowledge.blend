@@ -1,0 +1,8 @@
+<!-- Teaching layer over the approved Principles source 4520147. -->
+<!-- @opening -->
+<p class="story-lead">A delivery badge reads through the checkout session into the shipping provider. When the provider representation changes, the badge breaks. Identify the fact the badge needs and the collaborator that should supply it.</p>
+
+<!-- @before Staff Engineer Thinking :: staff -->
+### Expose the fact the caller needs
+
+For a badge that displays an estimated arrival, expose the estimate as a value. Keep provider selection and fallback policy in the shipping collaborator. A chain over a documented value object can be fine. Review the boundary by asking which caller must change when the provider changes. [The Law of Demeter project](https://khoury.northeastern.edu/home/lieber/LoD.html).

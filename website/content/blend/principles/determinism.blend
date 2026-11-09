@@ -1,0 +1,8 @@
+<!-- Teaching layer over the approved Principles source 4520147. -->
+<!-- @opening -->
+<p class="story-lead">The same order fixture passes in one time zone and fails in another. Both tests supplied the same order, but the function also consulted the current date. Identify every input needed to replay the decision.</p>
+
+<!-- @before Staff Engineer Thinking :: staff -->
+### Record what would let you replay the decision
+
+For a date rule, pin the instant and zone and assert the expected date boundary. For a concurrent decision, specify which ordering matters to the result. A fixed clock removes one hidden input. It does not choose the order in which concurrent writers commit. [Java Clock](https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/time/Clock.html).

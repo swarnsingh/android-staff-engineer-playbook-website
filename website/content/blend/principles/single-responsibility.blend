@@ -1,0 +1,8 @@
+<!-- Teaching layer over the approved Principles source 4520147. -->
+<!-- @opening -->
+<p class="story-lead">A checkout screen changes for a new receipt layout and then changes again for a fraud rule. Both edits touch the same handler. Identify who owns each decision before choosing where to split it.</p>
+
+<!-- @before Staff-Level Application in Mobile :: staff -->
+### Separate policy from coordination
+
+Let the screen coordinate the purchase and let the policy owner answer whether it is allowed. Keep the sequence visible at the call site. If two proposed helpers are always changed for the same policy decision, keeping them together may make that decision easier to review. [Martin’s explanation of SRP](https://blog.cleancoder.com/uncle-bob/2014/05/08/SingleReponsibilityPrinciple.html).

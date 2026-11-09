@@ -1,0 +1,8 @@
+<!-- Teaching layer over the approved Principles source 4520147. -->
+<!-- @opening -->
+<p class="story-lead">A caller needs the standard connection, but the constructor asks for a retry policy and an engine. Another caller needs to override just the timeout. Give each caller a path with only the choices it needs.</p>
+
+<!-- @before Staff Engineer Thinking :: staff -->
+### Make the default visible before adding a knob
+
+Write the default beside the common call, then show the named override at the point where it matters. Route both calls through the same validation so a caller who advances to the configuration block keeps the same semantics. Document the contract of any extension point before shipping it. [Kotlin default and named arguments](https://kotlinlang.org/docs/functions.html#default-arguments).

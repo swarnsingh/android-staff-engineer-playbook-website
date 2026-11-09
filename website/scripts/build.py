@@ -26,6 +26,7 @@ FIGURES_USED = set()
 TREES = {
     'engineering-fundamentals': {'title': 'Engineering Fundamentals', 'phases': None},
     'computer-science': {'title': 'Computer Science', 'phases': None},
+    'principles': {'title': 'Principles', 'phases': None},
     'platform-engineering': {'title': 'Platform Engineering', 'phases': None},
     'kotlin': {'title': 'Kotlin', 'phases': None},
     'android': {'title': 'Android', 'phases': [1, 2, 3, 4, 5, 6, 7, 8, 9]},
@@ -48,6 +49,14 @@ def phases(slug):
         sequence=(ROOT/f'{slug}.md').read_text().split('## Guided Reading Sequence',1)[1].split('**Next:**',1)[0]
         paths=re.findall(r'\]\((computer-science/[^)#]+\.md)\)',sequence)
         return [('Phase 1 — Data structures',paths[:7]),('Phase 2 — Algorithms',paths[7:11]),('Phase 3 — Systems',paths[11:])]
+    if slug == 'principles':
+        sequence = (ROOT/'principles.md').read_text().split('## Guided Reading Sequence', 1)[1].split('**Next:**', 1)[0]
+        paths = re.findall(r'\]\((principles/[^)#]+\.md)\)', sequence)
+        return [
+            ('Phase 1 — Responsibilities and contracts', paths[:5]),
+            ('Phase 2 — Locality and simplicity', paths[5:8]),
+            ('Phase 3 — Failure and change', paths[8:]),
+        ]
     if slug == 'distributed-systems':
         sequence=(ROOT/f'{slug}.md').read_text().split('## Guided Reading Sequence',1)[1].split('**Next:**',1)[0]
         paths=re.findall(r'\]\((distributed-systems/[^)#]+\.md)\)',sequence)
@@ -672,7 +681,7 @@ INTRO = {
 
 def intro(path):
     extras={}
-    for name in ('engineering-fundamentals','computer-science','platform-engineering','mobile-system-design','observability','distributed-systems','release-engineering','security','backend-for-mobile'):
+    for name in ('engineering-fundamentals','computer-science','principles','platform-engineering','mobile-system-design','observability','distributed-systems','release-engineering','security','backend-for-mobile'):
         extras.update(json.loads((WEB/f'content/{name}.json').read_text()))
     return extras.get(path) or INTRO.get(path) or INTRO[Path(path).stem]
 
@@ -928,8 +937,9 @@ def build(skip_diagrams=False):
             cards=[]
             for index,(heading,paths) in enumerate(groups,1):
                 label=re.sub(r'^Phase \d+\s*[—–-]\s*','',heading)
-                target=route(paths[0]) if slug=='engineering-fundamentals' else '#'+slug_heading(heading)
-                action='Start this phase' if slug=='engineering-fundamentals' else 'View sequence'
+                starts_chapter = slug in {'engineering-fundamentals', 'principles'}
+                target=route(paths[0]) if starts_chapter else '#'+slug_heading(heading)
+                action='Start this phase' if starts_chapter else 'View sequence'
                 cards.append(f'<li><a href="{target}"><span class="phase-number">Phase {index}</span><strong>{escape(label)}</strong><span class="phase-count">{len(paths)} {"chapter" if len(paths)==1 else "chapters"} · {action} →</span></a></li>')
             path_overview='<section class="path-overview" id="path-phases" aria-labelledby="path-phases-title"><h2 id="path-phases-title">Choose your next phase</h2><p>Follow the phases in order, or use the checkpoints in the full sequence below to find your starting point.</p><ol class="path-phase-grid">'+''.join(cards)+'</ol></section>'
         elif report['layout']=='walkthrough':

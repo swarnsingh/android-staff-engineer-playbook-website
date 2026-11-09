@@ -14,13 +14,13 @@ Furthermore, a class can usually only inherit from one superclass. If you have a
 
 This is the second principle listed in the introduction of the legendary 1994 "Gang of Four" Design Patterns book. For decades, Java developers ignored it, building massive 7-layer inheritance hierarchies (`BaseFragment -> BaseNetworkFragment -> BaseListFragment -> BasePagingListFragment`). 
 
-Modern Android development has aggressively rejected inheritance. Kotlin makes classes `final` by default. Jetpack Compose completely abandons inheritance-based Views (`class MyButton : Button()`) in favor of composition-based functions (`@Composable fun MyButton() { Text() }`).
+Kotlin classes are `final` by default. Idiomatic Compose UI authoring builds functions from other functions rather than subclassing widgets; Android Views and inheritance still exist in the framework and interoperability layers.
 
 ## First Principles
 
 1.  **"Is-A" vs "Has-A":** A `Car` *is a* `Vehicle` (Inheritance). A `Car` *has an* `Engine` (Composition). If you aren't absolutely sure it's an "is-a" relationship, use Composition.
-2.  **Flatten the Hierarchy:** Deep inheritance trees ($>2$ levels) are almost always a mistake. They hide logic and create massive cognitive load.
-3.  **Interfaces > Base Classes:** If you want polymorphism (treating different objects uniformly), use Interfaces, not abstract base classes.
+2.  **Flatten the Hierarchy:** Review deep hierarchies for hidden behavior and fragile extension contracts. There is no universal two-level limit; judge substitutability, documented hooks, and the cost of change.
+3.  **Interfaces > Base Classes:** Prefer interfaces for independently replaceable roles. An abstract base class can be appropriate when a deliberate extension contract shares state and implementation.
 
 ## Mental Model
 
@@ -48,9 +48,11 @@ class ProfileViewModel : BaseViewModel() {
     fun load() = launchWithLoading { api.getProfile() }
 }
 ```
-*Why this fails:* What if `SettingsViewModel` needs to handle loading state differently for just one method? It can't. It's bound to the `BaseViewModel`. If you modify `BaseViewModel` to accommodate `Settings`, you might accidentally break `Profile`.
+*Why this fails:* What if `SettingsViewModel` needs to handle loading state differently for just one method? It may need a new hook or override in the base-class contract. If you modify `BaseViewModel` to accommodate `Settings`, you might accidentally break `Profile`.
 
 ### The Composable Solution (Composition)
+
+These are API sketches, not complete coroutine helpers. An implementation must preserve cancellation, define concurrent-loading behavior, and specify whether errors are retained when no UI collector exists. `api` is an application dependency.
 
 ```kotlin
 // GOOD: Composition via independent components
@@ -109,9 +111,7 @@ graph TD
 
 **Jetpack Compose UI**
 
-The classic Android View system relied on deep inheritance. A `Button` inherited from `TextView`, which inherited from `View`. If you wanted a Button with an image in it, you couldn't easily compose it; you had to write a custom class that inherited and overrode measurement and drawing logic.
-
-Compose destroys this. There is no `View` class to inherit from.
+The View system uses widget inheritance, but it also supports composition: `TextView` compound drawables can add an image without overriding measurement and drawing. Compose makes content slots and composable functions the usual application-level extension mechanism.
 
 ```kotlin
 // You don't inherit from Button. You CALL a Button and compose things inside it.
@@ -156,7 +156,7 @@ When reviewing code, a Staff engineer heavily scrutinizes the `open` keyword:
 ## Common Misconceptions
 
 - **"Inheritance is bad."** Inheritance is not inherently bad; it is just highly specialized. It is a surgical scalpel. Most developers treat it like a hammer and use it for everything, which is why it gets a bad reputation.
-- **"Interfaces are inheritance."** Implementing an interface is *subtyping*, not *implementation inheritance*. Implementing an interface does not tightly couple you to any existing code or state, making it extremely safe compared to inheriting from an abstract base class.
+- **"Interfaces are inheritance."** Interfaces express subtyping and cannot store backing-field state in Kotlin, but they can provide default methods and accessors. Depending on an interface still couples a caller to its semantic contract; default implementations can introduce behavioral coupling.
 
 ## Probing Questions
 
@@ -192,10 +192,14 @@ When reviewing code, a Staff engineer heavily scrutinizes the `open` keyword:
 9. **Why does deep class inheritance make unit testing incredibly difficult?**
    Because testing a subclass implicitly requires testing and mocking all the hidden state and logic of every parent class in its hierarchy, which is often impossible or extremely brittle.
 10. **Describe the impact on Android APK size and method count when choosing Composition over a massive `BaseActivity` hierarchy.**
-    Composition avoids the bloat of "God Classes" and dead code inherited by subclasses that don't need it, ultimately keeping the method count lower and reducing APK size.
+    Neither approach guarantees a smaller APK. Superclass methods are not copied into every subclass, and composition can add forwarding methods and objects. R8 reachability, keep rules, and optimization determine the shipped result; compare release artifacts when size matters.
 
 ## Further Reading
 
 - [`simplicity.md`](simplicity.md) — Composition creates many simple classes; Inheritance creates a few infinitely complex ones.
 - [`../patterns/decorator.md`](../patterns/decorator.md) — The Decorator pattern is a specific, powerful implementation of Composition.
 - [Effective Java: Item 18](https://learning.oreilly.com/library/view/effective-java/9780134686097/ch4.xhtml) — Favor composition over inheritance.
+- [Kotlin inheritance](https://kotlinlang.org/docs/inheritance.html)
+- [Kotlin interfaces](https://kotlinlang.org/docs/interfaces.html)
+- [TextView compound drawables](https://developer.android.com/reference/android/widget/TextView#setCompoundDrawablesWithIntrinsicBounds(int,%20int,%20int,%20int))
+- [R8 app optimization](https://developer.android.com/topic/performance/app-optimization/enable-app-optimization)

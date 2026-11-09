@@ -1,0 +1,14 @@
+{
+  "principles.md": "Work through design trade-offs from local code structure to failure and change. Try each principle against a system you already know.",
+  "principles/simplicity.md": "Trace a change through the call path and see which abstractions earn their place.",
+  "principles/single-responsibility.md": "Draw boundaries around decisions that have different owners and reasons to change.",
+  "principles/least-knowledge.md": "Give callers the result they need without exposing a collaborator’s internal graph.",
+  "principles/composition-over-inheritance.md": "Choose between a subtype contract and independently composed behaviors.",
+  "principles/make-invalid-states-impossible.md": "Use types to carry checked invariants from the input boundary into domain code.",
+  "principles/locality-of-reference.md": "Compare the costs of scattered memory access, feature code and UI state reads.",
+  "principles/progressive-disclosure.md": "Give common callers a short path and introduce configuration as their needs grow.",
+  "principles/prefer-deletion.md": "Identify unused code and verify which installed versions and settings still reach it.",
+  "principles/design-for-failure.md": "Decide how each failed dependency affects the screen, the saved data and recovery.",
+  "principles/determinism.md": "Make the inputs to a decision explicit so a test can replay the same outcome.",
+  "principles/optimize-for-change.md": "Invest in compatibility and recovery where an architectural decision is hard to reverse."
+}

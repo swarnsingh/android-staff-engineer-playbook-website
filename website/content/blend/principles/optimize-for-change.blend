@@ -1,0 +1,8 @@
+<!-- Teaching layer over the approved Principles source 4520147. -->
+<!-- @opening -->
+<p class="story-lead">The checkout redesign can be hidden with a flag, but its new order format is already in storage. Separate the part you can switch back from the data that older clients still have to read.</p>
+
+<!-- @before Staff Engineer Thinking :: staff -->
+### Rehearse the rollback after the write
+
+Describe the rollback from the moment the first new record has been written. Identify the oldest reader it must support and how the app behaves with cached settings. Choose a compatible change or a recovery path before enabling the feature. [Firebase activation strategies](https://firebase.google.com/docs/remote-config/loading).

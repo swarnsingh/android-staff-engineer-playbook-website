@@ -1,0 +1,8 @@
+<!-- Teaching layer over the approved Principles source 4520147. -->
+<!-- @opening -->
+<p class="story-lead">A product list is already on screen when the refresh times out. The reader can still browse the last snapshot, but the app needs to say how current it is. Decide what remains usable before wiring the retry button.</p>
+
+<!-- @before Staff Engineer Thinking :: staff -->
+### Give each failure a visible outcome
+
+Write down what the screen can show with a saved snapshot and what it shows without one. For a purchase with an unknown outcome, keep the operation identity and reconcile before presenting a final result or offering a fresh attempt. Test the interruption as part of the design. [Android offline-first guidance](https://developer.android.com/topic/architecture/data-layer/offline-first).

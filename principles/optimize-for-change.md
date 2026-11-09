@@ -154,14 +154,14 @@ If the abstraction captures the required domain semantics, callers and many test
 ### Feature flags: runtime branching with config control
 
 ```kotlin
-class FeatureFlags(private val remoteConfig: RemoteConfig) {
-    fun isEnabled(flag: String): Boolean = remoteConfig.getBoolean(flag, false)
+class FeatureFlags(private val remoteConfig: FirebaseRemoteConfig) {
+    fun isEnabled(flag: String): Boolean = remoteConfig.getBoolean(flag)
 }
 ```
 
-Flags are evaluated at runtime against the latest config. The config can be updated server-side (Firebase Remote Config, LaunchDarkly, in-house systems) without an app release. Properties:
+Configure in-app defaults and a fetch/activation policy at the application boundary. Reads use activated values, configured defaults, or the SDK fallback; a read does not fetch the latest server state. The config can be updated server-side (Firebase Remote Config, LaunchDarkly, in-house systems) without an app release. Properties:
 
-- **Reversibility**: flip in seconds.
+- **Mitigation**: updated values take effect only after the relevant clients fetch and activate them.
 - **Targeting**: enable for 1% of users, then 10%, then 100%.
 - **Kill switches**: a flag that can disable a feature entirely if it misbehaves.
 - **Decoupling release from feature exposure**: code can ship months before exposure.
@@ -190,16 +190,13 @@ A messaging change is a server-side text change. A layout tweak is a server-side
 ### Database migrations: reversible vs irreversible
 
 ```sql
--- Reversible: add a nullable column
+-- Expand: keep old readers/writers compatible while adding a field.
 ALTER TABLE users ADD COLUMN nickname TEXT;
--- Reverse: ALTER TABLE users DROP COLUMN nickname;
-
--- Irreversible: drop a column with data
-ALTER TABLE users DROP COLUMN deprecated_field;
--- Reverse: data is gone; can only restore from backup
+-- Contract only after readers, writers, recovery and data-retention needs are handled.
+-- ALTER TABLE users DROP COLUMN deprecated_field;
 ```
 
-The first migration is two-way; the second is one-way. A schema change strategy that runs irreversible migrations only after careful soak time, with backups verified, is the operational form of optimize-for-change.
+An additive nullable column can support a compatible rollout, but deleting it later loses values written to it. Expand–migrate–contract reduces deployment coupling; it does not make data destruction reversible. Preserve or transform required data, verify recovery, and test the actual SQLite versions and schema constraints. `DROP COLUMN` support varies across Android SQLite versions; Room migrations may need a create/copy/rename strategy.
 
 ### Refactoring as a continuous activity
 
@@ -234,7 +231,7 @@ flowchart TB
 
 ### Vendor abstraction for payment processing
 
-A mobile app integrates with Stripe. Six months later, the business adds Apple Pay. Twelve months later, they explore Razorpay for India. Each addition is a one-way door if hard-coded; each is a small swap if abstracted.
+A mobile app integrates with Stripe. Later the business considers a second processor for another region. A wallet such as Apple Pay is not interchangeable with a processor and is not an Android wallet API. A processor abstraction can contain some changes, but capabilities, backend contracts and operations still need integration work.
 
 ```kotlin
 interface PaymentGateway {
@@ -242,7 +239,6 @@ interface PaymentGateway {
 }
 
 class StripeGateway(...) : PaymentGateway { ... }
-class ApplePayGateway(...) : PaymentGateway { ... }
 class RazorpayGateway(...) : PaymentGateway { ... }
 
 class CheckoutViewModel @Inject constructor(
@@ -250,7 +246,7 @@ class CheckoutViewModel @Inject constructor(
 ) : ViewModel() { ... }
 ```
 
-The cost of building the abstraction the first time was maybe two hours. The savings on each new gateway are months of refactoring.
+The benefit depends on how well the interface models the shared semantics. Estimate migration cost from the real integrations rather than assuming hours of abstraction save months of work.
 
 The discipline: **introduce the abstraction when the second implementation appears**, not before. Premature abstraction guesses wrong about the shared interface and gets in the way.
 
@@ -271,7 +267,7 @@ class CheckoutScreenSelector(private val flags: FeatureFlags) {
 }
 ```
 
-Both V1 and V2 ship in the same APK. The flag is rolled out: 1% on Monday, 5% on Tuesday, 50% by Friday. Conversion rate drops on Tuesday — the flag is flipped off in minutes, fix the bug, roll out again next week. Without the flag, the same recovery is a hotfix release with 48-hour Play Store review.
+Both V1 and V2 ship in the same APK. The flag is rolled out: 1% on Monday, 5% on Tuesday, 50% by Friday. Conversion rate drops on Tuesday — the flag is flipped off in minutes, fix the bug, roll out again next week. Without a compatible mitigation path, recovery may require an app update whose review and fleet adoption times vary. This is an illustrative rollout, not a propagation guarantee.
 
 ### Schema evolution with backward compatibility
 
@@ -318,7 +314,7 @@ Each variant gets its own resources, dependency wiring, and entry points. Switch
 ```kotlin
 @HiltViewModel
 class HomeViewModel @Inject constructor(
-    private val flags: RemoteConfig,
+    private val flags: FirebaseRemoteConfig,
     private val analytics: Analytics
 ) : ViewModel() {
 
@@ -330,7 +326,7 @@ class HomeViewModel @Inject constructor(
 }
 ```
 
-A recommendation system that's misbehaving on Samsung Galaxy S20s can be disabled for that audience via Remote Config rules — without redeploying.
+Targeting can disable the compatible path for eligible clients after fetch and activation. This constructor-time read is a snapshot; an existing ViewModel will not automatically rerun it when configuration changes. Observe an application-owned configuration stream if immediate in-session changes are required.
 
 ### Refactor-friendly code patterns
 
@@ -484,11 +480,11 @@ Default arguments preserve many source callers that recompile, but they can affe
 3. **Explain why introducing a `PaymentGateway` interface on day one might be worse than introducing it when the second gateway arrives.**
    Premature abstraction often guesses wrong about what the shared interface needs to be. It adds unnecessary complexity (YAGNI) until a second implementation actually proves the need and shape of the abstraction.
 4. **A feature flag has been in production for 14 months. Both paths are still in the code. What's the cost of leaving it, and how do you decide when to remove it?**
-   The cost includes cognitive overload, increased testing surface area, and maintaining dead code. It should be removed immediately once the feature is fully rolled out and stabilized, using tech debt tracking with strict deadlines.
+   The cost includes cognitive overload, increased testing surface area, and maintaining dead code. Remove it after rollback windows, targeting, defaults/offline behavior and old-client compatibility permit. Track the owner and removal criteria; rollout percentage alone does not prove the path is dead.
 5. **When can nullable fields and default-argument parameters support compatible evolution, and where do they fail?**
    They can preserve source compatibility when absence has a defined meaning and callers recompile under supported rules. Strict wire decoders, semantic changes, Java callers, generated models, and precompiled binary consumers can still break, so validate actual provider/consumer fixtures and publish a support policy.
 6. **A schema migration drops a column. Walk through how you'd convert this to a reversible two-phase change.**
-   Phase 1: Mark the column as deprecated, stop writing to it, and deploy. Phase 2: After sufficient soak time to ensure no clients or processes still rely on it, execute the migration to actually drop the column.
+   Expand with a compatible representation, migrate/backfill and reconcile data, then remove old reads/writes only after all supported consumers permit it. Preserve required data and test recovery before dropping the column. A two-phase rollout does not restore dropped values; rollback may require a verified backup or forward repair.
 7. **What's the operational cost of a 100-flag system at a mid-sized mobile org? How do you keep it manageable?**
    The cost includes interacting states, evaluation/config-refresh work, stale paths, ownership, and larger test/incident surfaces. Manage it with owners, types, expiry criteria, dependency constraints, observability, and risk-based/combinatorial testing rather than assuming every flag is temporary.
 8. **Why is "make everything configurable" usually the wrong response to a feature being "too rigid"?**
@@ -521,3 +517,8 @@ External:
 - Martin Fowler, *"Feature Toggles (aka Feature Flags)"* (martinfowler.com) — a comprehensive treatment.
 - *Continuous Delivery* by Jez Humble and David Farley — the operational toolkit for cheap changes.
 - *Accelerate* by Forsgren, Humble, Kim — empirical evidence that change-cost-optimized organizations outperform.
+- [Parnas: module decomposition (original paper reprint)](https://www.cs.lafayette.edu/~gexia/cs301/resources/parnas.html)
+- [Amazon 2015 shareholder letter](https://s2.q4cdn.com/299287126/files/doc_financials/annual/2015-Letter-to-Shareholders.PDF)
+- [Firebase activated values and defaults](https://firebase.google.com/docs/reference/kotlin/com/google/firebase/remoteconfig/FirebaseRemoteConfig)
+- [SQLite ALTER TABLE limits](https://www.sqlite.org/lang_altertable.html)
+- [Kotlin compatibility contracts](https://kotlinlang.org/docs/api-guidelines-backward-compatibility.html)
