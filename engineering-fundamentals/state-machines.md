@@ -2,7 +2,7 @@
 
 ## Overview
 
-A state machine is a model of computation defined by a finite set of *states*, a finite set of *events*, and a *transition function* that, given the current state and an event, decides the next state. The model is older than programming itself, but it is one of the most underused tools in application code — and one of the highest-leverage tools available to a Staff engineer. Most "weird bug" tickets in long-lived mobile systems are state machines that were never written down.
+This chapter focuses on machines with finite, named *control states*, an initial configuration, events and a transition function. Application machines can also carry data, such as a payload or retry deadline; their complete state space is not limited to the number of control-state names. The model is older than programming itself, but it is one of the most underused tools in application code — and one of the highest-leverage tools available to a Staff engineer. Most "weird bug" tickets in long-lived mobile systems are state machines that were never written down.
 
 ---
 
@@ -10,9 +10,9 @@ A state machine is a model of computation defined by a finite set of *states*, a
 
 Almost every non-trivial system has *modes*: an upload is idle, then uploading, then paused, then retrying; an auth session is unauthenticated, authenticating, authenticated, expired; a Bluetooth device is disconnected, connecting, connected, disconnecting. The transitions between these modes are the actual business logic.
 
-What was broken before this existed: developers expressed mode logic as a bag of boolean flags (`isLoading`, `isError`, `hasData`, `isPaused`). Booleans compose multiplicatively — five flags is thirty-two possible combinations — and almost none of those combinations are valid. The combinations that are invalid are exactly where bugs live. ("Why is `isLoading` true and `hasData` true at the same time?")
+Without an explicit model, mode logic can become independently mutable flags (`isLoading`, `isError`, `hasData`, `isPaused`). Five booleans permit thirty-two combinations. Which combinations are valid depends on the product: `isLoading && hasData` can correctly represent refreshing cached content. Write those invariants before deciding which modes should be mutually exclusive.
 
-A state machine replaces the implicit set of "currently valid flag combinations" with an explicit set of states and an explicit set of legal transitions. Invalid combinations become unrepresentable.
+A state machine replaces implicit mode rules with named states, data invariants and explicit transitions. A suitable representation can rule out selected invalid combinations; guards, serialized event handling and tests are still needed to enforce valid behavior.
 
 ---
 
@@ -30,24 +30,24 @@ The evolution moved upward through the stack: from logic gates, to network proto
 
 ## First Principles
 
-A state machine has four ingredients. None of them are optional; if any is missing, you have flag soup, not a state machine.
+A practical application machine defines its states, initial configuration, input events and transition rules. Actions or side effects are optional additions; a machine that only changes or recognizes state is still a state machine.
 
-**1. States.** A finite, named set. `Idle`, `Loading`, `Success`, `Failure`. The cardinality of valid states is `|S|`, not `2^n` for `n` booleans. This collapse is the whole point.
+**1. States.** A named control-state set, such as `Idle`, `Loading`, `Success`, `Failure`. Associated payloads and orthogonal regions also contribute to the complete state space; naming four control modes does not reduce every application state to four values.
 
-**2. Events.** What can happen. `UserPressedRetry`, `NetworkResponseReceived`, `Timeout`. Events are *inputs* — they arrive from the outside (UI taps, network, timers, sensors).
+**2. Events.** Inputs such as `UserPressedRetry`, `NetworkResponseReceived` or `Timeout`. A machine can receive external events and can also raise internal events or react to completion; events need not all originate outside the machine.
 
 **3. Transitions.** A function `(State, Event) → State`. The transition function is total over the state-event pairs you actually allow, and undefined (or explicit error) elsewhere. Defining what *cannot* happen is as important as defining what can.
 
-**4. Side effects.** Sometimes called *actions* or *effects*. On entering a state, on leaving a state, or on a specific transition, the machine triggers a side effect: log a metric, fire a network request, vibrate the phone. Side effects are decoupled from the state graph itself — the graph defines *what is true*, the effects define *what to do about it*.
+**4. Optional side effects.** Actions can run on entry, exit or a transition, such as recording a metric or starting an operation. Keeping their execution separate from a pure transition calculation helps testing; entry/exit placement does not itself guarantee exactly-once execution.
 
 That's the entire model. Everything else is an embellishment on these four ingredients.
 
 ### Variants worth knowing
 
 - **Mealy machine.** Outputs depend on `(state, event)`. The transition produces the output.
-- **Moore machine.** Outputs depend only on `state`. Entering a state produces the output. Less expressive, easier to reason about.
+- **Moore machine.** Outputs depend only on state. Mealy and Moore machines can represent equivalent finite-state input/output behavior, allowing for the Moore initial output; the conversion can change state count and output timing.
 - **Hierarchical state machine (statechart, Harel).** States can contain sub-states. Lets you factor out shared transitions ("from any state, on `LogOut`, go to `Unauthenticated`") into a parent state. Crucial for large machines.
-- **Parallel / orthogonal regions.** Multiple state machines that run independently and compose. The full app state is the *product* of region states. Used to model "user is authenticated AND playback is paused AND network is offline" without an exponential blowup of single states.
+- **Parallel / orthogonal regions.** Concurrent state regions compose as a product. Hierarchical notation can avoid explicitly drawing every combination, but the reachable product state space and cross-region interactions still need analysis.
 
 ---
 
@@ -85,16 +85,19 @@ sealed interface Event {
     data object Retry : Event
 }
 
-fun transition(current: State, event: Event): State = when (current to event) {
-    State.Idle to Event.Load -> State.Loading
-    State.Loading to is Event.Loaded -> State.Success((event as Event.Loaded).data)
-    State.Loading to is Event.Failed -> State.Failure((event as Event.Failed).cause)
-    State.Failure to Event.Retry -> State.Loading
-    else -> current  // ignore illegal events
+fun transition(current: State, event: Event): State = when (current) {
+    State.Idle -> if (event == Event.Load) State.Loading else current
+    State.Loading -> when (event) {
+        is Event.Loaded -> State.Success(event.data)
+        is Event.Failed -> State.Failure(event.cause)
+        else -> current
+    }
+    is State.Failure -> if (event == Event.Retry) State.Loading else current
+    is State.Success -> current
 }
 ```
 
-(The `when` matching above is illustrative; real Kotlin uses `when (val s = current)` with nested branches.)
+The transition function above uses valid Kotlin syntax. `Payload` is an application-defined type, and this example deliberately ignores unhandled events by returning the current state.
 
 The four ingredients map directly:
 
@@ -105,7 +108,7 @@ The four ingredients map directly:
 
 ### Where side effects go
 
-The cleanest model treats `transition` as a *pure function*. The system around it observes state changes and fires effects:
+A useful model keeps the transition calculation pure. The event processor can produce the next state and explicit effect instructions, then a separate runner executes those instructions. Observing only a conflated state stream is insufficient when an effect is attached to a transition that leaves the state value unchanged.
 
 ```mermaid
 flowchart LR
@@ -120,7 +123,7 @@ This separation is what makes a state machine testable. You can verify the trans
 
 ### Persistence
 
-For long-lived flows that survive process death (uploads, downloads, multi-step purchases), the state must be persisted. The pattern: serialize the current `State` to disk on every transition, restore it on launch. Idempotency of the effects is what makes this safe — see [`../distributed-systems/idempotency.md`](../distributed-systems/idempotency.md).
+For uploads or purchases that must recover after process death, persist sufficient state and pending-effect intent atomically, for example with an outbox. Execute effects using stable operation IDs, retain outcomes and reconcile uncertain remote results. Persisting a state name alone can leave a crash gap; idempotent retries address duplicates but do not create missing effect records. See [`../distributed-systems/idempotency.md`](../distributed-systems/idempotency.md).
 
 ---
 
@@ -148,7 +151,7 @@ stateDiagram-v2
     Success --> [*]
 ```
 
-A diagram like this is the *specification* of the system. If the implementation does anything the diagram doesn't allow, the implementation has a bug. This is a stronger guarantee than test coverage.
+A diagram like this can be the reviewed specification. Verify that code and effects obey it using transition tests, invariant checks or model checking as appropriate. Drawing the graph alone provides no stronger correctness guarantee than testing.
 
 ---
 
@@ -156,7 +159,7 @@ A diagram like this is the *specification* of the system. If the implementation 
 
 Almost every production system you can name is built on state machines, whether named that way or not.
 
-- **TCP.** The TCP state diagram is the most-cited automaton in computing. `LISTEN → SYN_RCVD → ESTABLISHED → FIN_WAIT_1 → ...`. It exists because reliable transport over an unreliable network is *only* expressible as a state machine; any other formulation has gaps.
+- **TCP.** RFC 9293 specifies TCP connection states and transitions. The state model makes permitted connection behavior explicit; it does not imply that every other formal description of the same protocol is incomplete.
 - **Stripe payments.** A `PaymentIntent` is an explicit state machine: `requires_payment_method → requires_confirmation → processing → succeeded | requires_action | canceled`. The state is exposed in the API. This makes integrations possible without coupling to Stripe's internal implementation.
 - **Uber driver dispatch.** Drivers move through `Offline → Online → Matching → EnRoute → Trip → Settling`. The state machine is the contract between mobile app, dispatch server, and pricing system.
 - **Netflix playback.** The Netflix player is a hierarchical state machine: parent states (`Initializing`, `Playing`, `Errored`) with sub-states for buffering, ABR adaptation, and DRM. Documented publicly in their engineering blog.
@@ -170,7 +173,7 @@ The shared property: in each system, the state machine is the *interface* — th
 
 Android exposes state machines at multiple layers. Knowing this changes what code you write.
 
-**Activity / Fragment lifecycle** is a state machine: `Initialized → Created → Started → Resumed → Paused → Stopped → Destroyed`. The Lifecycle library exposes these as observable states; modern code subscribes instead of overriding lifecycle methods.
+**Activity / Fragment lifecycle** has callbacks and an observable state model. Jetpack `Lifecycle.State` contains `INITIALIZED`, `CREATED`, `STARTED`, `RESUMED` and `DESTROYED`. Pausing moves the owner back toward `STARTED`; stopping moves it toward `CREATED`. `PAUSED` and `STOPPED` are not enum values.
 
 **`androidx.lifecycle.Lifecycle.State`** is literally an enum of states with an explicit ordering relation (`isAtLeast`). The framework treats lifecycle as the state machine it always was — just for years it was hidden behind eight callback methods.
 
@@ -186,7 +189,7 @@ Idiomatic Android uses these state machines instead of fighting them. Most Andro
 
 **Advantages**
 
-- Invalid states become unrepresentable. The class of "impossible bug" tickets disappears.
+- Selected invalid mode combinations can become unrepresentable. Other invariants, stale events and incorrect effects still require validation.
 - Pure transition functions are trivial to test — table-driven, no mocks.
 - The state diagram is documentation that cannot drift from the code, if the code is generated from or constrained by it.
 - New requirements show up as new states or new transitions, both of which are localized changes.
@@ -211,7 +214,7 @@ Idiomatic Android uses these state machines instead of fighting them. Most Andro
 
 ## Failure Modes
 
-**Untracked side effects re-run on transition.** A side effect that runs every time you *enter* a state will re-run on persistence-driven recovery. Fix: tag effects as `OnEntry` (run once when entering) vs `OnTransition` (run once on the specific edge) vs `OnExit`. Or — preferred — make all effects idempotent.
+**Effects can repeat or be lost during recovery.** Entry, transition and exit actions describe when an action is triggered, not whether it has already completed durably. Persist pending work with stable identities, make retries idempotent where required, and reconcile uncertain remote outcomes before repeating a sensitive operation.
 
 **Event flooding.** UI sources can fire events faster than the machine processes them. Fix: a bounded event queue with explicit drop or coalesce policy. Avoid `Channel(UNLIMITED)` in production.
 
@@ -225,14 +228,14 @@ Idiomatic Android uses these state machines instead of fighting them. Most Andro
 
 ## Performance Considerations
 
-State machines are cheap. The transition function is a `when` expression; it runs in nanoseconds. Performance concerns are about the *surrounding* infrastructure:
+A small transition calculation often needs little work, but its actual cost depends on guards, payload handling and the implementation. There is no universal nanosecond timing guarantee. Measure the transition and its surrounding event, persistence and effect pipeline.
 
 - **CPU.** Negligible for the state machine itself. Watch for hot loops in the event queue (e.g., UI events firing on every frame).
-- **Memory.** A sealed-class `State` value is one allocation per transition (or zero if all states are `data object`). Total memory is proportional to the depth of the persistence history if you log transitions.
+- **Memory.** A transition may reuse an existing state value or construct new state and effect data. Allocation count depends on the implementation and optimizations; retained history and queued events also contribute to memory use.
 - **Disk.** Persisted state writes happen on every transition for durable machines. Use append-only journaling rather than rewriting the whole state file; periodically compact.
 - **Battery.** Wakelocks held to "wait for the next event" are a real cost on mobile. Prefer pull-based event sources (cold flows, lifecycle observers) over push-based wakers.
 - **Network.** Not inherent. The effects triggered by transitions may be expensive; the machine itself is not.
-- **Latency.** End-to-end latency in a state-machine-driven system is dominated by the slowest effect, not by the transition.
+- **Latency.** Account for event-queue delay, transition work, persistence and required effects. Any of these can dominate the measured end-to-end operation.
 
 ---
 
@@ -243,7 +246,7 @@ State machines are a reliability *strategy*, not just a code pattern. The reliab
 - **Retries.** Belong in the state machine, not in callers. The `Retrying` state encapsulates exponential backoff (see [`../patterns/retry.md`](../patterns/retry.md)) and clearly bounds when retry happens.
 - **Backoff.** State transitions are guarded by timers in retry states. Persist the next-retry-at timestamp; on recovery, resume the timer.
 - **Circuit breakers.** Model the breaker itself as a state machine (`Closed → Open → HalfOpen`) — see [`../patterns/circuit-breaker.md`](../patterns/circuit-breaker.md). Compose it with the larger machine via parallel regions.
-- **Recovery.** Persistence + idempotency = recovery. The state machine defines *what* to recover to; idempotency makes it safe to repeat the entry effects.
+- **Recovery.** Durable state, recoverable effect intent, idempotent or reconciled remote work and an explicit replay policy work together. A state name plus an idempotency claim is not a complete recovery protocol.
 
 ---
 
@@ -253,7 +256,7 @@ State machines are mostly neutral from a security perspective, but two patterns 
 
 **Authorization is state.** Modeling auth as a state machine (`Unauthenticated → Authenticating → Authenticated → Expired`) makes authorization checks structural rather than scattered. A check like "must be Authenticated" is a state assertion, not an ad-hoc condition.
 
-**Replay resistance.** Persisted state machines can be tampered with on-device if the persistence is unsigned. For sensitive flows (payments, key exchange), the persisted state needs integrity (HMAC) and freshness (a server-issued nonce per transition). Otherwise an attacker can rewind the machine to a more permissive state.
+**Replay resistance.** Treat persisted client state as untrusted input to privileged server operations. Enforce authorization and sensitive transition validity on the server. Local integrity protection and freshness checks can support a threat model, but a client-held HMAC or a persisted `Authenticated` state is not sufficient authorization; nonce and replay policies must be designed for the actual protocol.
 
 ---
 
@@ -265,7 +268,7 @@ State machines are inherently observable — every transition is an event you ca
 - **Metrics.** Counter per `(from, to)` edge. Histogram of dwell time per state. Counter for illegal-event-ignored. These three together tell you whether the machine behaves the way the diagram says it should.
 - **Traces.** Attach a `machine_id` and `correlation_id` to every transition log. A trace becomes a sequence of transitions across one machine instance.
 - **Dashboards.** A panel that visualizes the live distribution of instances across states. If 80% of upload instances are stuck in `Retrying`, that is visible at a glance.
-- **Alerts.** Alert on illegal-event-ignored rate > 0. That rate should be 0 in steady state; non-zero means the machine and the system disagree.
+- **Alerts.** Track ignored events by reason. Alert on unexpected invalid transitions or anomalous rates; deliberately ignored stale completions, duplicate requests and events outside the current mode can be valid policy.
 
 Link to [`../observability/structured-logging.md`](../observability/structured-logging.md) and [`../observability/metrics.md`](../observability/metrics.md) for canonical treatment.
 
@@ -330,13 +333,13 @@ Questions a Staff engineer should be able to answer cold about state machines:
 4.  **How do you migrate a persisted state machine when you add a new state? Remove one? Rename one?**
     Treat it like a database migration. Persisted states must include a version tag. When loading an old version, write explicit migration logic to map removed/renamed states to their new logical equivalents before resuming the machine.
 5.  **What is the difference between a Mealy and a Moore machine, and when does it matter in practice?**
-    In a Mealy machine, outputs depend on both state and the event (the transition). In a Moore machine, outputs depend only on the current state (entering the state). Moore is easier to reason about, while Mealy can be more expressive.
+    Mealy output depends on the current state and input; Moore output depends only on the current state. Equivalent finite-state behavior can be represented in either form after accounting for the Moore initial output, with possible differences in state count and timing.
 6.  **How do parallel regions compose? What new failure mode do they introduce that a flat machine doesn't have?**
     They compose orthogonally, where the total state is the product of all regions. They introduce the risk of conflicting side effects or implicit dependencies between regions that aren't structurally represented.
 7.  **A file-upload pipeline persists state on every transition. What property must the side effects have for this to be safe?**
-    Side effects must be idempotent. If the process crashes after a transition but before the effect completes, recovery will re-run the effect. Idempotency ensures this duplicate execution is safe.
+    Recovery must retain enough durable state and effect intent to know what remains to do. Stable operation IDs and idempotent effects make retries safe when execution may have occurred already; uncertain remote outcomes may require reconciliation. State and pending intent should commit atomically so an effect is not lost before it can be retried.
 8.  **If your `Retrying` state has a 30-second backoff and the process dies after 5 seconds, what's the correct behavior on restart?**
-    The persisted state should store the `next_retry_at` timestamp. On restart, the system calculates the remaining time (25 seconds) and resumes the timer, rather than starting a fresh 30-second wait or firing immediately.
+    Persist a deadline with a defined clock/reboot policy. On restart, recompute max(0, deadline - now); process downtime also counts, so the remainder is not necessarily 25 seconds. A wall-clock deadline must handle clock changes, while elapsedRealtime is monotonic within one boot and cannot be reused unchanged across a reboot.
 9.  **Show me three real systems in this repo (or in your work) whose behavior is best modeled as a state machine and explain why.**
     (e.g., Video Player, Payment Checkout, Offline Sync Engine). They are best modeled as state machines because they have distinct modes, explicit valid transitions, and complex side effects dependent on mode changes.
 10. **When is a state machine the *wrong* abstraction? Give a concrete example.**
@@ -360,3 +363,21 @@ External:
 - David Harel, *Statecharts: A Visual Formalism for Complex Systems* (1987). The hierarchical-machine paper. Reads surprisingly well.
 - *TCP/IP Illustrated* by W. Richard Stevens. The TCP state diagram in chapter 18 is the textbook example of a real-world state machine.
 - XState documentation (statecharts.dev). Even if you don't use the library, the conceptual material is the clearest practical introduction online.
+
+### Official verification references
+
+The corrections in this chapter were checked against the following primary references.
+
+- [www.w3.org: scxml](https://www.w3.org/TR/scxml/)
+- [www.w3.org: #raise](https://www.w3.org/TR/scxml/#raise)
+- [www.w3.org: #onentry](https://www.w3.org/TR/scxml/#onentry)
+- [github.com: transactional-outbox-pattern](https://github.com/aws-samples/transactional-outbox-pattern)
+- [www.cs.umd.edu: fsm.html](https://www.cs.umd.edu/class/sum2003/cmsc311/Notes/Seq/fsm.html)
+- [www.w3.org: #parallel](https://www.w3.org/TR/scxml/#parallel)
+- [kotlinlang.org: control-flow.html#when-expressions-and-statements](https://kotlinlang.org/docs/control-flow.html#when-expressions-and-statements)
+- [www.w3.org: #transition](https://www.w3.org/TR/scxml/#transition)
+- [kotlinlang.org: -shared-flow](https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines.flow/-shared-flow/)
+- [www.rfc-editor.org: rfc9293.html](https://www.rfc-editor.org/rfc/rfc9293.html)
+- [developer.android.com: Lifecycle.State](https://developer.android.com/reference/androidx/lifecycle/Lifecycle.State)
+- [mas.owasp.org: 0x04e-Testing-Authentication-and-Session-Management](https://mas.owasp.org/MASTG/0x04e-Testing-Authentication-and-Session-Management/)
+- [developer.android.com: SystemClock](https://developer.android.com/reference/android/os/SystemClock)

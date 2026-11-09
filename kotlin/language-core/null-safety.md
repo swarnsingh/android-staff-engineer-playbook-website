@@ -56,7 +56,7 @@ Kotlin makes the type system carry the burden. The compiler refuses to let you f
 | Operator | Reads as | Returns null when… | Use when |
 |---|---|---|---|
 | `?.` (safe call) | "if non-null, call" | Receiver is null | Chain calls through possibly-null receivers |
-| `?:` (Elvis) | "or else" | Left-hand is null | Provide a default value |
+| `?:` (Elvis) | "or else" | Only if the selected fallback itself is null | Provide a default when the left side is null |
 | `!!` (not-null assert) | "or throw NPE" | Never (throws if null) | You can prove non-null but compiler can't |
 | `?.let { }` | "if non-null, do" | Receiver is null | Run a block on the value if it exists |
 | `requireNotNull(x)` | "or throw IAE" | Never (throws) | Validate input at boundaries |
@@ -274,7 +274,7 @@ val user = Gson().fromJson(json, User::class.java)
 println(user.name.length)   // NPE — and your "non-null String" was a lie
 ```
 
-Gson uses `Unsafe` allocation: it constructs the object **without calling the constructor**, then injects fields by reflection. Constructor checks (`Intrinsics.checkNotNullParameter`) never run.
+When its reflection adapter cannot use a suitable no-args constructor, default Gson can fall back to Unsafe allocation, unless that mechanism is disabled or an explicit adapter/creator changes instantiation. This bypasses the constructor and its parameter checks. A Kotlin data class with generated defaults or custom serialization may follow a different path.
 
 **Fix:** use Moshi or kotlinx.serialization — both honor Kotlin nullability and refuse to deserialize missing non-null fields:
 
@@ -311,7 +311,7 @@ public static final void printName(@NotNull String name) {
 
 If a Java caller passes `null`, the function fails **at the boundary** with a clear message ("Parameter specified as non-null is null: ..., name"), rather than crashing deep inside business logic.
 
-Likewise, when you call a Kotlin function returning a non-null type from Java, the return is checked.
+A non-null Kotlin return type is a language contract, not a general runtime assertion inserted at the Java call boundary. This concrete function returns its String directly; @NotNull informs tools. Kotlin can instead insert checks when it consumes a Java/platform value as non-null. Unsafe operations or untrusted implementations can still violate a declared contract.
 
 ---
 
@@ -328,9 +328,9 @@ Likewise, when you call a Kotlin function returning a non-null type from Java, t
 | `getContext()` | Same | Use `requireContext()` |
 | `SharedPreferences.getString(key, null)` | Default returns null | Provide non-null default |
 | `Cursor.getString(idx)` | Column NULL | Check `isNull(idx)` |
-| `JSONObject.optString(key)` | Returns `"null"` (string!) when missing | Use Moshi/kotlinx instead |
+| `JSONObject.optString(key)` | Missing key defaults to `""`; explicit JSON null can coerce to `"null"` | Check `has`/`isNull`, or use a typed serializer |
 | `LiveData.value` | No value emitted yet | Treat as nullable |
-| `StateFlow.value` | None — always has a value | Non-null |
+| `StateFlow.value` | Always has a value, which may itself be null for `StateFlow<T?>` | Respect its declared element type |
 | Compose `LocalContext.current` | Has a default `error()` | OK in @Composable scope |
 
 ### ViewBinding lifecycle pattern
@@ -395,6 +395,7 @@ Or use Kotlin's `Result<T>`:
 
 ```kotlin
 suspend fun pay(): Result<String> = runCatching { api.pay() }
+    .onFailure { if (it is kotlinx.coroutines.CancellationException) throw it }
 
 pay()
     .onSuccess { showReceipt(it) }
@@ -465,7 +466,7 @@ When reviewing nullability, I look at:
 1. **What is a Kotlin "platform type" (`String!`)? When do you encounter it, and how do you defend against it?**
    A platform type (`String!`) occurs when Kotlin calls Java code that lacks `@Nullable`/`@NonNull` annotations. The compiler suspends null-safety checks because it doesn't know if the value can be null. You defend against it by treating all unannotated Java returns as nullable (`T?`), adding annotations to the Java code if possible, or wrapping the Java API in a strict Kotlin anti-corruption layer.
 2. **Walk through what bytecode the compiler generates for a `fun greet(name: String)` function. What runtime check does it insert?**
-   The compiler generates a public static/instance method with a non-null signature. At the very beginning of the method body, it inserts a call to `Intrinsics.checkNotNullParameter(name, "name")`. If a Java caller bypasses the compiler and passes `null`, this intrinsic immediately throws an `IllegalArgumentException` at the boundary.
+   The compiler generates a public static/instance method with a non-null signature. At the very beginning of the method body, it inserts a call to `Intrinsics.checkNotNullParameter(name, "name")`. If a Java caller bypasses the compiler and passes `null`, this intrinsic throws a `NullPointerException` at the boundary on current Kotlin/JVM.
 3. **Why does smart cast fail on a `var` property? Show three ways to work around it.**
    Smart cast fails on a `var` property because a concurrent thread could mutate the property to `null` between the `!= null` check and the actual usage. Workarounds: 1) Assign to a local `val` first (`val n = name; if (n != null) n.length`); 2) Use the safe call and let (`name?.let { it.length }`); 3) Change the property declaration from `var` to `val` if it's meant to be immutable.
 4. **`lateinit` vs `by lazy` vs `var x: String? = null` — when do you pick each?**
@@ -475,7 +476,7 @@ When reviewing nullability, I look at:
 6. **Why is using `null` as a return value to indicate an error a code smell at a staff-engineer level? What's the alternative?**
    `null` is ambiguous—it doesn't communicate *why* an operation failed (e.g., network timeout vs. unauthorized vs. local error), leading to lossy error handling. The alternative is to return a `sealed interface` representing explicit success/failure states, or `Result<T>` if the error is an opaque exception.
 7. **Walk through how Gson can produce a Kotlin object with a `null` value in a non-null `String` field. How do you prevent it?**
-   Gson deserializes objects using `Unsafe` allocation, bypassing the class constructor entirely, and then sets fields via reflection. Since the constructor never runs, Kotlin's non-null intrinsic checks are bypassed. If the JSON omits a field, the field remains uninitialized (`null`), violating the type system. Prevent this by using Moshi or `kotlinx.serialization`.
+   Gson reflection can allocate a class without a usable no-args constructor via Unsafe and populate its fields without Kotlin constructor checks. A missing field can therefore remain null despite a non-null declaration. A Kotlin-aware adapter such as kotlinx.serialization or Moshi codegen/KotlinJsonAdapterFactory can reject missing required non-null properties; properties with declared defaults have their own missing-field behavior.
 8. **Give a legitimate use case for `!!`. Give an illegitimate one and the refactor.**
    A legitimate use case is inside a Fragment's ViewBinding getter (`val binding get() = _binding!!`), where you strictly control the lifecycle and guarantee it's accessed only between `onCreateView` and `onDestroyView`. An illegitimate use is `intent.getStringExtra("id")!!`, which crashes if the extra is missing. Refactor it to `requireNotNull(intent.getStringExtra("id")) { "Activity requires 'id' extra" }`.
 9. **`requireNotNull` vs `checkNotNull` vs `!!` — when do you use each?**
@@ -501,3 +502,14 @@ When reviewing nullability, I look at:
 - [Tony Hoare — "Null References: The Billion Dollar Mistake"](https://www.infoq.com/presentations/Null-References-The-Billion-Dollar-Mistake-Tony-Hoare/) — the apology that started it all.
 - [Roman Elizarov — "Dealing with absence of value"](https://elizarov.medium.com/dealing-with-absence-of-value-307b80534903) — Kotlin lead engineer's take.
 - [JSpecify](https://jspecify.dev/) — standard nullness annotations for Java/Kotlin interop.
+
+### Official verification references
+
+- [Primary documentation or owning implementation](https://developer.android.com/kotlin/coroutines/coroutines-best-practices#exceptions)
+- [Primary documentation or owning implementation](https://developer.android.com/reference/org/json/JSONObject#optString(java.lang.String))
+- [Primary documentation or owning implementation](https://github.com/JetBrains/kotlin/blob/v2.2.21/libraries/stdlib/jvm/runtime/kotlin/jvm/internal/Intrinsics.java)
+- [Primary documentation or owning implementation](https://google.github.io/gson/Troubleshooting.html#default-field-values-missing)
+- [Primary documentation or owning implementation](https://kotlinlang.org/api/core/kotlin-stdlib/kotlin/run-catching.html)
+- [Primary documentation or owning implementation](https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines.flow/-state-flow/)
+- [Primary documentation or owning implementation](https://kotlinlang.org/docs/java-interop.html#null-safety-and-platform-types)
+- [Primary documentation or owning implementation](https://kotlinlang.org/docs/null-safety.html#elvis-operator)

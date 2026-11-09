@@ -225,7 +225,7 @@ When reviewing raw threading code, a Staff engineer focuses on lifecycle and syn
 8. **How does Kotlin's `Dispatchers.Main` actually integrate with Android's legacy `Looper` system under the hood?**
    It simply wraps Android's `Handler(Looper.getMainLooper())`. When a coroutine needs to resume on the Main thread, it posts the Continuation's state machine as a `Runnable` into the Main `MessageQueue`.
 9. **What is the difference between `handlerThread.quit()` and `handlerThread.quitSafely()`?**
-   `quit()` terminates the `Looper` immediately, dropping any unprocessed messages. `quitSafely()` allows all currently pending messages in the queue to finish processing before terminating the thread.
+   `quit()` stops processing queued messages without draining them. `quitSafely()` processes messages already due when shutdown is requested, then exits; delayed messages due in the future are discarded. Neither API forcefully interrupts a callback that is already executing.
 10. **Describe the "Message Queue" architectural pattern and why it is vastly superior to creating a new OS thread for every individual asynchronous task.**
     Creating raw OS threads requires massive memory overhead (~1MB per stack) and kernel context switching. A Message Queue reuses a single living thread to process millions of lightweight task objects sequentially, saving immense resources.
 
@@ -234,3 +234,7 @@ When reviewing raw threading code, a Staff engineer focuses on lifecycle and syn
 - [`coroutines-under-the-hood.md`](../concurrency/coroutines-under-the-hood.md) — How modern Kotlin builds its state machines on top of these raw thread pools.
 - [`anrs.md`](../performance/anrs.md) — What happens when the Main Looper gets blocked.
 - [Android Developers: Processes and Threads](https://developer.android.com/guide/components/processes-and-threads)
+
+### Official verification references
+
+- [Primary documentation or owning implementation](https://developer.android.com/reference/android/os/Looper#quitSafely())

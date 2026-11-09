@@ -264,10 +264,10 @@ This is how engineering cultures of learning scale. Without it, mentorship stays
 - [`../career/technical-leadership.md`](../career/technical-leadership.md) — mentorship as leadership.
 - [`../career/senior-to-staff-progression.md`](../career/senior-to-staff-progression.md) — what to mentor people *toward*.
 - [`running-a-design-review.md`](running-a-design-review.md) — mentorship in the review setting.
-- [Lara Hogan — "Mentorship vs Sponsorship"](https://larahogan.me/blog/) — the canonical distinction.
+- [Lara Hogan — "What does sponsorship look like?"](https://larahogan.me/blog/what-sponsorship-looks-like/) — the canonical distinction.
 - [Tanya Reilly — "Being Glue"](https://noidea.dog/glue) — mentorship as glue work.
 - [Cate Huston — "DRI Your Support System"](https://cate.blog/2021/11/22/dri-your-support-system/) — practical mentoring and sponsorship distinctions.
-- [Will Larson — "Sponsoring is more important than mentoring"](https://lethain.com/) — the case for sponsorship.
+- [Will Larson — "Find your sponsor"](https://staffeng.com/guides/find-your-sponsor/) — why sponsorship matters for Staff+ growth.
 - [Lara Hogan: what sponsorship looks like](https://larahogan.me/blog/what-sponsorship-looks-like/)
 - [Tanya Reilly: Being Glue](https://www.noidea.dog/glue)
 - [Google review guidance: direction and learning](https://google.github.io/eng-practices/review/reviewer/comments.html)

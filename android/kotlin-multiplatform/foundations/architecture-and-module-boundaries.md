@@ -440,10 +440,10 @@ Shared feature modules depend on reusable core capabilities, and platform apps r
 
 ### Why Multi-Module Matters for Build Time
 
-In a monolithic `shared` module, changing one file in `commonMain` triggers recompilation of the entire module for all targets. In a multi-module project:
+Changing commonMain affects the requested target compilations, but incremental compilation and caches can reuse unaffected work. ABI changes may invalidate consumers, and final Native linking still consumes module outputs.
 
-- Changing `feature-auth` only recompiles `feature-auth` for all targets.
-- `core-network`, `core-database`, `feature-checkout`, etc. are cached and skipped.
+- A feature-auth edit recompiles affected sources/targets and any invalidated consumers; it is not universally confined to one module.
+- Unaffected tasks may remain up to date or reuse cached outputs. Native incremental compilation and final linking have different reuse boundaries.
 - Gradle's parallel task execution can compile `feature-auth:compileKotlinIosArm64` and `feature-checkout:compileKotlinAndroid` simultaneously.
 
 The benefit is workload-dependent: every KMP module also adds configuration and target tasks. Establish a build-report baseline, split along stable API boundaries, and verify clean and incremental builds after the change. Do not assume more modules automatically make builds faster.
@@ -491,3 +491,8 @@ KMP adoption changes iOS API design, debugging, build tooling, and ownership eve
 - [Set up ViewModel for KMP](https://developer.android.com/kotlin/multiplatform/viewmodel) — AndroidX dependencies, SwiftUI ownership, and current limitations.
 - [Kotlin Multiplatform API guidelines](https://kotlinlang.org/docs/api-guidelines-build-for-multiplatform.html) — Official boundary and API design guidance.
 - [Swift export](https://kotlinlang.org/docs/native-swift-export.html) — Alpha Swift-native export mappings and concurrency support.
+
+### Official verification references
+
+- [Primary documentation or owning implementation](https://kotlinlang.org/docs/gradle-compilation-and-caches.html)
+- [Primary documentation or owning implementation](https://kotlinlang.org/docs/native-improving-compilation-time.html)

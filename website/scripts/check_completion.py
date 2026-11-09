@@ -45,30 +45,36 @@ def check(source_root=None):
   assert entry.get('primary_sources'),('missing primary evidence',entry['id'])
  rows=json.loads((ROOT/'website/content/corrections-z-completion.json').read_text())
  assert len(rows)==743 and len({r['id'] for r in rows})==743
- core=[r for r in build.APPROVED_CORRECTIONS if r['path'].split('/')[0] in {'kotlin','android'}]
- canonical_ids={r['id'] for r in rows}
- assert len([r for r in core if r['id'] in canonical_ids])==743, 'Canonical inventory must be applied exactly once'
+ # Kotlin, Android, Computer Science and Engineering Fundamentals now carry exact merged-source
+ # text that already contains every earlier website correction, so that overlay is retired, not applied.
+ snapshot=json.loads((ROOT/'source-snapshot.json').read_text())
+ resynced={'kotlin','android','computer-science','engineering-fundamentals'}
+ tree=lambda r:r['path'].split('/')[0].removesuffix('.md')
+ assert all(snapshot.get(t+'_provenance') for t in resynced),'Resynced tree without merged-source provenance'
+ assert not [r for r in build.APPROVED_CORRECTIONS if tree(r) in resynced],'Corrections re-applied over resynced source'
+ retired=[r for r in build.ALL_CORRECTIONS if tree(r) in resynced and r.get('status')=='superseded-by-merged-source' and r.get('superseded_by')==f'source-snapshot.json {tree(r)}_provenance']
+ assert len(retired)==1084 and len({r.get('id') for r in retired})==1084,'Retired resync inventory changed'
+ for fix in retired:
+  raw=(ROOT/fix['path']).read_text()
+  # Either the source carries the replacement, or it rewrote the reviewed original wording further.
+  assert fix['new'] in raw or fix['old'] not in raw,('Retired correction neither present nor superseded',fix['id'])
  sync=json.loads((ROOT/'website/content/corrections-zz-observability-source-sync.json').read_text())
  expected_paths={'android/networking-and-security/retrofit-and-okhttp.md','android/performance/anrs.md','android/performance/memory-management-and-leaks.md'}
  assert len(sync)==3 and {r['path'] for r in sync}==expected_paths, 'Merged PR #72 sync scope changed'
  auth_sync=json.loads((ROOT/'website/content/corrections-zz-auth-source-sync.json').read_text())
  assert len(auth_sync)==1 and {r['path'] for r in auth_sync}=={'android/networking-and-security/ktor-vs-retrofit.md'}, 'Merged PR #74 sync scope changed'
- assert len(core)==747 and len({r['id'] for r in core})==747, 'Unexpected or duplicate Kotlin/Android corrections'
- assert {r['id'] for r in core}==canonical_ids|{r['id'] for r in sync}|{r['id'] for r in auth_sync}
  for fix in sync:
-  assert fix['status']=='approved' and fix['source_pr']==72 and fix.get('approval') and fix.get('sources')
+  assert fix['status']=='superseded-by-merged-source' and fix['source_pr']==72 and fix.get('approval') and fix.get('sources')
   assert fix['source_commit']=='7666569cf77db7616d43f05cf041c438cb947035'
   assert digest(fix['new'])==fix['source_sha256']
-  assert digest(build.corrected((ROOT/fix['path']).read_text(),fix['path'])[0])==fix['source_sha256'], ('Merged-source replay mismatch',fix['path'])
  for fix in auth_sync:
-  assert fix['status']=='approved' and fix['source_pr']==74 and fix.get('approval') and fix.get('sources')
+  assert fix['status']=='superseded-by-merged-source' and fix['source_pr']==74 and fix.get('approval') and fix.get('sources')
   assert fix['source_commit']=='8e152a8ead842de3c7f20ac6f88118d5b3e70fc6'
   assert digest(fix['new'])==fix['source_sha256']
-  assert digest(build.corrected((ROOT/fix['path']).read_text(),fix['path'])[0])==fix['source_sha256'], ('Merged-source replay mismatch',fix['path'])
- fundamentals=[r for r in build.APPROVED_CORRECTIONS if r['path'].startswith('engineering-fundamentals/')]
+ fundamentals=[r for r in retired if tree(r)=='engineering-fundamentals']
  assert fundamentals and len({r['id'] for r in fundamentals})==len(fundamentals)
  assert all(r.get('sources') and r.get('validation') for r in fundamentals)
- assert all(r['status']=='approved' and r.get('sources') and 'pending' not in r.get('validation','').lower() for r in rows)
+ assert all(r['status']=='superseded-by-merged-source' and r.get('sources') and 'pending' not in r.get('validation','').lower() for r in rows)
  for file in (ROOT/'website/content/blend').rglob('*.blend'):
   assert not re.search(r'<!--\s*@[^>]*:: review\s*-->',file.read_text()),('resolved review notice remains',file)
  proof=json.loads((REVIEW/'validation.json').read_text())
@@ -139,6 +145,6 @@ def check(source_root=None):
    actual=(Path(source_root)/path).read_text().split('\n### Official verification references\n',1)[0].rstrip()
    expected=build.corrected((ROOT/path).read_text(),path)[0].rstrip()
    assert actual==expected,('source/website divergence',path)
- print(f'Completion: {len(entries)} review entries closed; {len(rows)} canonical exact replacements; '+str(dict(Counter(e['status'] for e in entries)))+'.')
+ print(f'Completion: {len(entries)} review entries closed; {len(rows)} canonical replacements carried by merged source; '+str(dict(Counter(e['status'] for e in entries)))+'.')
 if __name__=='__main__':
  parser=argparse.ArgumentParser(description=__doc__);parser.add_argument('--source-root');args=parser.parse_args();check(args.source_root)

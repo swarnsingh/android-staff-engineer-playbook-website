@@ -26,26 +26,27 @@ Hardcoded dependency strings across 200 `build.gradle.kts` files are a maintenan
 ```kotlin
 // BAD — every module repeats versions
 dependencies {
-    implementation("com.squareup.retrofit2:retrofit:2.9.0")
-    implementation("com.squareup.okhttp3:okhttp:4.12.0")
+    implementation("com.squareup.retrofit2:retrofit:3.0.0")
+    implementation("com.squareup.okhttp3:okhttp:5.5.1")
 }
 ```
 
-The version catalog centralizes it:
+The version catalog centralizes it (versions shown are illustrative; check each library's release notes before copying them):
 
 ```toml
 # gradle/libs.versions.toml
 [versions]
-kotlin = "1.9.22"
-agp = "8.3.1"
-compose-bom = "2024.02.02"
-retrofit = "2.9.0"
-okhttp = "4.12.0"
-hilt = "2.50"
-room = "2.6.1"
-coroutines = "1.7.3"
+kotlin = "2.4.21"
+agp = "9.5.1"
+compose-bom = "2026.09.00"
+retrofit = "3.0.0"
+okhttp = "5.5.1"
+hilt = "2.60.1"
+room = "2.8.5"
+coroutines = "1.11.0"
 
 [libraries]
+compose-bom = { module = "androidx.compose:compose-bom", version.ref = "compose-bom" }
 retrofit-core = { module = "com.squareup.retrofit2:retrofit", version.ref = "retrofit" }
 retrofit-converter-moshi = { module = "com.squareup.retrofit2:converter-moshi", version.ref = "retrofit" }
 okhttp-core = { module = "com.squareup.okhttp3:okhttp", version.ref = "okhttp" }
@@ -129,7 +130,7 @@ implementation("com.yourorg.sdk:auth")        // no version
 implementation("com.yourorg.sdk:analytics")   // no version
 ```
 
-Versioning the BOM by calendar (`2024.06`, `2024.09`) makes the cadence visible. Every quarter, a new BOM; consumers upgrade at their own pace.
+Versioning the BOM by calendar (`2024.06`, `2024.09`), as the Compose BOM does, makes the cadence visible. Every quarter, a new BOM; consumers upgrade at their own pace. SemVer-style BOM versions also work: the Firebase Android BoM bumps its major version when it removes libraries (v34.0.0 dropped the KTX artifacts). Pick one scheme and document what a bump means.
 
 ---
 
@@ -140,29 +141,29 @@ When your Platform team publishes SDKs to a private Maven repo and other Android
 | Bump | Triggers | Examples |
 |---|---|---|
 | **PATCH** (`x.y.Z`) | Internal change only | Bug fix; refactor; perf improvement |
-| **MINOR** (`x.Y.0`) | Backwards-compatible additions | New function, new optional parameter, new module |
+| **MINOR** (`x.Y.0`) | Backwards-compatible additions | New function, new overload that keeps the old signature, new module |
 | **MAJOR** (`X.0.0`) | Breaking change | Removed function, changed signature, changed default behavior |
 
-The rule: **if a consumer's code that used to compile and run on version `X.Y.Z` no longer compiles or behaves differently on `X.Y.Z+1`, it's a MAJOR bump.**
+The rule: **if a consumer's code that used to compile, link and run on version `X.Y.Z` no longer compiles, fails to link (`NoSuchMethodError`) or breaks its documented contract on a later version, it's a MAJOR bump.** In Kotlin, adding a parameter with a default value keeps source compatibility but changes the JVM signature, so already-compiled callers break; keep the old signature as an overload (or use the experimental `@IntroducedAt`) to make it a MINOR change.
 
-### Enforce with binary-compatibility-validator
+### Enforce with ABI validation
 
-Manual SemVer policing fails at scale. Use [`binary-compatibility-validator`](https://github.com/Kotlin/binary-compatibility-validator) to snapshot the ABI and fail CI on accidental changes.
+Manual SemVer policing fails at scale. Snapshot the ABI and fail CI on accidental changes. The Kotlin Gradle plugin now has experimental built-in [binary compatibility validation](https://kotlinlang.org/docs/gradle-binary-compatibility-validation.html) (`kotlin { abiValidation() }`, tasks `checkKotlinAbi` / `updateKotlinAbi`). The older [`binary-compatibility-validator`](https://github.com/Kotlin/binary-compatibility-validator) plugin is in maintenance mode but still widely used; its workflow is shown here:
 
 ```kotlin
 // :sdk:auth/build.gradle.kts
 plugins {
-    id("org.jetbrains.kotlinx.binary-compatibility-validator") version "0.14.0"
+    id("org.jetbrains.kotlinx.binary-compatibility-validator") version "0.18.2"
 }
 ```
 
-After the first build, a `:sdk:auth/api/auth.api` file is generated, listing every public class, function, and field. Subsequent builds compare against it. Any diff fails CI unless the engineer regenerates the dump (`./gradlew apiDump`) — which forces them to explicitly acknowledge the API change in the PR.
+Run `./gradlew apiDump` once to create `:sdk:auth/api/auth.api`, listing every public class, function, and field, and commit it. From then on `apiCheck` (part of `check`) compares the build against it. Any diff fails CI unless the engineer regenerates the dump (`./gradlew apiDump`) — which forces them to explicitly acknowledge the API change in the PR.
 
-```
-public final class com/yourorg/sdk/auth/AuthClient {
-    public fun login(Ljava/lang/String;Ljava/lang/String;)V    ← old
-    public fun login(Ljava/lang/String;)V                       ← new (param removed)
-}
+```diff
+ public final class com/yourorg/sdk/auth/AuthClient {
+-    public final fun login (Ljava/lang/String;Ljava/lang/String;)V
++    public final fun login (Ljava/lang/String;)V
+ }
 ```
 
 A reviewer sees the diff in the `.api` file and asks: "Did you mean to remove the password param? If so, this is a MAJOR bump."
@@ -174,11 +175,11 @@ Kotlin defaults class members to `public`. Engineers forget visibility modifiers
 ```kotlin
 // :sdk:auth/build.gradle.kts
 kotlin {
-    explicitApi()    // strict: every public API must be explicitly declared `public` or `internal`
+    explicitApi()    // strict: declarations that would be public by default need an explicit modifier
 }
 ```
 
-Now the compiler refuses to build until every member has an explicit visibility. The SDK's public surface stays intentional.
+Now the compiler refuses to build until every declaration that would otherwise be public by default has an explicit visibility (and public functions and properties have explicit types). The SDK's public surface stays intentional.
 
 ---
 
@@ -215,13 +216,13 @@ When you spot a forced upgrade you didn't expect, file a JIRA, pin the version e
 dependencies {
     implementation("com.squareup.okhttp3:okhttp") {
         version {
-            strictly("4.12.0")   // build fails if anyone forces a different version
+            strictly("4.12.0")   // excludes every other version; can downgrade transitive requests
         }
     }
 }
 ```
 
-Use `strictly` only when a specific version is load-bearing (e.g., security patch you must apply). Otherwise prefer the catalog default.
+Use `strictly` only when a specific version is load-bearing and must not move. On a declared dependency it can downgrade what other modules request; on a transitive one, resolution fails if no acceptable version exists. For a security floor ("at least the patched version"), a normal `require` version or a dependency constraint is enough and still lets later upgrades through. Gradle recommends `strictly` over `resolutionStrategy.force()` for new builds. Otherwise prefer the catalog default.
 
 ---
 
@@ -229,10 +230,9 @@ Use `strictly` only when a specific version is load-bearing (e.g., security patc
 
 A Platform team should not manually check for new versions. Automate it.
 
-```yaml
-# renovate.json
+```json
 {
-  "extends": ["config:base"],
+  "extends": ["config:recommended"],
   "labels": ["dependencies"],
   "schedule": ["after 1am on monday"],
   "packageRules": [
@@ -242,7 +242,7 @@ A Platform team should not manually check for new versions. Automate it.
       "automergeType": "branch"
     },
     {
-      "matchPackagePatterns": ["^com.yourorg.sdk"],
+      "matchPackageNames": ["/^com\\.yourorg\\.sdk/"],
       "schedule": ["at any time"],
       "minimumReleaseAge": "0 days"
     },
@@ -254,7 +254,7 @@ A Platform team should not manually check for new versions. Automate it.
 }
 ```
 
-Renovate (or Dependabot) scans `libs.versions.toml`, opens PRs for new releases, runs full CI, and merges patches automatically if green. Majors and minors land in a PR queue for the Platform team to review.
+Renovate (configured in `renovate.json`, above) or Dependabot scans `libs.versions.toml`, opens PRs for new releases, runs full CI, and merges patches automatically if green. Majors and minors land in a PR queue for the Platform team to review.
 
 Gate dangerous bumps:
 
@@ -262,7 +262,7 @@ Gate dangerous bumps:
 - **MINOR** — Platform team reviewer required.
 - **MAJOR** — RFC required; coordinated rollout.
 
-Save dozens of engineer-hours per week.
+Measure the time it saves; at scale it adds up quickly.
 
 ### Dependency governance board
 
@@ -316,14 +316,22 @@ Conventions:
 - Production app builds **never** depend on `-SNAPSHOT` versions. Enforce in CI.
 
 ```kotlin
-configurations.all {
-    resolutionStrategy.eachDependency {
-        if (requested.version?.contains("SNAPSHOT") == true && isReleaseBuild) {
-            throw GradleException("SNAPSHOT dependency in release: ${requested.module}")
+// :app/build.gradle.kts — guard every release variant (release, demoRelease, …)
+androidComponents {
+    onVariants(selector().withBuildType("release")) { variant ->
+        val variantName = variant.name
+        listOf(variant.compileConfiguration, variant.runtimeConfiguration).forEach { classpath ->
+            classpath.resolutionStrategy.eachDependency {
+                if (requested.version?.endsWith("-SNAPSHOT") == true) {
+                    throw GradleException("SNAPSHOT dependency in $variantName: ${requested.module}")
+                }
+            }
         }
     }
 }
 ```
+
+Select variants through the Android variant API rather than by configuration-name prefix: with product flavors, release classpaths are named `<flavor>ReleaseCompileClasspath` and `<flavor>ReleaseRuntimeClasspath` (for example `demoReleaseRuntimeClasspath`), so a `startsWith("release")` filter would silently skip them.
 
 ---
 
@@ -348,9 +356,12 @@ public class AuthClient {
 
 Cadence:
 
-1. **Release N.x** — add the new API; mark the old `@Deprecated(WARNING)`.
-2. **Release N+1.x** — change the deprecation to `DeprecationLevel.ERROR`. Code still runs, but compilation warns hard.
-3. **Release N+2 (MAJOR bump)** — remove the old API.
+1. **Minor release N.1** — add the new API; mark the old `@Deprecated(WARNING)`.
+2. **Minor release N.2** — change the deprecation to `DeprecationLevel.ERROR`. Source that calls it no longer compiles, but already-compiled callers still link and run.
+3. **Minor release N.3** — change it to `DeprecationLevel.HIDDEN`. Source can no longer see it; the method stays in the binary, so compiled callers keep working.
+4. **Next major release (N+1.0)** — remove the old API.
+
+This follows Kotlin's library guidance: warning, then error, then hidden across several minor releases, with removal only in a major release. Space the steps by time, not just release count, so consumers have a real migration window.
 
 Document deprecations in release notes. Use IDE hints (`ReplaceWith`) so consumers get one-click migrations.
 
@@ -366,7 +377,9 @@ If you publish an SDK and don't know who's on which version, you fly blind.
 // :sdk:core/src/main/kotlin/.../SdkInitializer.kt
 public object SdkInitializer {
     public fun initialize(context: Context, config: Config) {
-        reportSdkVersion(BuildConfig.VERSION_NAME, config.consumerAppId)
+        // Library BuildConfig has had no VERSION_NAME since AGP 4.1; define your own
+        // buildConfigField (BuildConfig generation is off by default since AGP 8.0).
+        reportSdkVersion(BuildConfig.SDK_VERSION, config.consumerAppId)
         // ...
     }
 }
@@ -397,7 +410,7 @@ Two questions the Platform lead now answers in seconds:
 | Engineers add deps without review | No policy | RFC for new top-level deps |
 | Dependabot floods PR list | All updates trigger PRs | Renovate config; group + auto-merge patches |
 | Production app shipped with a SNAPSHOT | No CI guard | Resolution strategy: fail on SNAPSHOT in release |
-| Deprecation removed without warning | Skipped the WARNING→ERROR cycle | Documented deprecation policy |
+| Deprecation removed without warning | Skipped the WARNING→ERROR→HIDDEN cycle | Documented deprecation policy |
 | Don't know which apps use SDK 1.x | No telemetry | Init-time version ping |
 
 ---
@@ -407,15 +420,15 @@ Two questions the Platform lead now answers in seconds:
 - **Dynamic versions (`1.+`, `latest.release`).** Non-deterministic builds. Yesterday's CI passed; today's fails because a transitive dep released a bad version. Pin always.
 - **`force()` everywhere.** When you force a version of every dep, you bypass the resolver's ability to upgrade safely. Use sparingly.
 - **`api` on internal SDK transitives.** Don't leak Retrofit out of your auth SDK; consumers can't upgrade Retrofit themselves. Use `implementation` and re-expose only the types you intend to.
-- **No deprecation runway.** Cutting an API in a MINOR release breaks downstream apps unexpectedly. Always WARNING → ERROR → remove across at least two MAJOR cycles.
-- **Versioning the BOM in semver (`1.2.3`).** Confuses consumers; the BOM is a snapshot of a moment, not an evolving API. Use date-based (`2024.06`).
-- **No catalog policy.** Engineers add libraries individually; the catalog drifts. Lint rule: any direct version string in `build.gradle.kts` fails build.
+- **No deprecation runway.** Cutting an API in a MINOR release breaks downstream apps unexpectedly. Go WARNING → ERROR → HIDDEN across minor releases, and remove only in a MAJOR release.
+- **An undocumented BOM version scheme.** Date-based (`2024.06`, like the Compose BOM) signals cadence; SemVer-style (like the Firebase BoM) signals breaking removals. Either works if consumers know what a bump means.
+- **No catalog policy.** Engineers add libraries individually; the catalog drifts. Escalate Android Lint's built-in `UseTomlInstead` check (it flags dependencies declared directly in build files when a version catalog exists) to an error.
 
 ---
 
 ## Probing Questions
 
-1. Walk through a complete `libs.versions.toml` upgrade from Kotlin 1.9.10 to 1.9.22. What can go wrong?
+1. Walk through a complete `libs.versions.toml` upgrade from Kotlin 2.3.x to 2.4.x. What can go wrong?
 2. Why date-version a BOM (`2024.06`) instead of SemVer-version it?
 3. The `binary-compatibility-validator` fails CI for a PR. Walk through how you'd evaluate whether to bump MAJOR.
 4. A feature team forces a higher OkHttp version "for a security fix." How do you assess and respond?
@@ -428,10 +441,10 @@ Two questions the Platform lead now answers in seconds:
 
 ## Answer Key
 
-1. **Walk through a complete `libs.versions.toml` upgrade from Kotlin 1.9.10 to 1.9.22. What can go wrong?**
-   Updating the version string in `libs.versions.toml` is easy, but it changes the compiler for all modules. Things that can go wrong: KSP/KAPT compatibility breakage, Compose Compiler version mismatch, transitive dependency conflicts, and subtle bytecode changes that invalidate caches.
+1. **Walk through a complete `libs.versions.toml` upgrade from Kotlin 2.3.x to 2.4.x. What can go wrong?**
+   Updating the version string in `libs.versions.toml` is easy, but it changes the compiler for all modules. Things that can go wrong: the KSP release no longer supports the new Kotlin version (check KSP's compatibility table), AGP's built-in Kotlin or other compiler plugins lag behind, new compiler warnings fail `allWarningsAsErrors` modules, transitive dependency conflicts (for example on `kotlin-stdlib`), and a one-time wave of build-cache misses because every Kotlin compile task's key changes. Since Kotlin 2.0 the Compose compiler ships with Kotlin, so there is no separate Compose Compiler version to align.
 2. **Why date-version a BOM (`2024.06`) instead of SemVer-version it?**
-   A BOM represents a snapshot of compatible library versions at a point in time across many different artifacts. Since the underlying artifacts evolve independently, SemVer is misleading. Date versioning sets a clear expectation of cadence and age.
+   A BOM represents a snapshot of compatible library versions at a point in time across many different artifacts that evolve independently. Date versioning (the Compose BOM) sets a clear expectation of cadence and age. SemVer-style versioning (the Firebase BoM) is also used, with a major bump when the BOM drops or breaks artifacts. Either is defensible; the mistake is leaving consumers to guess what a bump means.
 3. **The `binary-compatibility-validator` fails CI for a PR. Walk through how you'd evaluate whether to bump MAJOR.**
    Review the `.api` diff. If the change removes, renames, or modifies the signature of a `public` or `protected` member in a way that breaks existing consumers at compile or runtime, it requires a MAJOR bump. If it was accidental, revert the change.
 4. **A feature team forces a higher OkHttp version "for a security fix." How do you assess and respond?**
@@ -441,7 +454,7 @@ Two questions the Platform lead now answers in seconds:
 6. **SNAPSHOT vs release conventions — why are they enforced?**
    Releases are immutable and guarantee reproducible builds. SNAPSHOTs are mutable, causing non-deterministic builds where CI might pass today and fail tomorrow without code changes. Enforcing release-only in production prevents shipping unstable artifacts.
 7. **A widely-used API needs to change. Walk through a 6-month deprecation plan.**
-   Month 1: Introduce the new API, mark the old one with `@Deprecated(level = WARNING)` providing a `ReplaceWith` snippet. Month 3: Elevate to `@Deprecated(level = ERROR)` to break builds and force migration. Month 6: Remove the old API completely and bump the MAJOR version.
+   Month 1 (minor release): Introduce the new API, mark the old one with `@Deprecated(level = WARNING)` providing a `ReplaceWith` snippet. Month 3 (minor release): Elevate to `@Deprecated(level = ERROR)` so source that still calls it fails to compile and teams must migrate. Month 5 (minor release): Move to `HIDDEN`, which keeps the method in the binary for already-compiled callers. Month 6: Remove the old API completely in a MAJOR release.
 8. **Renovate opens 30 PRs/week. How do you keep up without spending all of Monday merging?**
    Configure Renovate to auto-merge `PATCH` updates if CI passes. Group related updates (e.g., all AndroidX libraries) into single PRs. Require manual review only for `MINOR` and `MAJOR` updates.
 
@@ -451,9 +464,11 @@ Two questions the Platform lead now answers in seconds:
 - [`sdk-distribution.md`](sdk-distribution.md) — how to publish SDKs you've versioned correctly.
 - [`internal-developer-platforms.md`](internal-developer-platforms.md) — versioning as a platform service.
 - [`../android/data-and-di/hilt-vs-koin-vs-manual-di.md`](../android/data-and-di/hilt-vs-koin-vs-manual-di.md) — how upgrade cadence differs across DI choices.
-- [Gradle — Sharing dependency versions across projects](https://docs.gradle.org/current/userguide/platforms.html) — version catalogs official docs.
+- [Gradle — Version Catalogs](https://docs.gradle.org/current/userguide/version_catalogs.html) — version catalogs official docs.
 - [Gradle — Java Platform Plugin](https://docs.gradle.org/current/userguide/java_platform_plugin.html) — BOM publishing.
-- [Kotlin — binary-compatibility-validator](https://github.com/Kotlin/binary-compatibility-validator) — ABI guard.
+- [Kotlin — Binary compatibility validation in the Kotlin Gradle plugin](https://kotlinlang.org/docs/gradle-binary-compatibility-validation.html) — built-in ABI guard (experimental).
+- [Kotlin — binary-compatibility-validator](https://github.com/Kotlin/binary-compatibility-validator) — ABI guard plugin (maintenance mode).
+- [Kotlin — Backward compatibility guidelines for library authors](https://kotlinlang.org/docs/api-guidelines-backward-compatibility.html) — default arguments, overloads and deprecation cycles.
 - [Kotlin — Explicit API mode](https://kotlinlang.org/docs/whatsnew14.html#explicit-api-mode-for-library-authors) — official docs.
 - [Renovate Bot](https://docs.renovatebot.com/) — config reference.
 - [SemVer.org](https://semver.org/) — canonical definition.

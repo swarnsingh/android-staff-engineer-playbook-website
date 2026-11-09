@@ -10,9 +10,9 @@ It is primarily used to eliminate the severe memory and performance overhead of 
 
 Kotlin encourages functional programming. You frequently pass functions as arguments to other functions: `list.filter { it > 5 }`. 
 
-In the JVM world, every time you define a lambda `{ it > 5 }`, the compiler creates an anonymous class implementation under the hood (e.g., `Function1<Int, Boolean>`). Every time that code is executed, the JVM allocates a new object on the heap. If you call `filter` inside a `RecyclerView` loop 60 times a second, you allocate 60 hidden objects a second. This causes massive Garbage Collection (GC) churn, freezing the UI.
+A non-inline higher-order call can involve a function object, captures, boxing, and indirect calls. This is not a new anonymous object on every invocation: noncapturing lambdas may be reused, and Kotlin/JVM 2.0+ uses `invokedynamic` by default. Capturing lambdas and runtime optimisations need separate inspection. Also, stdlib `filter` is already inline.
 
-The `inline` keyword solves this by removing the object allocation entirely.
+Inlining can remove the inlinable lambda object and indirect call at a Kotlin call site. It does not remove unrelated allocations, such as the result list. Measure hot paths before attributing UI jank to lambda allocation.
 
 ## Historical Context
 
@@ -47,12 +47,12 @@ fun calculate() {
 }
 ```
 
-If you decompile the generated Java code for `calculate()`, you will see something horrifying:
+The following Java-shaped sketch illustrates a possible function-object call. It is pseudocode, not guaranteed decompiler output: this noncapturing lambda can be reused, and modern Kotlin/JVM normally emits `invokedynamic`.
 
 ```java
-// Decompiled Java (No Inline)
+// Conceptual Java-shaped sketch (No Inline)
 public final void calculate() {
-    // The JVM instantiated a hidden object!
+    // Illustrative function object; not proof of a fresh allocation per call.
     int result = doMath(5, 10, new Function2<Integer, Integer, Integer>() {
         public Integer invoke(Integer x, Integer y) {
             return x + y;
@@ -111,7 +111,7 @@ graph TD
 
 Showing decompiled Java is one level of evidence; reading actual JVM bytecode is another. Compile both versions and run `javap -c -p`:
 
-**Without `inline`** — `calculate()` allocates a `Function2` object on every call:
+**Without `inline`** — this illustrative listing shows one possible class-based call shape. It is not the output of the noncapturing example on current defaults. Kotlin/JVM 2.2.21 emits `invokedynamic`; with `-Xlambdas=class` it uses a cached `INSTANCE` for this lambda:
 
 ```
 public final void calculate();
@@ -128,7 +128,7 @@ public final void calculate();
     18: return
 ```
 
-The `new #15` + `dup` + `invokespecial #19` triplet is the JVM allocating + initializing a brand-new `Function2` object every invocation. In a 60Hz scroll loop, that's 60 allocations per second → GC churn → jank.
+In the illustrative listing, `new` followed by construction would allocate a fresh function object. Do not apply that count to the source above: its noncapturing lambda can be cached or linked using `invokedynamic`. Actual allocation rates and jank require measurement.
 
 **With `inline`** — the lambda body is pasted into the caller. No allocation:
 
@@ -148,7 +148,7 @@ public final void calculate();
 
 Zero `new` opcodes, zero `invokevirtual` on a lambda interface, zero `Function2` reference anywhere. The math (`iadd`) happens directly in the caller's frame.
 
-**The diff matters per call site.** If `doMath` is called 1,000 times in a scroll, the inlined version produces 8,000 stack ops total; the non-inlined version produces 1,000 heap allocations + 1,000 virtual dispatches. R8 + ART will optimize some away — but you've removed the regression entirely at the source instead of hoping.
+**Compare the actual call sites.** Inlining can eliminate the function-object invocation and boxing used by a generic Function interface. It does not establish a fixed number of heap allocations or a runtime speedup for this example. Inspect compiler output for the chosen version and flags, then measure the optimised Android build.
 
 ## Production Example
 
@@ -156,7 +156,7 @@ Zero `new` opcodes, zero `invokevirtual` on a lambda interface, zero `Function2`
 
 Almost all collection operators (`forEach`, `map`, `filter`) and scope functions (`let`, `apply`, `run`) in the Kotlin Standard Library are `inline`.
 
-This is why chaining 5 Kotlin collection operations together `list.filter{}.map{}.sortedBy{}` does not immediately crash an Android phone with out-of-memory errors. The compiler squashes all of those lambdas flat into massive blocks of inline bytecode.
+Inlining reduces overhead for many stdlib higher-order calls. It does not fuse eager collection operations: `filter` and `map` still create their result collections, and sorting has its own allocations and comparison cost. A chain is not guaranteed to crash without inlining or become allocation-free with it.
 
 ```kotlin
 // Kotlin Standard Library Source Code
@@ -176,7 +176,7 @@ public inline fun <T, R> Iterable<T>.map(transform: (T) -> R): List<R> {
 
 **Disadvantages**
 - **Bytecode Bloat:** If you `inline` a massive, 500-line function, and you call it in 100 places, the compiler copies those 500 lines 100 times. Your APK size will explode, and the Android ART compiler will choke. 
-- **No Encapsulation:** Inline functions cannot access `private` members of the class they are defined in, because their code will be executed in a completely different class (the caller's class).
+- **Public API visibility:** Public/protected inline bodies cannot access non-public implementation declarations. Private inline functions can use private members. An `internal` helper marked `@PublishedApi` can support a public inline wrapper, but then becomes part of its binary compatibility contract.
 - **Stack Traces:** When an exception is thrown inside an inlined lambda, the stack trace can be confusing because the function call that *looks* like it should be on the stack doesn't actually exist at runtime. Instead, the stack trace will point directly to the caller's line of code.
 - **Inline Properties:** You can also apply `inline` to custom property getters (`inline val foo: String get() = ...`). Kotlin call sites that can inline the accessor avoid that call, but a public accessor is still emitted for JVM ABI, Java callers, reflection, and callable references.
 
@@ -198,7 +198,7 @@ public inline fun <T, R> Iterable<T>.map(transform: (T) -> R): List<R> {
       Thread { action() }.start() 
   }
   ```
-  *(Fix: If the lambda must escape, you must mark it as `crossinline`. This tells the compiler: "Still inline the function, but forbid the user from using non-local returns inside this lambda, because the outer function will have already finished before this thread runs").*
+  *(Fix: Use `crossinline` when an inlined lambda is invoked from another callable context such as a Runnable; this forbids non-local returns. Use `noinline` when the function value itself must be stored or passed to a non-inline consumer. A crossinline invocation does not require the outer function to have finished.)*
 - **The Noline Trap:**
   If your inline function takes *two* lambdas, but you only want to inline one of them, you use `noinline` on the second one to prevent it from being copied.
 
@@ -206,9 +206,9 @@ public inline fun <T, R> Iterable<T>.map(transform: (T) -> R): List<R> {
 
 When reviewing code containing `inline`, a Staff engineer enforces strict boundaries:
 
-1.  **Is the inline function too big?** I look at the line count. If an `inline` function is more than 3-4 lines of logic, I will reject the PR. Massive inline functions cause severe instruction cache misses at the CPU level and bloat the dex file. 
+1.  **Is inlining justified by the call sites?** Inspect generated code size and measure hot paths. Larger bodies can increase bytecode, but a universal 3–4-line threshold does not predict instruction-cache misses or APK impact. Extract substantial non-inline helpers when that preserves the API contract.
 2.  **Why did you use `inline` here?** If a developer puts `inline` on a function that has no lambda parameters and no `reified` types, I know they are "Cargo Culting" (copying syntax without understanding it). I will explain that they are actively fighting the JVM's optimized JIT compiler.
-3.  **Are we hiding massive logic in Scope Functions?** `apply` and `let` are inline. If a developer puts 50 lines of complex database transactions inside a `.let { }` block, it makes the bytecode of the caller massive. I will demand the logic be extracted to a standard `private fun`.
+3.  **Are we hiding substantial logic in scope functions?** `apply` and `let` inline their lambdas, but code written directly at a single call site is not multiplied just because it is inside `let`. Extract a named function for clarity, reuse, or measured size concerns rather than assuming scope-function syntax itself duplicates that one block.
 
 ## Common Misconceptions
 
@@ -224,14 +224,14 @@ When reviewing code containing `inline`, a Staff engineer enforces strict bounda
 5.  What is a "Non-Local Return," and why is it only possible inside an inlined lambda?
 6.  Explain the purpose of the `crossinline` modifier. In what scenario are you forced to use it?
 7.  Why are almost all higher-order functions in the Kotlin Standard Library (like `map`, `filter`, `let`) marked as `inline`?
-8.  Why can't an `inline` function access a `private` variable belonging to the class it is declared inside?
+8.  Why can't a public API `inline` function access a private implementation declaration, while a private inline function can?
 9.  If you decompile a Kotlin `inline` function invocation back into Java, what does the resulting code look like?
 10. Describe the difference between `crossinline` and `noinline`.
 
 ## Answer Key
 
 1. **What is the primary memory/performance problem that the `inline` keyword solves on the JVM?**
-   It prevents the severe memory allocation overhead of Lambdas. Without it, passing a lambda to a function creates a new anonymous `Function` object on the heap per call. In hot loops, this causes massive Garbage Collection churn.
+   It can remove function-object invocation and allocation for inlinable lambdas. Non-inline lambdas do not necessarily allocate anew on every call: noncapturing instances can be reused, and current Kotlin/JVM normally uses `invokedynamic`. Measure allocation and latency on the target runtime.
 2. **Explain the "Copy and Paste" mental model of how the `kotlinc` compiler implements `inline`.**
    The compiler literally copies the bytecode body of the inline function, along with the body of the lambda passed to it, and pastes them directly into the caller's bytecode. This removes the function call jump and the object allocation entirely.
 3. **Why does the IDE generate a warning if you place `inline` on a function that does not accept a lambda as a parameter?**
@@ -243,9 +243,9 @@ When reviewing code containing `inline`, a Staff engineer enforces strict bounda
 6. **Explain the purpose of the `crossinline` modifier. In what scenario are you forced to use it?**
    `crossinline` is used when an inline function takes a lambda but passes that lambda to another context (like a background thread or a callback). You are forced to use it because the compiler cannot allow a Non-Local Return if the lambda executes asynchronously after the outer function has already returned.
 7. **Why are almost all higher-order functions in the Kotlin Standard Library (like `map`, `filter`, `let`) marked as `inline`?**
-   Because functional programming chains (`list.filter{}.map{}`) are heavily used. If they weren't `inline`, every operation would allocate intermediate Lambda objects, immediately crashing Android apps with Out-Of-Memory errors or extreme GC jank.
-8. **Why can't an `inline` function access a `private` variable belonging to the class it is declared inside?**
-   Because the `inline` function's body is physically copied into the *caller's* class. If it copied private variables, the caller's class would suddenly have illegal bytecode instructions attempting to access private fields of a different class, violating JVM visibility rules.
+   Inlining can avoid inlinable function objects and indirect calls at many stdlib call sites. It does not imply that the non-inline alternative would crash; eager operations such as `filter` and `map` still allocate result collections.
+8. **Why can't a public API `inline` function access a private implementation declaration, while a private inline function can?**
+   A public API inline body can be copied into another module, so it cannot depend on private implementation declarations. A private inline function has no such external API exposure and can use private members. Use an appropriate public helper or an `internal @PublishedApi` helper when an external inline wrapper requires one.
 9. **If you decompile a Kotlin `inline` function invocation back into Java, what does the resulting code look like?**
    There is no function call to the inline function, and there is no instantiation of a `Function` interface. Instead, the raw logic from the inline function and the lambda are seamlessly woven directly into the local variables and instructions of the caller.
 10. **Describe the difference between `crossinline` and `noinline`.**
@@ -255,3 +255,9 @@ When reviewing code containing `inline`, a Staff engineer enforces strict bounda
 
 - [`reified-types.md`](reified-types.md) — The other major feature unlocked by `inline`.
 - [`memory-model.md`](../runtime-and-jvm/memory-model.md) — Understanding the Heap vs Stack implications of allocating hidden Lambda objects.
+
+### Official verification references
+
+- [Primary documentation or owning implementation](https://kotlinlang.org/docs/inline-functions.html)
+- [Primary documentation or owning implementation](https://kotlinlang.org/docs/inline-functions.html#non-local-jump-expressions)
+- [Primary documentation or owning implementation](https://kotlinlang.org/docs/whatsnew20.html#generation-of-lambda-functions-using-invokedynamic)

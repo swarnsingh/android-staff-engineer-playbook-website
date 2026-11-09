@@ -23,6 +23,7 @@ A Staff engineer designs graceful degradation: the app should reduce work before
 Android exposes thermal status through `PowerManager` on API 29+.
 
 ```kotlin
+@RequiresApi(29)
 class ThermalMonitor(
     context: Context,
     private val onStatus: (Int) -> Unit
@@ -44,6 +45,8 @@ class ThermalMonitor(
     }
 }
 ```
+
+Construct this API-29 implementation only after a Build.VERSION.SDK_INT >= 29 guard. Older supported versions use a product fallback that makes no thermal-status API call. An annotation documents the boundary; it is not a runtime guard.
 
 Thermal statuses include:
 
@@ -209,3 +212,7 @@ Run long enough to expose heat and memory churn. A 30-second happy path does not
 - [Android Developers: Macrobenchmark](https://developer.android.com/topic/performance/benchmarking/macrobenchmark-overview)
 - [`macrobenchmark-and-perfetto.md`](macrobenchmark-and-perfetto.md) - benchmark workflow.
 - [`native-memory-bitmaps.md`](native-memory-bitmaps.md) - image/native memory constraints.
+
+### Official verification references
+
+- [Primary documentation or owning implementation](https://developer.android.com/reference/android/os/PowerManager.OnThermalStatusChangedListener)

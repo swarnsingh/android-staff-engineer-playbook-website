@@ -138,7 +138,7 @@ Hilt's killer feature: predefined scopes that match Android's lifecycle.
 | Scope | Lives as long as | Use for |
 |---|---|---|
 | `@Singleton` | Application | Retrofit, Room DB, analytics, app-wide caches |
-| `@ActivityRetainedScoped` | Activity (survives rotation) | ViewModels via `@HiltViewModel` |
+| `@ActivityRetainedScoped` | Logical Activity lifetime across recreation | Dependencies shared by ViewModels under the retained Activity; each Hilt ViewModel uses ViewModelComponent |
 | `@ActivityScoped` | Activity instance | Activity-specific state (rare) |
 | `@ViewModelScoped` | ViewModel | Per-screen repositories, use-cases |
 | `@FragmentScoped` | Fragment | Fragment-specific UI helpers |
@@ -213,7 +213,7 @@ class SyncWorker @AssistedInject constructor(
 
 ### The Build-Time Cost
 
-Hilt was historically built on **KAPT** (Kotlin Annotation Processing Tool) — slow, single-threaded, breaks incremental compilation. Since Hilt 2.48 + Dagger 2.48, **KSP** support is stable. KSP is 2× faster than KAPT and incremental.
+Hilt/Dagger support KSP processing. Dagger 2.48 introduced an alpha KSP processor, not a stable-support milestone. Use mutually compatible current plugin/processor versions and check all processors in the graph. KSP avoids KAPT's Java-stub stage, but speed and incremental behavior depend on the actual build; measure the project rather than promising a fixed multiplier.
 
 ```kotlin
 plugins {
@@ -333,7 +333,7 @@ Koin's scopes are more flexible than Hilt's (you can define your own), but they 
 - With the compiler plugin: compile-time graph validation.
 
 **Cons:**
-- DSL-style still allows you to ship runtime crashes (`NoBeanDefFoundException`).
+- DSL-style still allows you to ship runtime crashes (`NoDefinitionFoundException`).
 - Less rigid scope hierarchy than Hilt — Android lifecycle integration is less automatic.
 - Smaller community than Hilt (though active and growing).
 - Mixing DSL and annotations in the same codebase is confusing.
@@ -420,10 +420,11 @@ class CheckoutTest {
 @Before
 fun setup() {
     startKoin {
+        allowOverride(true) // Explicitly permit the test replacement below.
         modules(appModule)
     }
     loadKoinModules(
-        module(override = true) {
+        module {
             single<Api> { FakeApi() }
         }
     )
@@ -467,8 +468,8 @@ fun setup() {
 |---|---|---|
 | Build fails: `[Dagger/MissingBinding]` | Hilt can't construct a dep | Add `@Provides` or `@Inject constructor` |
 | Build fails: `[Dagger/DuplicateBindings]` | Two `@Provides` for the same type | Use `@Qualifier` or remove one |
-| Build time 90s on every change | KAPT in use | Migrate to KSP (Hilt 2.48+) |
-| Runtime crash `NoBeanDefFoundException` (Koin DSL) | Module forgot the definition | Migrate to Koin Annotations for compile check, or add the definition |
+| Annotation processing dominates measured builds | Processor work, invalidated inputs or stub generation | Inspect a build trace and evaluate a supported KSP setup; measure clean and incremental builds separately |
+| Runtime crash `NoDefinitionFoundException` (Koin DSL) | Module forgot the definition | Migrate to Koin Annotations for compile check, or add the definition |
 | Hilt complains "non-Hilt-managed class" | Activity / Fragment not `@AndroidEntryPoint` | Annotate it |
 | ViewModel constructor needs runtime param | Hilt can't inject it directly | Use `@AssistedInject` + `@AssistedFactory` |
 | Mock isn't injected in test | Hilt picks production module first | `@TestInstallIn(replaces = [...])` |
@@ -487,7 +488,7 @@ fun setup() {
 - **Wrong Hilt scope.** `@Singleton` for an Activity-tied object = memory leak forever. Pick the smallest scope that fits.
 - **Forgetting `@Qualifier`.** Two `OkHttpClient`s (auth vs unauthenticated)? Without qualifiers, Hilt can't disambiguate.
 - **Service Locator usage of Koin DSL.** Calling `getKoin().get<Repo>()` throughout your code defeats DI — it's now a runtime locator. Use constructor injection.
-- **Heavy work in `@HiltAndroidApp` `onCreate`.** Every `@Provides` graph is wired eagerly for `@Singleton`. Defer with `Lazy<T>`.
+- **Heavy work in Application injection.** Dependencies actually requested by injected fields can be constructed on the startup path. A singleton scope caches a binding after request; it does not eagerly construct every possible binding. Consider Provider or Lazy only when deferring that dependency preserves its initialization contract.
 - **`@Singleton` for everything.** Then your test container holds half the world. Smaller scopes = faster tests.
 - **No `@HiltWorker` for WorkManager.** `WorkManagerInitializer` doesn't see Hilt-managed Workers without the annotation + `androidx.hilt:hilt-work` dep.
 - **Manual `ViewModelFactory` with Hilt installed.** Just annotate `@HiltViewModel` and inject via `hiltViewModel()` / `by viewModels()`.
@@ -516,7 +517,7 @@ fun setup() {
 2. **Walk through Hilt's scope hierarchy. Why does `@Singleton` matter vs `@ActivityRetainedScoped`?**
    `@Singleton` lives for the entire app process, meaning state is shared globally and persists across all screens. `@ActivityRetainedScoped` lives only as long as an Activity logical session (surviving rotation) but is garbage collected when the user fully backs out of the screen, keeping memory lean and resetting state properly between distinct visits.
 3. **KAPT vs KSP — concrete build time difference. How do you migrate Hilt from KAPT to KSP?**
-   KSP is up to 2x faster because it analyzes Kotlin AST directly instead of generating intermediate Java stubs like KAPT does. To migrate, ensure Hilt is >= 2.48, remove `kotlin-kapt` plugin, add the KSP plugin, and replace `kapt(...)` dependencies in `build.gradle` with `ksp(...)`.
+   KSP can avoid KAPT's Java-stub generation. Measure the selected processors and build workload; there is no universal twofold gain. Dagger 2.48 was the alpha introduction, so choose a current supported Hilt/KSP combination and migrate processor dependencies together.
 4. **Your app needs runtime parameters in a ViewModel (a `productId` from a deeplink). How do you wire it with Hilt?**
    Annotate the constructor with `@AssistedInject`, annotate the runtime parameter with `@Assisted`, define an `@AssistedFactory` interface inside the ViewModel, and construct it in Compose using `hiltViewModel(creationCallback = { factory -> factory.create(productId) })`.
 5. **Why is Koin's DSL form considered a Service Locator? How do Koin Annotations + compiler plugin change that?**
@@ -530,7 +531,7 @@ fun setup() {
 9. **Two `OkHttpClient`s in your graph (authenticated vs unauthenticated). How do you wire both?**
    Define a custom `@Qualifier` annotation for each (e.g., `@AuthClient` and `@PublicClient`). Annotate the respective `@Provides` methods with them, and use the exact same qualifier annotation on the constructor parameter where they are injected.
 10. **Compare the testing story: how do you swap a real `Api` for a `FakeApi` in Hilt vs Koin?**
-    In Hilt, create a new module with `@TestInstallIn(replaces = [ProdModule::class])` that provides the fake. In Koin, load a new module in the `@Before` setup using `loadKoinModules(module(override = true) { single<Api> { FakeApi() } })`.
+    In Hilt, create a new module with `@TestInstallIn(replaces = [ProdModule::class])` that provides the fake. In Koin, load a new module in the `@Before` setup using `loadKoinModules(module { single<Api> { FakeApi() } })`.
 11. **A circular dependency `UserRepo → AuthClient → UserRepo`. How do you fix it (two valid approaches)?**
     1. Architectural fix: Extract the shared logic into a 3rd class (e.g., `SessionStorage`) that both depend on. 2. Framework fix: Inject a `Provider<UserRepo>` (Hilt) or use `inject<UserRepo>()` lazily (Koin) so the dependency is only resolved when accessed, breaking the construction loop.
 12. **Build times jumped 40% after migrating to Hilt. Walk through investigation.**
@@ -551,4 +552,13 @@ fun setup() {
 - [Hilt documentation](https://developer.android.com/training/dependency-injection/hilt-android) — official.
 - [Koin documentation](https://insert-koin.io/) — official.
 - [Koin Annotations](https://insert-koin.io/docs/reference/koin-annotations/start) — compiler plugin reference.
-- [Manuel Vivo — Hilt deep dive](https://medium.com/androiddevelopers/) — Google DevRel posts.
+- [Manuel Vivo — Dependency injection on Android with Hilt](https://medium.com/androiddevelopers/dependency-injection-on-android-with-hilt-67b6031e62d) — Google DevRel post.
+
+### Official verification references
+
+- [Primary documentation or owning implementation](https://dagger.dev/hilt/components.html)
+- [Primary documentation or owning implementation](https://dagger.dev/semantics/advanced.html#scopes)
+- [Primary documentation or owning implementation](https://github.com/google/dagger/releases/tag/dagger-2.48)
+- [Primary documentation or owning implementation](https://insert-koin.io/docs/reference/koin-core/modules/)
+- [Primary documentation or owning implementation](https://insert-koin.io/docs/reference/koin-test/verify/)
+- [Primary documentation or owning implementation](https://kotlinlang.org/docs/ksp-overview.html)

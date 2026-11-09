@@ -34,7 +34,7 @@ Think of DI as a **High-End Restaurant Kitchen**.
 - **The ViewModel:** The Waiter. They need a perfectly plated steak to give to the UI. They don't know *how* to cook it, they just ask the Kitchen for it (`@Inject`).
 - **The Module:** The Recipe Book. It tells the kitchen exactly how to combine ingredients (meat, salt, fire) to create a `Steak`.
 - **The Component:** The Kitchen itself. `SingletonComponent` is the main kitchen that stays open all day. `ActivityComponent` is a pop-up kitchen that is torn down when the event ends.
-- **The Scope:** If a `Steak` is `@Singleton`, the kitchen cooks one massive steak in the morning and slices off a piece for every waiter all day (Shared State). If it is unscoped, they cook a brand new steak from scratch every time a waiter asks.
+- **The Scope:** A `@Singleton` recipe produces one instance when first requested and the component reuses it. An unscoped recipe is evaluated separately for each request; scope controls caching, not an automatic morning startup batch.
 
 ## Internal Mechanics
 
@@ -59,11 +59,11 @@ graph TD
         App[Application]
         DB[(Room Database)]
         Net[Retrofit Network]
+        Repo[Repository]
     end
     
     subgraph "ViewModelComponent"
         VM[ViewModel]
-        Repo[Repository]
     end
     
     subgraph "ActivityComponent"
@@ -137,7 +137,7 @@ class MainActivity : AppCompatActivity() {
     - *Cons:* Slows down build times due to KAPT/KSP annotation processing. Very rigid structure.
 - **Koin:**
     - *Pros:* A pure Kotlin Service Locator. No annotation processing, meaning blazing fast build times. Extremely easy to learn.
-    - *Cons:* Runtime resolution. If you misconfigure the graph, the app compiles perfectly but crashes with a `NoBeanDefFoundException` the exact moment the user navigates to the screen.
+    - *Cons:* Runtime resolution. If you misconfigure the graph, the app compiles perfectly but crashes with a `NoDefinitionFoundException` the exact moment the user navigates to the screen.
 - **Pure Dagger 2:**
     - *Pros:* Ultimate flexibility. You can create insanely complex, dynamic multi-module component graphs (e.g., dynamic feature modules).
     - *Cons:* The learning curve is notoriously brutal. The boilerplate is immense. 
@@ -155,7 +155,7 @@ class MainActivity : AppCompatActivity() {
   ```
   *(Fix: If a class is `@Singleton`, it lives forever. If it injects an `@ActivityContext`, it now holds a hard reference to an Activity that was destroyed 5 minutes ago. Massive memory leak. Hilt usually catches this at compile time. Always use `@ApplicationContext` for Singletons).*
 - **Over-Scoping:**
-  Developers often slap `@Singleton` on every single class "just to be safe." This forces the app to instantiate and hold every repository, use case, and utility class in RAM from the moment the app boots until it dies, severely bloating memory.
+  `@Singleton` caches a binding's instance in its component after it is requested; it does not eagerly instantiate every binding when the app boots. App-wide dependencies can still retain expensive state longer than needed. Audit actual injection paths and lifetimes rather than treating scope as a startup trigger.
   *(Fix: Most classes should be **Unscoped** (no annotation). Unscoped classes are garbage collected the moment they are no longer needed).*
 - **The Interface Binding Error:**
   If you have an `interface Analytics` and a class `FirebaseAnalytics : Analytics`, Hilt doesn't magically know that `Analytics` should map to `FirebaseAnalytics`.
@@ -204,7 +204,7 @@ When reviewing DI architecture, a Staff engineer focuses on module boundaries an
 5. **What is the purpose of the `@Binds` annotation in a Hilt Module, and how does it relate to the Dependency Inversion Principle (SOLID)?**
    `@Binds` tells Hilt which concrete implementation to provide when an interface is requested (e.g., binding `UserRepositoryImpl` to `UserRepository`). This enables Dependency Inversion because classes depend only on abstract interfaces rather than concrete implementations, allowing for easy substitution (e.g., mocks during testing).
 6. **Describe the memory profiling tradeoff of annotating every single class in your project with `@Singleton`. What should you do instead?**
-   Annotating everything `@Singleton` forces the app to keep every class in RAM indefinitely, leading to massive memory bloat and slower startup times. Instead, most classes should be unscoped (so they can be garbage collected when the referencing component dies) or scoped tightly to the ViewModel (`@ViewModelScoped`).
+   A scoped binding is created when requested and its component caches the result. Scope does not eagerly construct all classes, but an app-wide cached object can retain state longer than needed. Choose scope from actual sharing and ownership requirements; use startup traces to establish initialization cost.
 7. **How does Hilt solve the massive boilerplate problem that existed in Pure Dagger 2? (Hint: Think about Component generation).**
    In Pure Dagger 2, developers had to manually write interfaces for Components and Subcomponents, and manually wire them to the Android Lifecycle. Hilt pre-generates all standard Android components (`SingletonComponent`, `ActivityComponent`, etc.) and automatically handles the injection lifecycle via annotations like `@AndroidEntryPoint`.
 8. **If a ViewModel needs a runtime argument (like a `productId` from Navigation) in addition to its DI dependencies, how do you handle that in Hilt?**
@@ -219,3 +219,9 @@ When reviewing DI architecture, a Staff engineer focuses on module boundaries an
 - [`viewmodel.md`](../architecture/viewmodel.md) — The consumer of `@HiltViewModel`.
 - [`room.md`](room.md) — How databases are provided via `@Singleton`.
 - [Android Developers: Hilt](https://developer.android.com/training/dependency-injection/hilt-android)
+
+### Official verification references
+
+- [Primary documentation or owning implementation](https://dagger.dev/hilt/components.html#scoped-vs-unscoped-bindings)
+- [Primary documentation or owning implementation](https://dagger.dev/semantics/advanced.html#scopes)
+- [Primary documentation or owning implementation](https://insert-koin.io/docs/reference/koin-test/verify/)

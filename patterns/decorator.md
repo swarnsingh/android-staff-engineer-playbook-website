@@ -346,7 +346,7 @@ The Decorator pattern requires implementing the entire interface. If your `UserR
 - [OkHttp interceptor guide (official source)](https://raw.githubusercontent.com/square/okhttp/master/docs/features/interceptors.md) — ordering, application/network constraints and closing discarded responses.
 - [OkHttp Authenticator contract (official source)](https://raw.githubusercontent.com/square/okhttp/master/okhttp/src/commonJvmAndroid/kotlin/okhttp3/Authenticator.kt) — bounded challenge follow-ups and returning the original response.
 - [HTTP Semantics, RFC 9110 §9.2.2](https://www.rfc-editor.org/rfc/rfc9110.html#section-9.2.2) — automatic retry and idempotency.
-- [Kotlin extensions are statically resolved](https://kotlinlang.org/docs/extensions.html#extensions-are-resolved-statically)
+- [Kotlin extensions are statically resolved](https://kotlinlang.org/docs/extensions.html#extension-or-member-functions)
 - [Kotlin delegation and overriding limits](https://kotlinlang.org/docs/delegation.html)
 - [Data-class generated methods and shallow copy](https://kotlinlang.org/docs/data-classes.html)
 - [Inline eligibility and stored lambdas](https://kotlinlang.org/docs/inline-functions.html)

@@ -403,7 +403,7 @@ When you ship a library used by other apps (in-house or open-source):
 ## 12. Further Reading
 
 - [Android Developers — Room migrations](https://developer.android.com/training/data-storage/room/migrating-db-versions) — official.
-- [Android Developers — Schema export](https://developer.android.com/training/data-storage/room/migrating-db-versions#export-schema) — exporting + diffing.
+- [Android Developers — Schema export](https://developer.android.com/training/data-storage/room/migrating-db-versions#export-schemas) — exporting + diffing.
 - [Semver 2.0](https://semver.org/) — versioning rules.
 - [Stripe API versioning](https://stripe.com/blog/api-versioning) — backwards-compat philosophy.
 - [In-app updates (Play Core)](https://developer.android.com/guide/playcore/in-app-updates) — flexible vs immediate update flows.

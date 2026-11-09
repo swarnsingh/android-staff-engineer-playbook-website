@@ -97,12 +97,12 @@ class Box {
     fun greet() = "hello from member"
 }
 
-fun Box.greet() = "hello from extension"  // compiler accepts this silently
+fun Box.greet() = "hello from extension"  // warning: extension is shadowed by a member
 
 Box().greet()  // prints "hello from member"
 ```
 
-If a member function and an extension have the same name and signature, the member wins. The extension is effectively dead code. Worse, the compiler issues no warning — you have to know this rule.
+If a member function and an extension have the same name and signature, the member wins. The extension is effectively dead code. The compiler warns that the extension is shadowed by a member.
 
 The rule exists for backward compatibility: if a library adds a new member function in v2, callers using an extension with the same name shouldn't silently switch behavior. The library's member wins. This is a safe default for evolution but a footgun for surprises.
 
@@ -195,7 +195,7 @@ When the compiler sees `someExpression.foo(args)`, it resolves `foo` in this ord
 
 1. **Member functions** of the declared type of `someExpression` (or any of its supertypes).
 2. **Extension functions** imported into scope (via package import, local import, or being in the same file).
-3. **Local functions** named `foo` that take the receiver as a parameter.
+3. **Other applicable extension candidates** according to lexical scope and import priority. A regular function `foo(receiver)` is not a candidate for `receiver.foo()`.
 
 If multiple extensions match, the **most specific receiver type wins** (Dog.foo beats Animal.foo when both are imported and the declared type is Dog). If they tie, ambiguity is an error.
 
@@ -397,7 +397,7 @@ Most Kotlin operators (`plus`, `minus`, `times`, `div`, `get`, `set`, `compareTo
 
 - **Static dispatch surprises.** Programmers expecting polymorphism are confused when the wrong overload is chosen based on declared type.
 - **Member-wins surprise.** Extensions can become silent dead code if a member is added later or already exists.
-- **Untestable in isolation.** You cannot mock or stub an extension function. If a unit under test calls `someJavaClient.awaitLastLocation()`, you must inject the receiver or fake it; the extension itself isn't mockable.
+- **Static-call test seam.** Ordinary instance mocks do not intercept top-level extensions. Static-mocking tools can, but an injected interface or receiver fake usually makes a clearer test boundary.
 - **Namespace pollution.** A single misplaced top-level extension on `Any` or `String` shows up in autocomplete everywhere, even in unrelated code.
 - **Reading discovery is bad.** You see `name.titleCase()` but you have no immediate way to know *which file* defined `titleCase`. IDE go-to-definition fixes this, but greppability is poor.
 
@@ -412,7 +412,7 @@ Most Kotlin operators (`plus`, `minus`, `times`, `div`, `get`, `set`, `compareTo
 
 ## Failure Modes
 
-**Namespace pollution.** A `fun Any.log()` at the top level of a commonly-imported package shows up on every value in every file. The standard fix is to keep extensions package-private (`internal`) or file-private (`private fun`), or scope them as members of an object (`object TextHelpers { fun String.titleCase() = ... }`, callable as `with(TextHelpers) { name.titleCase() }`).
+**Namespace pollution.** A broadly imported `fun Any.log()` appears on many receivers. Keep helpers module-internal (`internal`) or file-private (`private fun`), or scope them as members of an object (`object TextHelpers { fun String.titleCase() = ... }`, callable as `with(TextHelpers) { name.titleCase() }`).
 
 **Member-wins silent breakage.** A library adds a new method in v2 with the same name as your extension. Your extension becomes dead, the library's version runs, and the behavior changes silently. The fix is to either rename your extension or accept that overlapping names with library members is risky.
 
@@ -420,7 +420,7 @@ Most Kotlin operators (`plus`, `minus`, `times`, `div`, `get`, `set`, `compareTo
 
 **Mocking failure.** A unit test mocks `repository.fetchUser()` but the production code uses `repository.fetchUserWithRetry()`, an extension. The test never realizes the extension is called. The fix is to express retry as a member of an injectable interface, not as an extension on the repository.
 
-**Hidden cost in collection extensions.** `list.filter { ... }.map { ... }.first()` allocates two intermediate lists. The fix is `list.asSequence().filter { ... }.map { ... }.first()` for large lists, but only when the chain has more than ~3 elements — for small lists the eager version is faster.
+**Hidden cost in collection extensions.** `list.filter { ... }.map { ... }.first()` allocates two intermediate lists. The fix is `list.asSequence().filter { ... }.map { ... }.first()` for large lists, when laziness or short-circuiting helps enough to offset iterator and dispatch overhead; there is no universal three-element threshold. Measure the actual chain.
 
 ---
 
@@ -436,7 +436,7 @@ Most Kotlin operators (`plus`, `minus`, `times`, `div`, `get`, `set`, `compareTo
 
 ## Reliability Considerations
 
-- **Don't put business logic in extensions** that has to be mocked in tests. Extensions can't be intercepted by Mockito or MockK. Keep extensions to pure-function utilities.
+- **Don't put business logic in extensions** that has to be mocked in tests. Ordinary instance stubbing does not intercept top-level extensions; MockK supports static mocking. Prefer explicit injected seams for effects and test pure transformations directly.
 - **Avoid extensions on `Any` or `Any?`** in production code — they pollute every type and make code review hard.
 - **Prefer file-private or internal extensions** for module-specific helpers. Only mark them `public` if they're truly part of the module's API.
 - **Document extensions in package-level docs.** Because extensions don't show up in the receiver's KDoc, callers may miss them. AndroidX KTX puts each set of extensions in a single file per receiver to make discovery easier.
@@ -445,7 +445,7 @@ Most Kotlin operators (`plus`, `minus`, `times`, `div`, `get`, `set`, `compareTo
 
 ## Security Considerations
 
-Extensions inherit the visibility of where they're declared. A `private fun String.foo()` is visible only in the declaring file; an `internal fun` is module-scoped. There is one subtle leak: from Java code, an `internal` extension is still callable if the caller knows the name-mangled symbol (`StringExtKt.foo$mymodule_debug(...)`). This is a compile-time boundary, not a security one — don't use `internal` as access control for security-sensitive code.
+Extensions inherit the visibility of where they're declared. A `private fun String.foo()` is visible only in the declaring file; an `internal fun` is module-scoped. There is one subtle leak: from Java code, an internal top-level extension is generally a public static method (`StringExtKt.foo(...)`); internal member functions can be name-mangled. This is a compile-time boundary, not a security one — don't use `internal` as access control for security-sensitive code.
 
 Extension functions on user-input-bearing types (`String`, `Uri`, `Intent`) are common surfaces for injection bugs. Always treat the receiver as untrusted in security-sensitive extensions.
 
@@ -511,7 +511,7 @@ Extensions appear in stack traces by their JVM-mangled names: `StringExtKt.title
 2. **You declare `fun Animal.speak()` and `fun Dog.speak()`. You call `speak()` on a variable declared `val a: Animal = Dog()`. Which runs, and why?**
    `Animal.speak()` runs. Extensions are resolved statically based on the *declared* type of the variable at compile time (`Animal`), not via virtual dispatch based on the runtime type (`Dog`).
 3. **A class has `fun greet() = "member"`. A file in scope has `fun MyClass.greet() = "extension"`. Which is called and why does the compiler not warn?**
-   The member function `greet()` is called. Member functions always win over extension functions with the same signature. The compiler does not warn to ensure backward compatibility: if a library adds a member function that matches an existing extension in consumer code, the library's member will safely take precedence.
+   The member function `greet()` is called. Member functions always win over extension functions with the same signature. The compiler warns when an extension is shadowed by an applicable member. Adding such a member in a library can change binding when consumers recompile, so check collisions during upgrades.
 4. **Why can extension properties not have backing fields, and what are two strategies to "fake" cached state with an extension property?**
    Extension properties have no backing fields because they don't actually modify the class structure; they are just static getter/setter methods. To fake state, you can either: 1) store the state externally (e.g., in a `WeakHashMap` keyed by the receiver instance), or 2) store it inside the receiver if it supports flexible state (e.g., Android `View` tags).
 5. **Explain why `fun Any.log() = println(this)` is a code smell in a public module.**
@@ -525,7 +525,7 @@ Extensions appear in stack traces by their JVM-mangled names: `StringExtKt.title
 9. **Why is `list.asSequence().map { ... }.filter { ... }.first()` sometimes slower than `list.map { ... }.filter { ... }.first()` despite avoiding intermediate allocations?**
    Sequences add object allocation overhead (creating the sequence wrappers and iterators) and function call overhead for every element. For small collections, this overhead is more expensive than the memory and time spent eagerly allocating a few small intermediate lists.
 10. **You write a unit test for a function that internally calls `okHttpClient.awaitResponse()`, an extension wrapping the callback API. Mockito can't stub the extension. How do you make the function testable without giving up the extension syntax?**
-    Extensions cannot be mocked because they are static methods. To make the code testable, you should wrap the `OkHttpClient` inside an injected interface (e.g., `ApiClient`) that exposes `suspend fun fetch()`. The extension can still be used internally within the real implementation of `ApiClient`, but tests will mock the `ApiClient` interface.
+    Ordinary receiver mocks do not replace a top-level extension; static mocking is tool-dependent. To make the code testable through an explicit boundary, you should wrap the `OkHttpClient` inside an injected interface (e.g., `ApiClient`) that exposes `suspend fun fetch()`. The extension can still be used internally within the real implementation of `ApiClient`, but tests will mock the `ApiClient` interface.
 
 ---
 
@@ -548,3 +548,11 @@ External:
 - Kotlin Language Documentation: [Extensions](https://kotlinlang.org/docs/extensions.html) — the canonical reference, including resolution rules.
 - KEEP-367: [Context parameters proposal](https://github.com/Kotlin/KEEP/blob/context-parameters/proposals/context-parameters.md) — the next-generation replacement for context receivers.
 - Android KTX [source on AndroidX](https://android.googlesource.com/platform/frameworks/support/+/refs/heads/androidx-main/core/core-ktx/) — read the actual `View`, `Context`, `Bundle` extensions Google ships.
+
+### Official verification references
+
+- [Primary documentation or owning implementation](https://kotlinlang.org/docs/java-to-kotlin-interop.html#visibility)
+- [Primary documentation or owning implementation](https://kotlinlang.org/docs/sequences.html)
+- [Primary documentation or owning implementation](https://kotlinlang.org/docs/visibility-modifiers.html)
+- [Primary documentation or owning implementation](https://kotlinlang.org/spec/overload-resolution.html#call-with-an-explicit-receiver)
+- [Primary documentation or owning implementation](https://mockk.io/#top-level-functions)

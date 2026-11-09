@@ -245,7 +245,7 @@ In production, persist this in a database. A heap in memory is a scheduling help
 |---|---|---|
 | Heap | Fast top item and updates | No fast arbitrary lookup |
 | Sorted list | Fast iteration in order | Insert/remove O(n) |
-| Balanced tree | Ordered lookup and range queries | More overhead; not stdlib-friendly in Kotlin |
+| Balanced tree | Ordered lookup and range queries | More overhead; on the JVM use `java.util.TreeMap`/`TreeSet` (Kotlin's common stdlib has no tree map) |
 | Hash map | O(1) lookup | No priority/order |
 
 If you need priority plus lookup/removal by ID, use a heap plus an index map or a tree structure. Do not pretend a plain heap can do both.

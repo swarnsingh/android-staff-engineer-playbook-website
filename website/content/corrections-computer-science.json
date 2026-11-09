@@ -10,8 +10,9 @@
    "https://openjdk.org/jeps/180",
    "https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/lang/String.html#hashCode()"
   ],
-  "status": "approved",
-  "validation": "Owner approved all proposals on 2026-10-29. Verified against official documentation, specifications, source code or arithmetic; exact original text occurs once in the source snapshot."
+  "status": "superseded-by-merged-source",
+  "validation": "Owner approved all proposals on 2026-10-29. Verified against official documentation, specifications, source code or arithmetic; exact original text occurs once in the source snapshot.",
+  "superseded_by": "source-snapshot.json computer-science_provenance"
  },
  {
   "id": "computer-science:CSH02",
@@ -23,8 +24,9 @@
   "sources": [
    "https://openjdk.org/jeps/180"
   ],
-  "status": "approved",
-  "validation": "Owner approved all proposals on 2026-10-29. Verified against official documentation, specifications, source code or arithmetic; exact original text occurs once in the source snapshot."
+  "status": "superseded-by-merged-source",
+  "validation": "Owner approved all proposals on 2026-10-29. Verified against official documentation, specifications, source code or arithmetic; exact original text occurs once in the source snapshot.",
+  "superseded_by": "source-snapshot.json computer-science_provenance"
  },
  {
   "id": "computer-science:CSH03",
@@ -36,8 +38,9 @@
   "sources": [
    "Arithmetic: 2^256 = 1.158 × 10^77"
   ],
-  "status": "approved",
-  "validation": "Owner approved all proposals on 2026-10-29. Verified against official documentation, specifications, source code or arithmetic; exact original text occurs once in the source snapshot."
+  "status": "superseded-by-merged-source",
+  "validation": "Owner approved all proposals on 2026-10-29. Verified against official documentation, specifications, source code or arithmetic; exact original text occurs once in the source snapshot.",
+  "superseded_by": "source-snapshot.json computer-science_provenance"
  },
  {
   "id": "computer-science:CSH04",
@@ -49,8 +52,9 @@
   "sources": [
    "Birthday problem: n ≈ 1.1774 × sqrt(2^32) ≈ 77,163 for a 50% chance"
   ],
-  "status": "approved",
-  "validation": "Owner approved all proposals on 2026-10-29. Verified against official documentation, specifications, source code or arithmetic; exact original text occurs once in the source snapshot."
+  "status": "superseded-by-merged-source",
+  "validation": "Owner approved all proposals on 2026-10-29. Verified against official documentation, specifications, source code or arithmetic; exact original text occurs once in the source snapshot.",
+  "superseded_by": "source-snapshot.json computer-science_provenance"
  },
  {
   "id": "computer-science:CSH05",
@@ -62,8 +66,9 @@
   "sources": [
    "https://github.com/square/okhttp/blob/master/okhttp/src/commonJvmAndroid/kotlin/okhttp3/CertificatePinner.kt"
   ],
-  "status": "approved",
-  "validation": "Owner approved all proposals on 2026-10-29. Verified against official documentation, specifications, source code or arithmetic; exact original text occurs once in the source snapshot."
+  "status": "superseded-by-merged-source",
+  "validation": "Owner approved all proposals on 2026-10-29. Verified against official documentation, specifications, source code or arithmetic; exact original text occurs once in the source snapshot.",
+  "superseded_by": "source-snapshot.json computer-science_provenance"
  },
  {
   "id": "computer-science:CSH06",
@@ -76,8 +81,9 @@
    "https://developer.android.com/training/app-links/verify-android-applinks",
    "https://developer.android.com/about/versions/12/behavior-changes-all"
   ],
-  "status": "approved",
-  "validation": "Owner approved all proposals on 2026-10-29. Verified against official documentation, specifications, source code or arithmetic; exact original text occurs once in the source snapshot."
+  "status": "superseded-by-merged-source",
+  "validation": "Owner approved all proposals on 2026-10-29. Verified against official documentation, specifications, source code or arithmetic; exact original text occurs once in the source snapshot.",
+  "superseded_by": "source-snapshot.json computer-science_provenance"
  },
  {
   "id": "computer-science:CSH07",
@@ -89,8 +95,9 @@
   "sources": [
    "https://git-scm.com/docs/hash-function-transition"
   ],
-  "status": "approved",
-  "validation": "Owner approved all proposals on 2026-10-29. Verified against official documentation, specifications, source code or arithmetic; exact original text occurs once in the source snapshot."
+  "status": "superseded-by-merged-source",
+  "validation": "Owner approved all proposals on 2026-10-29. Verified against official documentation, specifications, source code or arithmetic; exact original text occurs once in the source snapshot.",
+  "superseded_by": "source-snapshot.json computer-science_provenance"
  },
  {
   "id": "computer-science:CSH08",
@@ -102,8 +109,9 @@
   "sources": [
    "https://github.com/openjdk/jdk/blob/master/src/java.base/share/classes/java/util/HashMap.java"
   ],
-  "status": "approved",
-  "validation": "Owner approved all proposals on 2026-10-29. Verified against official documentation, specifications, source code or arithmetic; exact original text occurs once in the source snapshot."
+  "status": "superseded-by-merged-source",
+  "validation": "Owner approved all proposals on 2026-10-29. Verified against official documentation, specifications, source code or arithmetic; exact original text occurs once in the source snapshot.",
+  "superseded_by": "source-snapshot.json computer-science_provenance"
  },
  {
   "id": "computer-science:CSH09",
@@ -115,8 +123,9 @@
   "sources": [
    "https://developer.android.com/develop/ui/compose/lists"
   ],
-  "status": "approved",
-  "validation": "Owner approved all proposals on 2026-10-29. Verified against official documentation, specifications, source code or arithmetic; exact original text occurs once in the source snapshot."
+  "status": "superseded-by-merged-source",
+  "validation": "Owner approved all proposals on 2026-10-29. Verified against official documentation, specifications, source code or arithmetic; exact original text occurs once in the source snapshot.",
+  "superseded_by": "source-snapshot.json computer-science_provenance"
  },
  {
   "id": "computer-science:CSH10",
@@ -128,8 +137,9 @@
   "sources": [
    "Computed with md5 on macOS"
   ],
-  "status": "approved",
-  "validation": "Owner approved all proposals on 2026-10-29. Verified against official documentation, specifications, source code or arithmetic; exact original text occurs once in the source snapshot."
+  "status": "superseded-by-merged-source",
+  "validation": "Owner approved all proposals on 2026-10-29. Verified against official documentation, specifications, source code or arithmetic; exact original text occurs once in the source snapshot.",
+  "superseded_by": "source-snapshot.json computer-science_provenance"
  },
  {
   "id": "computer-science:CSH11",
@@ -141,8 +151,9 @@
   "sources": [
    "https://github.com/openjdk/jdk/blob/master/src/java.base/share/classes/java/util/HashMap.java"
   ],
-  "status": "approved",
-  "validation": "Owner approved all proposals on 2026-10-29. Verified against official documentation, specifications, source code or arithmetic; exact original text occurs once in the source snapshot."
+  "status": "superseded-by-merged-source",
+  "validation": "Owner approved all proposals on 2026-10-29. Verified against official documentation, specifications, source code or arithmetic; exact original text occurs once in the source snapshot.",
+  "superseded_by": "source-snapshot.json computer-science_provenance"
  },
  {
   "id": "computer-science:CST01",
@@ -154,8 +165,9 @@
   "sources": [
    "https://git-scm.com/docs/git-commit"
   ],
-  "status": "approved",
-  "validation": "Owner approved all proposals on 2026-10-29. Verified against official documentation, specifications, source code or arithmetic; exact original text occurs once in the source snapshot."
+  "status": "superseded-by-merged-source",
+  "validation": "Owner approved all proposals on 2026-10-29. Verified against official documentation, specifications, source code or arithmetic; exact original text occurs once in the source snapshot.",
+  "superseded_by": "source-snapshot.json computer-science_provenance"
  },
  {
   "id": "computer-science:CST02",
@@ -168,8 +180,9 @@
    "https://git-scm.com/docs/hash-function-transition",
    "https://bitcoin.org/bitcoin.pdf"
   ],
-  "status": "approved",
-  "validation": "Owner approved all proposals on 2026-10-29. Verified against official documentation, specifications, source code or arithmetic; exact original text occurs once in the source snapshot."
+  "status": "superseded-by-merged-source",
+  "validation": "Owner approved all proposals on 2026-10-29. Verified against official documentation, specifications, source code or arithmetic; exact original text occurs once in the source snapshot.",
+  "superseded_by": "source-snapshot.json computer-science_provenance"
  },
  {
   "id": "computer-science:CST03",
@@ -182,8 +195,9 @@
    "https://developer.android.com/topic/performance/rendering/optimizing-view-hierarchies",
    "https://developer.android.com/reference/android/view/View"
   ],
-  "status": "approved",
-  "validation": "Owner approved all proposals on 2026-10-29. Verified against official documentation, specifications, source code or arithmetic; exact original text occurs once in the source snapshot."
+  "status": "superseded-by-merged-source",
+  "validation": "Owner approved all proposals on 2026-10-29. Verified against official documentation, specifications, source code or arithmetic; exact original text occurs once in the source snapshot.",
+  "superseded_by": "source-snapshot.json computer-science_provenance"
  },
  {
   "id": "computer-science:CST04",
@@ -195,8 +209,9 @@
   "sources": [
    "Code inspection of the chapter's Trie.wordsWithPrefix"
   ],
-  "status": "approved",
-  "validation": "Owner approved all proposals on 2026-10-29. Verified against official documentation, specifications, source code or arithmetic; exact original text occurs once in the source snapshot."
+  "status": "superseded-by-merged-source",
+  "validation": "Owner approved all proposals on 2026-10-29. Verified against official documentation, specifications, source code or arithmetic; exact original text occurs once in the source snapshot.",
+  "superseded_by": "source-snapshot.json computer-science_provenance"
  },
  {
   "id": "computer-science:CST05",
@@ -208,8 +223,9 @@
   "sources": [
    "log2(100,000) ≈ 16.6"
   ],
-  "status": "approved",
-  "validation": "Owner approved all proposals on 2026-10-29. Verified against official documentation, specifications, source code or arithmetic; exact original text occurs once in the source snapshot."
+  "status": "superseded-by-merged-source",
+  "validation": "Owner approved all proposals on 2026-10-29. Verified against official documentation, specifications, source code or arithmetic; exact original text occurs once in the source snapshot.",
+  "superseded_by": "source-snapshot.json computer-science_provenance"
  },
  {
   "id": "computer-science:CST06",
@@ -221,8 +237,9 @@
   "sources": [
    "log2(100,000) ≈ 16.6"
   ],
-  "status": "approved",
-  "validation": "Owner approved all proposals on 2026-10-29. Verified against official documentation, specifications, source code or arithmetic; exact original text occurs once in the source snapshot."
+  "status": "superseded-by-merged-source",
+  "validation": "Owner approved all proposals on 2026-10-29. Verified against official documentation, specifications, source code or arithmetic; exact original text occurs once in the source snapshot.",
+  "superseded_by": "source-snapshot.json computer-science_provenance"
  },
  {
   "id": "computer-science:CST07",
@@ -235,8 +252,9 @@
    "https://www.sqlite.org/fileformat2.html",
    "https://www.sqlite.org/eqp.html"
   ],
-  "status": "approved",
-  "validation": "Owner approved all proposals on 2026-10-29. Verified against official documentation, specifications, source code or arithmetic; exact original text occurs once in the source snapshot."
+  "status": "superseded-by-merged-source",
+  "validation": "Owner approved all proposals on 2026-10-29. Verified against official documentation, specifications, source code or arithmetic; exact original text occurs once in the source snapshot.",
+  "superseded_by": "source-snapshot.json computer-science_provenance"
  },
  {
   "id": "computer-science:CST08",
@@ -248,8 +266,9 @@
   "sources": [
    "https://developer.android.com/develop/ui/compose/lifecycle"
   ],
-  "status": "approved",
-  "validation": "Owner approved all proposals on 2026-10-29. Verified against official documentation, specifications, source code or arithmetic; exact original text occurs once in the source snapshot."
+  "status": "superseded-by-merged-source",
+  "validation": "Owner approved all proposals on 2026-10-29. Verified against official documentation, specifications, source code or arithmetic; exact original text occurs once in the source snapshot.",
+  "superseded_by": "source-snapshot.json computer-science_provenance"
  },
  {
   "id": "computer-science:CST09",
@@ -261,8 +280,9 @@
   "sources": [
    "https://github.com/facebook/rocksdb/wiki/RocksDB-Overview"
   ],
-  "status": "approved",
-  "validation": "Owner approved all proposals on 2026-10-29. Verified against official documentation, specifications, source code or arithmetic; exact original text occurs once in the source snapshot."
+  "status": "superseded-by-merged-source",
+  "validation": "Owner approved all proposals on 2026-10-29. Verified against official documentation, specifications, source code or arithmetic; exact original text occurs once in the source snapshot.",
+  "superseded_by": "source-snapshot.json computer-science_provenance"
  },
  {
   "id": "computer-science:CSG01",
@@ -275,8 +295,9 @@
    "https://dagger.dev/dev-guide/",
    "https://docs.gradle.org/current/userguide/java_plugin.html#sec:java_compile_avoidance"
   ],
-  "status": "approved",
-  "validation": "Owner approved all proposals on 2026-10-29. Verified against official documentation, specifications, source code or arithmetic; exact original text occurs once in the source snapshot."
+  "status": "superseded-by-merged-source",
+  "validation": "Owner approved all proposals on 2026-10-29. Verified against official documentation, specifications, source code or arithmetic; exact original text occurs once in the source snapshot.",
+  "superseded_by": "source-snapshot.json computer-science_provenance"
  },
  {
   "id": "computer-science:CSG02",
@@ -288,8 +309,9 @@
   "sources": [
    "https://docs.gradle.org/current/userguide/performance.html#parallel_execution"
   ],
-  "status": "approved",
-  "validation": "Owner approved all proposals on 2026-10-29. Verified against official documentation, specifications, source code or arithmetic; exact original text occurs once in the source snapshot."
+  "status": "superseded-by-merged-source",
+  "validation": "Owner approved all proposals on 2026-10-29. Verified against official documentation, specifications, source code or arithmetic; exact original text occurs once in the source snapshot.",
+  "superseded_by": "source-snapshot.json computer-science_provenance"
  },
  {
   "id": "computer-science:CSG03",
@@ -301,8 +323,9 @@
   "sources": [
    "https://docs.gradle.org/current/userguide/build_lifecycle.html"
   ],
-  "status": "approved",
-  "validation": "Owner approved all proposals on 2026-10-29. Verified against official documentation, specifications, source code or arithmetic; exact original text occurs once in the source snapshot."
+  "status": "superseded-by-merged-source",
+  "validation": "Owner approved all proposals on 2026-10-29. Verified against official documentation, specifications, source code or arithmetic; exact original text occurs once in the source snapshot.",
+  "superseded_by": "source-snapshot.json computer-science_provenance"
  },
  {
   "id": "computer-science:CSG04",
@@ -314,8 +337,9 @@
   "sources": [
    "https://engineering.linkedin.com/blog/2020/liquid-the-soul-of-a-new-graph-database-part-1"
   ],
-  "status": "approved",
-  "validation": "Owner approved all proposals on 2026-10-29. Verified against official documentation, specifications, source code or arithmetic; exact original text occurs once in the source snapshot."
+  "status": "superseded-by-merged-source",
+  "validation": "Owner approved all proposals on 2026-10-29. Verified against official documentation, specifications, source code or arithmetic; exact original text occurs once in the source snapshot.",
+  "superseded_by": "source-snapshot.json computer-science_provenance"
  },
  {
   "id": "computer-science:CSG05",
@@ -327,8 +351,9 @@
   "sources": [
    "https://en.wikipedia.org/wiki/Facebook%E2%80%93Cambridge_Analytica_data_scandal"
   ],
-  "status": "approved",
-  "validation": "Owner approved all proposals on 2026-10-29. Verified against official documentation, specifications, source code or arithmetic; exact original text occurs once in the source snapshot."
+  "status": "superseded-by-merged-source",
+  "validation": "Owner approved all proposals on 2026-10-29. Verified against official documentation, specifications, source code or arithmetic; exact original text occurs once in the source snapshot.",
+  "superseded_by": "source-snapshot.json computer-science_provenance"
  },
  {
   "id": "computer-science:CSG06",
@@ -340,8 +365,9 @@
   "sources": [
    "https://developer.android.com/develop/ui/compose/tooling/debug#recomposition-counts"
   ],
-  "status": "approved",
-  "validation": "Owner approved all proposals on 2026-10-29. Verified against official documentation, specifications, source code or arithmetic; exact original text occurs once in the source snapshot."
+  "status": "superseded-by-merged-source",
+  "validation": "Owner approved all proposals on 2026-10-29. Verified against official documentation, specifications, source code or arithmetic; exact original text occurs once in the source snapshot.",
+  "superseded_by": "source-snapshot.json computer-science_provenance"
  },
  {
   "id": "computer-science:CSG07",
@@ -353,8 +379,9 @@
   "sources": [
    "Diagram inspection"
   ],
-  "status": "approved",
-  "validation": "Owner approved all proposals on 2026-10-29. Verified against official documentation, specifications, source code or arithmetic; exact original text occurs once in the source snapshot."
+  "status": "superseded-by-merged-source",
+  "validation": "Owner approved all proposals on 2026-10-29. Verified against official documentation, specifications, source code or arithmetic; exact original text occurs once in the source snapshot.",
+  "superseded_by": "source-snapshot.json computer-science_provenance"
  },
  {
   "id": "computer-science:CSG08",
@@ -366,8 +393,9 @@
   "sources": [
    "Code inspection"
   ],
-  "status": "approved",
-  "validation": "Owner approved all proposals on 2026-10-29. Verified against official documentation, specifications, source code or arithmetic; exact original text occurs once in the source snapshot."
+  "status": "superseded-by-merged-source",
+  "validation": "Owner approved all proposals on 2026-10-29. Verified against official documentation, specifications, source code or arithmetic; exact original text occurs once in the source snapshot.",
+  "superseded_by": "source-snapshot.json computer-science_provenance"
  },
  {
   "id": "computer-science:CSS01",
@@ -379,8 +407,9 @@
   "sources": [
    "Internal consistency"
   ],
-  "status": "approved",
-  "validation": "Owner approved all proposals on 2026-10-29. Verified against official documentation, specifications, source code or arithmetic; exact original text occurs once in the source snapshot."
+  "status": "superseded-by-merged-source",
+  "validation": "Owner approved all proposals on 2026-10-29. Verified against official documentation, specifications, source code or arithmetic; exact original text occurs once in the source snapshot.",
+  "superseded_by": "source-snapshot.json computer-science_provenance"
  },
  {
   "id": "computer-science:CSS02",
@@ -393,8 +422,9 @@
    "https://dora.dev/research/",
    "https://itrevolution.com/product/accelerate/"
   ],
-  "status": "approved",
-  "validation": "Owner approved all proposals on 2026-10-29. Verified against official documentation, specifications, source code or arithmetic; exact original text occurs once in the source snapshot."
+  "status": "superseded-by-merged-source",
+  "validation": "Owner approved all proposals on 2026-10-29. Verified against official documentation, specifications, source code or arithmetic; exact original text occurs once in the source snapshot.",
+  "superseded_by": "source-snapshot.json computer-science_provenance"
  },
  {
   "id": "computer-science:CSS03",
@@ -406,8 +436,9 @@
   "sources": [
    "Same basis as CSS01"
   ],
-  "status": "approved",
-  "validation": "Owner approved all proposals on 2026-10-29. Verified against official documentation, specifications, source code or arithmetic; exact original text occurs once in the source snapshot."
+  "status": "superseded-by-merged-source",
+  "validation": "Owner approved all proposals on 2026-10-29. Verified against official documentation, specifications, source code or arithmetic; exact original text occurs once in the source snapshot.",
+  "superseded_by": "source-snapshot.json computer-science_provenance"
  },
  {
   "id": "computer-science:CSS04",
@@ -419,8 +450,9 @@
   "sources": [
    "https://www.sonarsource.com/docs/CognitiveComplexity.pdf"
   ],
-  "status": "approved",
-  "validation": "Owner approved all proposals on 2026-10-29. Verified against official documentation, specifications, source code or arithmetic; exact original text occurs once in the source snapshot."
+  "status": "superseded-by-merged-source",
+  "validation": "Owner approved all proposals on 2026-10-29. Verified against official documentation, specifications, source code or arithmetic; exact original text occurs once in the source snapshot.",
+  "superseded_by": "source-snapshot.json computer-science_provenance"
  },
  {
   "id": "computer-science:CSS05",
@@ -432,8 +464,9 @@
   "sources": [
    "https://www.sonarsource.com/docs/CognitiveComplexity.pdf"
   ],
-  "status": "approved",
-  "validation": "Owner approved all proposals on 2026-10-29. Verified against official documentation, specifications, source code or arithmetic; exact original text occurs once in the source snapshot."
+  "status": "superseded-by-merged-source",
+  "validation": "Owner approved all proposals on 2026-10-29. Verified against official documentation, specifications, source code or arithmetic; exact original text occurs once in the source snapshot.",
+  "superseded_by": "source-snapshot.json computer-science_provenance"
  },
  {
   "id": "computer-science:CSS06",
@@ -445,8 +478,9 @@
   "sources": [
    "https://developer.android.com/develop/ui/compose/performance/stability"
   ],
-  "status": "approved",
-  "validation": "Owner approved all proposals on 2026-10-29. Verified against official documentation, specifications, source code or arithmetic; exact original text occurs once in the source snapshot."
+  "status": "superseded-by-merged-source",
+  "validation": "Owner approved all proposals on 2026-10-29. Verified against official documentation, specifications, source code or arithmetic; exact original text occurs once in the source snapshot.",
+  "superseded_by": "source-snapshot.json computer-science_provenance"
  },
  {
   "id": "computer-science:CSS07",
@@ -458,8 +492,9 @@
   "sources": [
    "https://developer.android.com/develop/ui/compose/performance/stability/strongskipping"
   ],
-  "status": "approved",
-  "validation": "Owner approved all proposals on 2026-10-29. Verified against official documentation, specifications, source code or arithmetic; exact original text occurs once in the source snapshot."
+  "status": "superseded-by-merged-source",
+  "validation": "Owner approved all proposals on 2026-10-29. Verified against official documentation, specifications, source code or arithmetic; exact original text occurs once in the source snapshot.",
+  "superseded_by": "source-snapshot.json computer-science_provenance"
  },
  {
   "id": "computer-science:CSS08",
@@ -471,8 +506,9 @@
   "sources": [
    "Code inspection; https://docs.konsist.lemonappdev.com/"
   ],
-  "status": "approved",
-  "validation": "Owner approved all proposals on 2026-10-29. Verified against official documentation, specifications, source code or arithmetic; exact original text occurs once in the source snapshot."
+  "status": "superseded-by-merged-source",
+  "validation": "Owner approved all proposals on 2026-10-29. Verified against official documentation, specifications, source code or arithmetic; exact original text occurs once in the source snapshot.",
+  "superseded_by": "source-snapshot.json computer-science_provenance"
  },
  {
   "id": "computer-science:CSS09",
@@ -484,8 +520,9 @@
   "sources": [
    "Code inspection"
   ],
-  "status": "approved",
-  "validation": "Owner approved all proposals on 2026-10-29. Verified against official documentation, specifications, source code or arithmetic; exact original text occurs once in the source snapshot."
+  "status": "superseded-by-merged-source",
+  "validation": "Owner approved all proposals on 2026-10-29. Verified against official documentation, specifications, source code or arithmetic; exact original text occurs once in the source snapshot.",
+  "superseded_by": "source-snapshot.json computer-science_provenance"
  },
  {
   "id": "computer-science:CSS10",
@@ -497,8 +534,9 @@
   "sources": [
    "https://detekt.dev/docs/rules/complexity"
   ],
-  "status": "approved",
-  "validation": "Owner approved all proposals on 2026-10-29. Verified against official documentation, specifications, source code or arithmetic; exact original text occurs once in the source snapshot."
+  "status": "superseded-by-merged-source",
+  "validation": "Owner approved all proposals on 2026-10-29. Verified against official documentation, specifications, source code or arithmetic; exact original text occurs once in the source snapshot.",
+  "superseded_by": "source-snapshot.json computer-science_provenance"
  },
  {
   "id": "computer-science:CSS11",
@@ -510,8 +548,9 @@
   "sources": [
    "https://docs.gradle.org/current/userguide/viewing_debugging_dependencies.html"
   ],
-  "status": "approved",
-  "validation": "Owner approved all proposals on 2026-10-29. Verified against official documentation, specifications, source code or arithmetic; exact original text occurs once in the source snapshot."
+  "status": "superseded-by-merged-source",
+  "validation": "Owner approved all proposals on 2026-10-29. Verified against official documentation, specifications, source code or arithmetic; exact original text occurs once in the source snapshot.",
+  "superseded_by": "source-snapshot.json computer-science_provenance"
  },
  {
   "id": "computer-science:CSS12",
@@ -523,8 +562,9 @@
   "sources": [
    "https://detekt.dev/docs/rules/complexity"
   ],
-  "status": "approved",
-  "validation": "Owner approved all proposals on 2026-10-29. Verified against official documentation, specifications, source code or arithmetic; exact original text occurs once in the source snapshot."
+  "status": "superseded-by-merged-source",
+  "validation": "Owner approved all proposals on 2026-10-29. Verified against official documentation, specifications, source code or arithmetic; exact original text occurs once in the source snapshot.",
+  "superseded_by": "source-snapshot.json computer-science_provenance"
  },
  {
   "id": "computer-science:CSS13",
@@ -536,8 +576,9 @@
   "sources": [
    "Count of decision points"
   ],
-  "status": "approved",
-  "validation": "Owner approved all proposals on 2026-10-29. Verified against official documentation, specifications, source code or arithmetic; exact original text occurs once in the source snapshot."
+  "status": "superseded-by-merged-source",
+  "validation": "Owner approved all proposals on 2026-10-29. Verified against official documentation, specifications, source code or arithmetic; exact original text occurs once in the source snapshot.",
+  "superseded_by": "source-snapshot.json computer-science_provenance"
  },
  {
   "id": "computer-science:CSA01",
@@ -549,8 +590,9 @@
   "sources": [
    "https://github.com/androidx/androidx/blob/androidx-main/compose/runtime/runtime/src/commonMain/kotlin/androidx/compose/runtime/SnapshotState.kt"
   ],
-  "status": "approved",
-  "validation": "Owner approved all proposals on 2026-10-29. Verified against official documentation, specifications, source code or arithmetic; exact original text occurs once in the source snapshot."
+  "status": "superseded-by-merged-source",
+  "validation": "Owner approved all proposals on 2026-10-29. Verified against official documentation, specifications, source code or arithmetic; exact original text occurs once in the source snapshot.",
+  "superseded_by": "source-snapshot.json computer-science_provenance"
  },
  {
   "id": "computer-science:CSO01",
@@ -562,8 +604,9 @@
   "sources": [
    "Chapter's own lowerBound/upperBound"
   ],
-  "status": "approved",
-  "validation": "Owner approved all proposals on 2026-10-29. Verified against official documentation, specifications, source code or arithmetic; exact original text occurs once in the source snapshot."
+  "status": "superseded-by-merged-source",
+  "validation": "Owner approved all proposals on 2026-10-29. Verified against official documentation, specifications, source code or arithmetic; exact original text occurs once in the source snapshot.",
+  "superseded_by": "source-snapshot.json computer-science_provenance"
  },
  {
   "id": "computer-science:CSP01",
@@ -575,7 +618,8 @@
   "sources": [
    "https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/util/TreeMap.html"
   ],
-  "status": "approved",
-  "validation": "Owner approved all proposals on 2026-10-29. Verified against official documentation, specifications, source code or arithmetic; exact original text occurs once in the source snapshot."
+  "status": "superseded-by-merged-source",
+  "validation": "Owner approved all proposals on 2026-10-29. Verified against official documentation, specifications, source code or arithmetic; exact original text occurs once in the source snapshot.",
+  "superseded_by": "source-snapshot.json computer-science_provenance"
  }
 ]

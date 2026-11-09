@@ -161,11 +161,12 @@ data class AdaptiveLayoutInfo(
     val hasSeparatingFold: Boolean
 )
 
-fun AdaptiveLayoutInfo.shouldUseTwoPane(): Boolean =
-    widthClass != WindowWidthSizeClass.Compact && !hasSeparatingFold
+fun AdaptiveLayoutInfo.shouldUseTwoPane(productSupportsSplit: Boolean): Boolean =
+    widthClass != WindowWidthSizeClass.Compact &&
+        (!hasSeparatingFold || productSupportsSplit)
 ```
 
-If a separating fold exists, prefer placing panes on each side only when the product experience naturally maps to that split.
+If a separating fold exists, first inspect its orientation, bounds and the usable region on each side. Pass productSupportsSplit only when that product experience and those regions support the split; a Boolean example is a policy sketch, not a replacement for fold-aware layout constraints.
 
 ## Input Modes
 
@@ -241,3 +242,7 @@ TextField(
 - [Android Developers: Canonical layouts](https://developer.android.com/develop/ui/compose/layouts/adaptive/canonical-layouts)
 - [`compose-navigation.md`](compose-navigation.md) - route ownership and navigation boundaries.
 - [`process-death-and-state-restoration.md`](../architecture/process-death-and-state-restoration.md) - durable UI state.
+
+### Official verification references
+
+- [Primary documentation or owning implementation](https://developer.android.com/develop/ui/compose/layouts/adaptive/foldables/make-your-app-fold-aware)

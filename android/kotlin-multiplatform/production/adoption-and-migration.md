@@ -97,9 +97,9 @@ object Validators {
 **Migration steps:**
 1. Move the Kotlin files from the Android module to `shared/commonMain`.
 2. Replace `Moshi`/`Gson` annotations with `@Serializable` / `@SerialName`.
-3. Replace `java.time.Instant` with `kotlinx.datetime.Instant`.
+3. For current kotlinx-datetime 0.7+ integration, migrate instants to kotlin.time.Instant; kotlinx.datetime.Instant is the deprecated compatibility name. Verify date/time and serialization versions together.
 4. In the Android app, change `import com.example.app.model.User` to `import com.example.shared.model.User`.
-5. The iOS team now gets these DTOs for free — no more manually maintaining Swift `Codable` structs.
+5. Shared DTO declarations reduce duplication, but Objective-C-exported classes are not automatically Swift Codable value types. Keep explicit mapping wherever Swift persistence, coding or value semantics require it.
 
 **Risk:** Usually low, but verify serialized field names/defaults, time and locale semantics, binary API exposure to Swift, and compatibility with stored/network payloads.
 
@@ -334,3 +334,8 @@ Use the official Kotlin Multiplatform case-study catalog as a starting index, th
 - [`swift-interop.md`](../tooling/swift-interop.md) — How SKIE makes the shared API pleasant for iOS engineers.
 - [`libraries-ecosystem.md`](../ecosystem/libraries-ecosystem.md) — The target-support and ownership checks used to choose libraries during each migration phase.
 - [`ci-cd-for-kmp.md`](ci-cd-for-kmp.md) — Setting up the macOS CI infrastructure (Phase 0).
+
+### Official verification references
+
+- [Primary documentation or owning implementation](https://github.com/Kotlin/kotlinx-datetime/blob/master/README.md)
+- [Primary documentation or owning implementation](https://kotlinlang.org/docs/native-objc-interop.html)

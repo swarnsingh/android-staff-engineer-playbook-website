@@ -181,7 +181,7 @@ composeRule.onNodeWithTag("name_input").performTextInput("Alice")
 composeRule.onNodeWithText("Submit").performClick()
 composeRule.onNodeWithTag("password").performTextClearance()
 composeRule.onNodeWithTag("settings").performScrollTo()
-composeRule.onRoot().performGesture {
+composeRule.onRoot().performTouchInput {
     swipeLeft()
 }
 ```
@@ -233,11 +233,11 @@ What Robolectric handles:
 - Compose runtime (with proper setup).
 
 What it doesn't handle:
-- Real animations (they snap to final values).
-- Real font rendering (uses Layoutlib's approximations).
-- Network/disk I/O (just like a unit test — must be faked).
+- Animation behavior depends on the configured clock and shadows; drive the relevant clock explicitly.
+- Graphics fidelity depends on legacy versus native Android graphics mode; Robolectric is not Paparazzi's Layoutlib renderer.
+- Ordinary JVM I/O can run, but fakes are usually preferable for deterministic external-system tests.
 
-The trade-off: faster, more isolated, slightly less realistic. For 90% of UI tests, this is fine.
+The trade-off depends on the failure mode: use JVM-hosted tests for suitable framework/state behavior and devices for platform, rendering and hardware behavior they cannot represent.
 
 ---
 
@@ -290,10 +290,10 @@ class CartItemSnapshotTest {
 ```
 
 Workflow:
-1. Run tests once: golden images are recorded.
+1. Run recordPaparazziDebug (or the selected variant's record task) to write reference images.
 2. Commit goldens to git (under `src/test/snapshots/`).
-3. CI runs tests: compares fresh renders against goldens.
-4. Any pixel diff fails the test.
+3. Run verifyPaparazziDebug in CI to compare renders with committed references. Ordinary test tasks generate reports but are not the reference-recording contract.
+4. Verification fails when the difference exceeds maxPercentDifference; choose and document the threshold rather than assuming every changed pixel fails.
 5. Re-record with `./gradlew :feature:cart:impl:recordPaparazzi` when intentional.
 
 ### Why use Paparazzi
@@ -361,7 +361,7 @@ Column(modifier = Modifier.semantics(mergeDescendants = true) {
 }
 ```
 
-Marks the whole subtree as one semantic unit (good for accessibility AND for tests). Otherwise the test sees three separate `Text` nodes.
+mergeDescendants merges eligible descendant properties using each property's merge policy. Independently merging children such as clickable controls can remain separate. Merged text may remain queryable on the parent; inspect merged and unmerged trees for the actual boundary.
 
 ---
 
@@ -379,7 +379,7 @@ class CartScreenHiltTest {
 
     @Inject lateinit var fakeRepository: FakeCartRepository
 
-    @BeforeEach
+    @Before
     fun setUp() {
         hiltRule.inject()
     }
@@ -397,7 +397,7 @@ class CartScreenHiltTest {
 }
 ```
 
-Override modules per test:
+Use the documented HiltTestApplication runner and an @AndroidEntryPoint HiltTestActivity registered in the debug manifest. Add hilt-android-testing and the Hilt test compiler to the instrumentation source set. Override the production module in the test source set:
 
 ```kotlin
 @Module
@@ -407,7 +407,10 @@ Override modules per test:
 )
 object FakeCartRepositoryModule {
     @Provides @Singleton
-    fun provideRepo(): CartRepository = FakeCartRepository()
+    fun provideFake(): FakeCartRepository = FakeCartRepository()
+
+    @Provides
+    fun provideRepo(fake: FakeCartRepository): CartRepository = fake
 }
 ```
 
@@ -480,25 +483,21 @@ Flaky UI tests destroy test-suite credibility. Common causes and fixes:
 ### 1. Animations
 
 ```kotlin
-@Before
-fun disableAnimations() {
-    composeRule.mainClock.autoAdvance = false      // pause clock
-    // Run actions
-    composeRule.mainClock.advanceTimeByFrame()     // step manually
-    composeRule.mainClock.autoAdvance = true        // resume
+@Test
+fun inspectIntermediateAnimation() {
+    composeRule.mainClock.autoAdvance = false
+    try {
+        composeRule.setContent { AnimatedCart() }
+        composeRule.onNodeWithTag("expand").performClick()
+        composeRule.mainClock.advanceTimeBy(100)
+        // Assert this deliberately chosen animation frame.
+    } finally {
+        composeRule.mainClock.autoAdvance = true
+    }
 }
 ```
 
-Or globally:
-
-```kotlin
-// android/test/manifest:
-<application android:name="androidx.test.core.app.testing.HiltTestApplication">
-    <activity android:name="androidx.compose.ui.test.junit4.android.ComponentActivity"/>
-</application>
-```
-
-And in build.gradle: `android.testOptions.animationsDisabled = true` for instrumentation tests.
+This controls one test, not global animation behavior. For Hilt instrumentation tests, use a custom AndroidJUnitRunner that creates `dagger.hilt.android.testing.HiltTestApplication`, plus a registered `@AndroidEntryPoint` test activity extending `androidx.activity.ComponentActivity`. The ordinary Compose host comes from ui-test-manifest; neither a manifest declaration nor the Hilt application disables animations. Platform instrumentation animation settings are a separate policy.
 
 ### 2. Async work
 
@@ -514,7 +513,7 @@ Wait for an assertion to become true, not for a fixed time.
 
 ```kotlin
 // In test:
-composeRule.awaitIdle()    // waits for all pending Compose work + coroutines
+composeRule.waitForIdle() // synchronous test API; waits for Compose and registered idlers
 ```
 
 ### 4. Idling resources
@@ -522,19 +521,25 @@ composeRule.awaitIdle()    // waits for all pending Compose work + coroutines
 For complex async chains:
 
 ```kotlin
-val idlingResource = CountingIdlingResource("Cart loading")
-
-// In production code:
-idlingResource.increment()
-viewModelScope.launch {
-    repo.load()
-    idlingResource.decrement()
+class LoadingIdler : androidx.compose.ui.test.IdlingResource {
+    private val pending = java.util.concurrent.atomic.AtomicInteger()
+    override val isIdleNow: Boolean get() = pending.get() == 0
+    fun begin() { pending.incrementAndGet() }
+    fun end() { check(pending.decrementAndGet() >= 0) }
 }
-
-// In test:
+val idlingResource = LoadingIdler()
+// In the owned coroutine, balance on failure and cancellation too:
+viewModelScope.launch {
+    idlingResource.begin()
+    try { repo.load() } finally { idlingResource.end() }
+}
+// In the test, register before triggering the work:
 composeRule.registerIdlingResource(idlingResource)
-// ... assertions ...
-composeRule.unregisterIdlingResource(idlingResource)
+try {
+    // Trigger load and assert the resulting UI.
+} finally {
+    composeRule.unregisterIdlingResource(idlingResource)
+}
 ```
 
 ### Avoiding Flakes — Best Practices
@@ -542,7 +547,7 @@ composeRule.unregisterIdlingResource(idlingResource)
 - Never use `Thread.sleep` in tests. Always `waitUntil` or `awaitIdle`.
 - Disable animations.
 - Use unique test data (avoid global state).
-- Reset all dependencies in `@BeforeEach`.
+- Reset dependencies in JUnit 4 @Before for these rule-based suites; Jupiter suites use @BeforeEach.
 - Don't depend on test execution order.
 - Fail loud — better to crash than silently pass.
 
@@ -574,12 +579,15 @@ fun cart_meetsAccessibilityRequirements() {
 For systematic accessibility audits:
 
 ```kotlin
-@get:Rule val a11yRule = AccessibilityChecksRule()
-    .enableAccessibilityChecks()
-    .enableThrowingOnFailure()
+// androidTestImplementation("androidx.compose.ui:ui-test-junit4-accessibility:<compose-version>")
+// import androidx.compose.ui.test.junit4.accessibility.enableAccessibilityChecks
+@get:Rule val composeRule = createAndroidComposeRule<ComponentActivity>()
+
+@Before
+fun enableChecks() { composeRule.enableAccessibilityChecks() }
 ```
 
-The rule runs Google's Accessibility Test Framework checks against every Compose hierarchy — catches contrast, tap targets, missing labels.
+Checks run on supported test actions and can be requested explicitly. They complement manual assistive-technology testing and do not certify every interaction or WCAG requirement.
 
 ---
 
@@ -597,7 +605,7 @@ gcloud firebase test android run \
   --device model=SamsungS21,version=33
 ```
 
-CI integration available via [Gradle Play Publisher](https://github.com/Triple-T/gradle-play-publisher) and [Fladle](https://github.com/runningcode/fladle). Most teams use this for critical-path tests only — it's expensive.
+CI can run Test Lab through gcloud, Firebase tooling or Fladle. Gradle Play Publisher publishes to Google Play and is not a Test Lab matrix runner.
 
 ---
 
@@ -633,7 +641,7 @@ class CheckoutScreenTest {
     @get:Rule(order = 0) val hiltRule = HiltAndroidRule(this)
     @get:Rule(order = 1) val composeRule = createAndroidComposeRule<HiltTestActivity>()
 
-    @Inject lateinit var fakeRepo: FakeCheckoutRepository
+    @Inject lateinit var repository: CheckoutRepository // supplied by the matching test replacement module
 
     @Before fun setUp() = hiltRule.inject()
 
@@ -703,14 +711,14 @@ Catches RTL bugs early. Most apps test LTR, dark mode, and one RTL locale per co
 | `HiltAndroidRule` works but `composeRule` doesn't see deps | Rule order wrong | `@get:Rule(order = 0)` for Hilt, `order = 1` for compose |
 | `androidx.compose.ui.test.manifest` not in debug | Missing manifest dep | Add `debugImplementation` |
 | Robolectric fails: "no Activity in test config" | Default activity not set | Use `createAndroidComposeRule<MyActivity>()` |
-| `performTextInput` doesn't trigger TextField update | Test runs faster than Compose recomposition | `composeRule.waitForIdle()` after input |
+| performTextInput does not update a TextField | Controlled state callback is unwired, or external work is not synchronized | Update the value in onValueChange; synchronize only the actual external boundary. Actions already synchronize with Compose |
 | Screenshot fails on Linux but works on macOS | Font fallback differences | Pin to a single OS in CI; or commit per-OS goldens (rare) |
 | `onAllNodesWithTag` selects too many | Duplicate `testTag` | Make tags unique or use indexed `[i]` |
 | `@HiltAndroidTest` not picked up | Forgot Hilt test runner | Add `testInstrumentationRunner` or `HiltTestApplication` |
 | Slow test suite (5min) | Mix of unit and instrumentation tests | Split into separate Gradle tasks |
 | Flaky `waitUntil` | Polling interval too long or timeout too short | Tune; or use IdlingResource |
-| Tests don't dismiss snackbars between cases | Reusing scope across tests | Reset state in `@BeforeEach` |
-| `mergeDescendants` blocks individual child queries | Semantic boundary set | Use `useUnmergedTree = true` |
+| Tests retain snackbar state between cases | Shared owner/state | Reset the rule-owned test and dependencies using JUnit 4 @Before; synchronize the expected UI outcome |
+| A child matcher changes after merging | The property moved to a parent or a nested merge boundary remains independent | Inspect both trees and query the actual semantic contract; useUnmergedTree is deliberate inspection, not a universal fix |
 | Paparazzi golden out of date | Intentional UI change but not re-recorded | `./gradlew recordPaparazzi` to update |
 
 ---
@@ -757,9 +765,9 @@ Catches RTL bugs early. Most apps test LTR, dark mode, and one RTL locale per co
 3. **Walk through structuring a Hilt + Compose UI test with `HiltAndroidRule`.**
    Annotate with `@HiltAndroidTest`, add `HiltAndroidRule` (order 0), add `createAndroidComposeRule<HiltTestActivity>` (order 1), and call `hiltRule.inject()` in `@Before` before setting content.
 4. **Why are animation-related test failures the most common flakes? How do you fix them globally?**
-   Animations run asynchronously and take time, leading to tests advancing before the UI is settled. Fix globally by disabling animations in developer options on the emulator, in gradle test options, or by pausing the `composeRule.mainClock`.
+   Control the Compose test clock for a specific intermediate frame and advance it explicitly. Automatic advancement normally helps actions reach idleness. Instrumentation animation settings affect platform animations, not every Compose animation or external job.
 5. **`mergeDescendants` — what does it do? How does it interact with test queries?**
-   It merges the semantics of all child nodes into a single unit for accessibility and testing. A test querying a child node inside a merged block won't find it unless it sets `useUnmergedTree = true`.
+   It merges eligible descendant properties using merge policies; independently merging children can stay separate. Text can be found on the merged parent. Inspect the actual merged tree before using useUnmergedTree for a child-specific assertion.
 6. **Paparazzi vs Compose Screenshot Testing — what's the trade-off?**
    Paparazzi is a mature, fast, third-party tool that uses Layoutlib. Compose Screenshot Testing is a newer, Google-official, IDE-integrated plugin but is slower and currently in alpha.
 7. **A new engineer writes a Compose UI test that fails on CI with 50% reliability. Walk through your debugging.**
@@ -767,9 +775,9 @@ Catches RTL bugs early. Most apps test LTR, dark mode, and one RTL locale per co
 8. **Multi-theme / multi-locale snapshot testing — how to set up?**
    Create multiple `Paparazzi` rule configurations or iterate over different `DeviceConfig` objects (altering locale/theme) in a single test, taking uniquely named snapshots for each variant.
 9. **Accessibility testing in Compose — what tools, what assertions?**
-   Use the `AccessibilityChecksRule` to run Google's Accessibility Test Framework checks on the whole screen. Manually, fetch a node's semantics to assert tap target size (>= 48dp) and `contentDescription` presence.
+   On a supported AndroidComposeTestRule, add ui-test-junit4-accessibility and call enableAccessibilityChecks(). Pair automated checks with semantics and manual TalkBack/Switch Access verification; labels and size assertions alone do not establish complete accessibility.
 10. **Why do you sometimes need `IdlingResource` even with `awaitIdle()`?**
-    `awaitIdle()` waits for Compose's internal state, recompositions, and coroutines on the main dispatcher. It doesn't know about background thread work, network requests, or custom coroutine scopes, requiring an `IdlingResource`.
+    awaitIdle is suspending; waitForIdle is the synchronous test API. They wait for Compose work and registered idling resources, not arbitrary Main/background jobs. Use a matching idler or waitUntil for the external outcome.
 11. **A junior creates 200 testTags called "button1", "button2", etc. What's the code-review pushback?**
     Push back because they are brittle, non-descriptive, and don't help accessibility. Require semantic testing where possible, or use descriptive tags representing the domain action (e.g., `submit_order_button`).
 12. **Component-level Paparazzi vs screen-level Compose UI tests — which catches what?**
@@ -790,3 +798,17 @@ Catches RTL bugs early. Most apps test LTR, dark mode, and one RTL locale per co
 - [Android Compose Screenshot Testing](https://developer.android.com/studio/preview/compose-screenshot-testing) — official alpha.
 - [Espresso (for legacy)](https://developer.android.com/training/testing/espresso) — official.
 - [Firebase Test Lab](https://firebase.google.com/docs/test-lab) — cross-device matrix.
+
+### Official verification references
+
+- [Primary documentation or owning implementation](https://developer.android.com/develop/ui/compose/accessibility/merging-clearing)
+- [Primary documentation or owning implementation](https://developer.android.com/develop/ui/compose/accessibility/testing)
+- [Primary documentation or owning implementation](https://developer.android.com/develop/ui/compose/testing/synchronization)
+- [Primary documentation or owning implementation](https://developer.android.com/reference/kotlin/androidx/compose/ui/test/IdlingResource)
+- [Primary documentation or owning implementation](https://developer.android.com/reference/kotlin/androidx/compose/ui/test/package-summary)
+- [Primary documentation or owning implementation](https://developer.android.com/training/dependency-injection/hilt-testing)
+- [Primary documentation or owning implementation](https://github.com/Triple-T/gradle-play-publisher)
+- [Primary documentation or owning implementation](https://github.com/cashapp/paparazzi#tasks)
+- [Primary documentation or owning implementation](https://github.com/robolectric/robolectric)
+- [Primary documentation or owning implementation](https://github.com/robolectric/robolectric/blob/master/annotations/src/main/java/org/robolectric/annotation/GraphicsMode.java)
+- [Primary documentation or owning implementation](https://robolectric.org/)

@@ -151,7 +151,7 @@ graph LR
   CheckoutI -.depends on.-> Profile
 ```
 
-Critical path: 3 nodes. Three features compile in parallel on three cores. Adding a fourth feature = three nodes more, still parallel.
+The longest drawn core → feature API → feature implementation → app chain contains four nodes. An extra feature adds its API and implementation nodes while sharing core/app. Which tasks can run in parallel also depends on task dependencies and available resources; the graph alone does not promise one feature per CPU core.
 
 The platform team's job: keep the `:core` thin, keep the graph wide, and run a CI check that no `:impl` is on the critical path of another `:impl`.
 
@@ -207,7 +207,7 @@ class ProfileModule
 
 ## Type-Safe Navigation Across Modules
 
-Compose Navigation 2.7+ supports type-safe routes:
+Navigation Compose 2.8.0 introduced Kotlin Serialization-based type-safe routes:
 
 ```kotlin
 // :feature:profile:api/Routes.kt
@@ -342,7 +342,7 @@ See [`../../platform-engineering/build-graph-scaling.md`](../../platform-enginee
 | `:app` module is back to 100k LOC | Features added to `:app` instead of new modules | Tighten code-review checklist; require modules for new screens |
 | First-time `:impl` compile is slow | Heavy generated code (Room, Hilt, Compose Compiler) | Profile with `--scan`; consider splitting the module further |
 | `:feature:x:api` accidentally exposes implementation type | Used a concrete class in an interface signature | Refactor: API should only expose `:api`-level types |
-| `internal` classes accessible from another module | Modules in same package (rare bug) | Use distinct packages per module |
+| Unexpected internal visibility | The declarations are in the same compilation module, or access occurs through a Java-facing boundary | Check module/source-set boundaries; changing package names does not change Kotlin internal visibility |
 | Cannot run a single feature from Android Studio | Feature module doesn't have its own `application` test target | Add a sample `:app-sample` module that depends on just the one feature |
 | Build cache misses despite no source changes | Cache key includes absolute paths or timestamps | Standardize JVM args; configure reproducible builds |
 
@@ -408,6 +408,12 @@ See [`../../platform-engineering/build-graph-scaling.md`](../../platform-enginee
 - [`../../platform-engineering/library-versioning.md`](../../platform-engineering/library-versioning.md) — `libs.versions.toml` for modular projects.
 - [`../../patterns/repository.md`](../../patterns/repository.md) — repositories at module boundaries.
 - [Now in Android sample](https://github.com/android/nowinandroid) — Google's reference multi-module app.
-- [Cash App — Modularization at scale](https://developer.squareup.com/blog/) — Square engineering posts.
+- [Cash App — Android Architecture for the Rocketship, Part 1: Modularisation](https://code.cash.app/android-architecture-for-the-rocketship-part1-modularisation) — Cash App engineering post.
 - [Dependency Analysis Gradle Plugin](https://github.com/autonomousapps/dependency-analysis-gradle-plugin) — the CI guard.
 - [Android — Play Feature Delivery](https://developer.android.com/guide/playcore/feature-delivery) — Dynamic Feature Modules reference.
+
+### Official verification references
+
+- [Primary documentation or owning implementation](https://developer.android.com/guide/navigation/design/type-safety)
+- [Primary documentation or owning implementation](https://docs.gradle.org/current/userguide/multi_project_builds.html)
+- [Primary documentation or owning implementation](https://kotlinlang.org/docs/visibility-modifiers.html#modules)

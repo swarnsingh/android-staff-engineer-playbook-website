@@ -66,7 +66,7 @@ The mnemonic prefix tells you the type: `i` int, `l` long, `f` float, `d` double
 kotlinc Foo.kt -d Foo.jar
 
 # Disassemble
-javap -c -p Foo.jar FooKt
+javap -c -p -classpath Foo.jar FooKt
 ```
 
 > **Show Kotlin Bytecode** vs **Decompile**: the first shows the actual JVM bytecode (the `iload_0` lines); the second runs it back through a decompiler (typically Fernflower) to recover Java-ish source. Use both. Bytecode shows truth; decompiled Java shows intent.
@@ -120,14 +120,14 @@ public final java.lang.String greeting();
      7: ldc          #5 // String "Hi "
      9: invokevirtual #6 // Method java/lang/StringBuilder.append:(Ljava/lang/String;)Ljava/lang/StringBuilder;
     12: aload_0
-    13: invokevirtual #7 // Method getName:()Ljava/lang/String;
+    13: getfield     #2 // Field name:Ljava/lang/String;
     16: invokevirtual #6 // Method java/lang/StringBuilder.append:(Ljava/lang/String;)Ljava/lang/StringBuilder;
     19: invokevirtual #8 // Method java/lang/StringBuilder.toString:()Ljava/lang/String;
     22: areturn
 ```
 
 Two observations:
-1. `val name` becomes a **field** (`getfield`) **plus** a getter method. Accessing `user.name` from Kotlin calls `getName()`, not the field directly.
+1. `val name` becomes a **field** plus a getter method. Code inside `User` reads the field directly (`getfield`); code in other classes calls `getName()`.
 2. In this compiler/target configuration, the string template lowers to a `StringBuilder` chain. Other Kotlin/JVM target and compiler configurations can emit `invokedynamic` string concatenation instead, so inspect the bytecode produced by the build you are tuning rather than assuming one universal lowering.
 
 ### Null safety
@@ -156,7 +156,7 @@ The `?.` becomes a simple `ifnull` branch. No reflection, no overhead. The Elvis
 data class User(val name: String, val age: Int)
 ```
 
-Generates 4 free methods. Look at `equals`:
+Generates accessors, `component1` / `component2`, `copy` (plus its default-argument helper), `equals`, `hashCode`, and `toString` for this two-property data class. Look at `equals`:
 
 ```
 public boolean equals(java.lang.Object);
@@ -189,7 +189,7 @@ public boolean equals(java.lang.Object);
     47: ireturn
 ```
 
-Every `val` in the data class produces a field comparison. With 10 fields you'd see 10 such blocks. This is why "10 fields × 5,000 data classes" inflates `classes.dex`.
+Every primary-constructor property participates in generated equality. Properties declared only in the class body do not. With 10 primary-constructor properties, the comparison includes all 10. This is why "10 fields × 5,000 data classes" inflates `classes.dex`.
 
 ### `lateinit var`
 
@@ -259,7 +259,7 @@ inline fun doMath(op: (Int, Int) -> Int): Int = op(5, 10)
 fun calc() = doMath { x, y -> x + y }
 ```
 
-Without `inline`, the bytecode for `calc()` constructs a `Function2` object. With `inline`, the bytecode for `calc()` directly contains `iconst_5`, `bipush 10`, `iadd`. No object allocation; the lambda evaporated.
+With `inline`, this direct lambda body can be copied into `calc()`, removing the function-object call at that site. Without inlining, the lambda is represented as a function object or an `invokedynamic` lambda depending on compiler settings; this non-capturing lambda can be reused rather than allocated on every call. Inspect the selected compiler target before counting allocations.
 
 ---
 
@@ -328,7 +328,7 @@ Tools: `retrace` (R8 CLI), Crashlytics/Sentry auto-upload mapping during build, 
 
 ## 9. DEX Specifics (Briefly)
 
-Same bytecode, different encoding. JVM stack-based; DEX register-based. `iadd` (JVM) ≈ `add-int` (DEX); `aload_0` ≈ `move-object v0, p0`.
+DEX uses a different instruction set and file format, not merely a different encoding of JVM instructions. JVM bytecode is stack-based; DEX is register-based. `iadd` (JVM) ≈ `add-int` (DEX); `aload_0` ≈ `move-object v0, p0`.
 
 To read DEX:
 
@@ -340,7 +340,7 @@ $ANDROID_HOME/build-tools/35.0.0/dexdump -d classes.dex
 java -jar baksmali.jar disassemble classes.dex -o smali_out/
 ```
 
-You rarely need DEX. The optimizations you care about happen at JVM bytecode time before D8/R8.
+Use JVM bytecode to inspect Kotlin lowering, then inspect DEX or runtime evidence when investigating D8/R8 transformations or ART performance. Important optimizations also happen during shrinking, DEX generation, and runtime compilation.
 
 ---
 
@@ -354,10 +354,10 @@ list.map { it.title }.filter { it.startsWith("X") }.firstOrNull()
 Investigation:
 
 1. Open `Tools → Kotlin → Show Kotlin Bytecode`.
-2. See three calls: `Iterable.map`, `Iterable.filter`, `Iterable.firstOrNull`. Each allocates an intermediate `ArrayList`.
-3. Decompile: confirms three intermediate lists.
-4. Refactor to `asSequence().map { }.filter { }.firstOrNull()` and check bytecode again — now uses `Sequence` which fuses operations into a single pass.
-5. Macrobenchmark the change. Allocation count drops; scroll improves.
+2. Inspect the inlined collection loops: eager `map` and `filter` build two intermediate lists; terminal `firstOrNull` reads the first result and creates no third list.
+3. Check the resulting allocations rather than expecting three literal `Iterable` calls in bytecode.
+4. Compare with `asSequence().map { }.filter { }.firstOrNull()`, which processes lazily and can stop after the first match, while introducing sequence/iterator machinery.
+5. Benchmark the actual workload. Fewer intermediate lists do not by themselves prove faster scrolling.
 
 The cycle: bytecode → understand cost → refactor → re-check bytecode → measure.
 
@@ -381,9 +381,19 @@ The cycle: bytecode → understand cost → refactor → re-check bytecode → m
 - [JVM Specification — Chapter 6: Instructions](https://docs.oracle.com/javase/specs/jvms/se21/html/jvms-6.html) — official mnemonic reference.
 - [`javap` man page](https://docs.oracle.com/en/java/javase/21/docs/specs/man/javap.html) — disassembler options.
 - [ASM library](https://asm.ow2.io/) — programmatic bytecode manipulation.
-- [Android Developers — R8 mapping files](https://developer.android.com/build/shrink-code#decode-stack-trace) — symbolication.
+- [Android Developers — R8 mapping files](https://developer.android.com/tools/retrace) — symbolication.
 - [Kotlin under the hood](https://kotlinlang.org/docs/) — official docs, look for "Kotlin/JVM" sections.
 
 ---
 
 > **In short:** the JVM is a stack machine; `javap -c` shows the truth; Kotlin's compiler magic (data classes, suspend, inline) leaves visible fingerprints in bytecode; R8 transforms class names + inlines + DCE; mapping files reverse the obfuscation. Read bytecode first, decompiled Java second, intent third.
+
+### Official verification references
+
+- [Primary documentation or owning implementation](https://developer.android.com/topic/performance/app-optimization/enable-app-optimization)
+- [Primary documentation or owning implementation](https://kotlinlang.org/api/core/kotlin-stdlib/kotlin.collections/first-or-null.html)
+- [Primary documentation or owning implementation](https://kotlinlang.org/docs/data-classes.html)
+- [Primary documentation or owning implementation](https://kotlinlang.org/docs/inline-functions.html)
+- [Primary documentation or owning implementation](https://kotlinlang.org/docs/properties.html)
+- [Primary documentation or owning implementation](https://kotlinlang.org/docs/sequences.html)
+- [Primary documentation or owning implementation](https://source.android.com/docs/core/runtime/dalvik-bytecode)

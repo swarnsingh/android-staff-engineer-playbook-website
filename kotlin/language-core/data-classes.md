@@ -35,7 +35,7 @@ The Java equivalent was 50 lines of boilerplate. Worse, if you forgot to overrid
 
 Modern Android relies on `equals` everywhere:
 
-- **Jetpack Compose** skips recomposition when state `equals` the previous state.
+- **Jetpack Compose** can skip a composable whose parameters are unchanged: stable parameters are compared with `equals`, unstable ones by instance.
 - **`StateFlow.value = newState`** emits only if `newState != oldState`.
 - **DiffUtil** (RecyclerView) animates list changes based on `equals`.
 - **`HashMap` / `Set` / Room entity caching** all rely on a correct `equals`/`hashCode` pair.
@@ -80,7 +80,7 @@ override fun hashCode(): Int {
 
 The two methods are generated **together** and stay in sync. Critical contract:
 - `a == b` ⇒ `a.hashCode() == b.hashCode()`.
-- If you override one manually, you must override the other; the compiler stops generating both.
+- If you override one manually, provide a compatible implementation of the other; the compiler can still generate the other method.
 
 ### `copy`
 
@@ -182,7 +182,7 @@ original.items   // [a, b, c] — also changed!
 `copy()` is a shallow copy — both objects share the same `MutableList`. **Fix:**
 
 ```kotlin
-data class Cart(val items: List<String>)   // immutable List type
+data class Cart(val items: List<String>)   // read-only interface; keep elements immutable
 
 val original = Cart(listOf("a", "b"))
 val updated = original.copy(items = original.items + "c")
@@ -242,7 +242,7 @@ data class HomeUiState(
 
 | Allowed | Not allowed |
 |---|---|
-| Implement interfaces | Extend other classes (`open class`, `abstract class`) |
+| Implement interfaces; extend an `open`, `abstract` or `sealed` class | Extend another data class (data classes are final) |
 | Be inside a sealed hierarchy | Be `open`, `abstract`, `sealed`, or `inner` |
 | Have a companion object | Be extended by another class |
 
@@ -258,7 +258,7 @@ open data class Base(val x: Int)
 data class Sub(val x: Int, val y: Int) : Base(x)
 ```
 
-This restriction exists because inheritance breaks the value-equality contract: a `Sub("a", 1)` and `Base("a")` couldn't both be "equal."
+A data class is final, so the shown `open data class Base` is illegal. A data class may extend an eligible ordinary or sealed class; inherited final members and incompatible component methods can restrict generation.
 
 ---
 
@@ -327,7 +327,7 @@ Two fixes for the second case:
 
 ### Why this matters in production
 
-A complex screen with an unstable `UiState` will recompose every emission instead of skipping unchanged sub-trees. On a 60Hz display, you have 16ms per frame; unnecessary recomposition burns it fast. Stability isn't pedantry — it's the difference between a smooth screen and a janky one.
+With strong skipping (default since Kotlin 2.0.20), restartable composables with unstable parameters can still skip when those instances are unchanged. Stable parameters use equality. Diagnose actual recomposition cost before changing state shape or adding stability promises.
 
 ---
 
@@ -418,12 +418,12 @@ If `ProductRow` is in a `LazyColumn`, stable params + stable lambda `onAdd` let 
 |---|---|---|
 | `HashSet.contains(x)` returns false after mutation | `var` in data class, hashCode changed | All-`val`; update via `copy` + re-insert |
 | Two equal-looking objects compare false | `ByteArray` / `Array<T>` field | Use `List<Byte>` or override `equals`/`hashCode` |
-| Compose recomposes the whole tree on every emission | Unstable data class (`var`, `List`) | `@Immutable`, or use `kotlinx.collections.immutable` |
+| Unexpected recomposition work | State invalidation or changed parameters; inspect compiler/runtime evidence | Verify skipping mode and immutable contracts before adding annotations |
 | `LazyColumn` doesn't animate item moves | Items don't have stable identity for `key` | Provide `key = { it.id }` |
 | Memory leak: items pile up in cart list across copies | Shared `MutableList` inside data class | Switch to `List<T>`; use `+ element` |
-| Two same-typed fields silently swapped after refactor | Destructuring positional, fields reordered | Access by name; or compiler warning "Component name mismatch" (Kotlin 1.9+) |
+| Two same-typed fields silently swapped after refactor | Destructuring is positional | Access properties by name; do not rely on a universal compiler warning |
 | `User(id=1) != User(id=1)` after JSON parse | Body property holding extra state | All identity props in primary constructor |
-| Random crash: `IllegalStateException: companion default value …` | Adding a new non-default field to a public data class | SDK-style data classes need `@JvmOverloads`-style defaults or use a Builder |
+| `NoSuchMethodError` after library upgrade | A constructor/copy signature changed | Preserve existing binary signatures; defaults alone do not preserve `copy` ABI |
 | Logs spam `User(id=…, name=…, email=…, …)` with PII | `toString` includes sensitive fields | Override `toString` manually or mark fields as redacted (`@Sensitive`) |
 | `60 fps drop to 30 fps` after adding state field | God-state `copy()` allocates large object each frame | Split into composed sub-states |
 
@@ -440,16 +440,16 @@ When reviewing a data class PR, I check for:
 5. **Public-API data classes in SDKs** — flag binary-compat risk. Adding a property is a breaking change for Java consumers who positional-construct. Force builders or `@JvmOverloads` if needed.
 6. **Destructuring on same-typed fields** — warn; require named access.
 7. **`Sensitive PII in `toString`** — call out for redaction.
-8. **Stability annotations missing** when used in Compose — push for `@Immutable`/`@Stable`.
+8. **Stability assumptions** — inspect inferred stability and skipping before adding `@Immutable`/`@Stable`; annotations promise behavior and are often unnecessary.
 
 ---
 
 ## Common Misconceptions
 
 - **"Every class should be a data class."** No. Data classes are for *carrying state*. Services and singletons aren't.
-- **"Data classes are just POJOs."** They're immutable value types with auto-generated structural equality. POJOs are mutable bean-style containers.
+- **"Data classes are just POJOs."** They generate equality and other data-oriented methods, but do not enforce immutability: constructor properties may be `var`, and `val` properties can reference mutable objects.
 - **"`copy()` is a deep copy."** It's shallow. Nested mutable state is shared. Switch to immutable types or `copy()` recursively.
-- **"`var` is fine if I'm careful."** It silently corrupts `HashSet`/`HashMap`/Compose. There is no safe `var` in a data class.
+- **"`var` is fine if I'm careful."** Mutating equality/hash properties while an object is a hash key breaks lookup assumptions. Mutable data classes are legal, but shared or UI state needs deliberate observation and mutation rules.
 - **"Data classes can't have business logic."** They can have functions; they shouldn't be the *primary location* of business logic. A short `fun totalCents(): Int` is fine; a 40-line validation method isn't.
 - **"Two equal data classes have the same hashCode (always)."** True if you used the generated `hashCode`. If you overrode `equals` without overriding `hashCode`, you've broken the contract.
 
@@ -466,7 +466,7 @@ When reviewing a data class PR, I check for:
 7. `data class Cart(val items: List<String>)` — calling `.copy()` produces an independent list, true or false? Walk through.
 8. Compare a `data class` Room entity with one written as a normal class. When does identity-equality matter more than value-equality?
 9. Your SDK publishes `data class Config(val timeout: Int)`. The next minor version adds `val retries: Int`. What breaks for Java consumers?
-10. Why are data classes forbidden from being `open` or extending another class?
+10. Why are data classes forbidden from being `open`, and when may they extend another class?
 11. Compare `data class` vs `value class` (inline class). When is each the right choice?
 12. A team's `data class HomeUiState` has 35 properties. What questions do you ask before they go further?
 
@@ -481,7 +481,7 @@ When reviewing a data class PR, I check for:
 4. **Walk through the silent bug when destructuring `data class LatLng(val lat: Double, val lng: Double)` as `val (lng, lat) = location`.**
    Destructuring in Kotlin is positional, bound to `component1()` and `component2()`. The compiler assigns `lat` (component 1) to the first variable declared (named `lng`), and `lng` (component 2) to the second variable (named `lat`). Because both are `Double`, it compiles perfectly, but the values are silently swapped, causing logic errors.
 5. **What happens to Compose recomposition if your `UiState` data class contains a `List<Item>` and you don't annotate it `@Immutable`?**
-   Compose treats `List` as unstable (because `java.util.List` can be mutated). Because the data class contains an unstable field, Compose marks the entire data class as unstable. It will no longer trust value equality to skip recomposition, meaning every state emission will force a full, expensive recomposition of the UI tree, even if the data hasn't changed.
+   Kotlin `List` is generally inferred unstable because the interface does not guarantee immutability. Strong skipping can still skip restartable composables when the unstable instance is unchanged; without strong skipping, unstable parameters restrict skipping. `@Immutable` is a contract, not a universal fix.
 6. **Why is using `var` inside a data class an architectural smell that breaks `HashMap`?**
    `var` allows the properties that define the object's identity to change after instantiation. If the object is used as a key in a `HashMap` or element in a `HashSet`, mutating a `var` alters the `hashCode()`. The object becomes "lost" in the collection because its new hash maps to the wrong internal bucket. Data classes imply value semantics, and values should be immutable.
 7. **`data class Cart(val items: List<String>)` — calling `.copy()` produces an independent list, true or false? Walk through.**
@@ -489,9 +489,9 @@ When reviewing a data class PR, I check for:
 8. **Compare a `data class` Room entity with one written as a normal class. When does identity-equality matter more than value-equality?**
    A normal class with a custom `equals` can define equality solely based on its primary key (e.g., `id`). A `data class` compares every field. If you fetch a user row, update their name, and compare it to the old row, a `data class` says they are different, while an identity-based class says they are the same entity. Identity-equality matters when tracking object persistence or updates; value-equality matters when rendering immutable snapshots (like `UiState`).
 9. **Your SDK publishes `data class Config(val timeout: Int)`. The next minor version adds `val retries: Int`. What breaks for Java consumers?**
-   Adding a new property to the primary constructor modifies the constructor signature. Java consumers using positional arguments (`new Config(5000)`) will experience a binary compatibility break (a `NoSuchMethodError`) because the single-argument constructor no longer exists. You must provide `@JvmOverloads` or a Builder pattern to preserve the old signature.
-10. **Why are data classes forbidden from being `open` or extending another class?**
-    Extending a data class breaks the symmetry and transitivity contracts of `equals()`. If `Sub(x=1, y=2)` extends `Base(x=1)`, comparing `Base(1) == Sub(1, 2)` would be true (Base only checks `x`), but `Sub(1, 2) == Base(1)` would be false (Sub expects `y` to exist). To prevent contract violations, Kotlin forbids inheritance for data classes.
+   Adding a new property to the primary constructor modifies the constructor signature. Java consumers using positional arguments (`new Config(5000)`) will experience a binary compatibility break (a `NoSuchMethodError`) because the single-argument constructor no longer exists. Preserve the existing constructor explicitly or through suitable defaulted overloads. Kotlin callers using generated `copy`/default helpers need their existing signatures preserved too; adding a Builder alone does not restore removed methods.
+10. **Why are data classes forbidden from being `open`, and when may they extend another class?**
+    Data classes are final, which prevents subclasses from changing their generated value semantics. They may extend eligible ordinary or sealed classes, provided inherited final methods or incompatible `componentN` methods do not conflict with generation.
 11. **Compare `data class` vs `value class` (inline class). When is each the right choice?**
     `data class` is for grouping multiple properties together with generated equality and copying semantics. `value class` (inline class) is for wrapping a single primitive or type (e.g., `value class Password(val s: String)`) to provide type safety without the runtime overhead of allocating a wrapper object, as it is erased to the underlying type at compile time.
 12. **A team's `data class HomeUiState` has 35 properties. What questions do you ask before they go further?**
@@ -512,3 +512,10 @@ When reviewing a data class PR, I check for:
 - [Kotlin Docs — Data classes](https://kotlinlang.org/docs/data-classes.html) — official reference.
 - [JEP 395: Records](https://openjdk.org/jeps/395) — Java's equivalent feature; useful for comparison.
 - [Jake Wharton — "Public API challenges in Kotlin"](https://jakewharton.com/public-api-challenges-in-kotlin/) — binary compatibility of data classes.
+
+### Official verification references
+
+- [Primary documentation or owning implementation](https://developer.android.com/develop/ui/compose/performance/stability/strongskipping)
+- [Primary documentation or owning implementation](https://kotlinlang.org/docs/api-guidelines-backward-compatibility.html)
+- [Primary documentation or owning implementation](https://kotlinlang.org/docs/collections-overview.html)
+- [Primary documentation or owning implementation](https://kotlinlang.org/docs/destructuring-declarations.html)

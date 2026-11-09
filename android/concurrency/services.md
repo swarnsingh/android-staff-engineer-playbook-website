@@ -6,7 +6,7 @@ A `Service` is an Android application component that can perform long-running op
 
 Crucially, **a Service runs on the Main Thread** of its hosting process. It is not a separate thread. It is simply a lifecycle container that signals to the Android Operating System: *"I am doing important work right now, please do not kill my app process."*
 
-A Staff Engineer must understand the strict evolution of Services. Over the last 5 years, Google has aggressively restricted what a Service can do to prevent battery drain, culminating in the strict Foreground Service Types introduced in Android 14.
+A Staff Engineer must track OS version, target SDK, service type and the applicable start/permission prerequisites. Foreground-service types predate Android 14; Android 14 adds stricter requirements for apps targeting API 34+.
 
 ## Why It Matters
 
@@ -19,16 +19,16 @@ To tell the OS about your background work, you must use a `Service` or `WorkMana
 In Android 4.0, a developer could start a `Service`, put the app in the background, and the Service would run indefinitely, polling a server every 5 seconds, completely destroying the user's battery.
 
 Google fought back:
-- **Android 8.0 (Oreo):** Introduced Background Execution Limits. Standard "Background Services" were essentially banned. If the app goes to the background, the Service is killed within minutes. Developers were forced to use **Foreground Services** (which require a sticky notification) for long-running work.
-- **Android 12:** Banned starting a Foreground Service from the background entirely. You can only launch one while the app is actively visible to the user.
-- **Android 14:** Mandated that every Foreground Service explicitly declare a strict "Type" (e.g., `camera`, `location`, `mediaPlayback`) in the Manifest. If the OS catches you declaring `location` but you don't actually request GPS updates, it crashes your app.
+- **Android 8.0 (Oreo):** Background-execution limits constrain background services for apps targeting API 26+, with documented temporary exemptions; this is not a deprecation of Service.
+- **Android 12:** Apps targeting API 31+ generally cannot start a foreground service from the background, with documented exemptions such as qualifying high-priority FCM messages.
+- **Android 14:** Apps targeting API 34+ must declare appropriate foreground-service types and permissions and satisfy type-specific prerequisites. Failure to meet those checks can raise an exception; not requesting a GPS update is not the stated validation rule.
 
 ## First Principles
 
 There are three distinct types of Services:
 
-1.  **Background Service:** Almost entirely deprecated. Banned from running when the app is in the background. Do not use.
-2.  **Foreground Service:** The highest priority component in Android. The OS promises to almost never kill it. Requires a persistent Notification. Examples: Spotify playing music, Google Maps navigation, Strava tracking a run.
+1. **Background Service:** A started service subject to OS and target-SDK background-execution limits. Prefer an appropriate scheduled-work API for deferrable work.
+2. **Foreground Service:** User-visible ongoing work with a notification and elevated process importance, subject to start, permission, type and timeout rules. It does not guarantee process survival.
 3.  **Bound Service:** A client-server model. Another component (like an `Activity` or another App) "binds" to the service. The service lives exactly as long as clients are bound to it. Often used for IPC (Inter-Process Communication) via [The Binder](../os-internals/the-binder.md).
 
 ## Mental Model
@@ -130,14 +130,11 @@ class AudioProcessingService : LifecycleService() { // Extends LifecycleService 
 
     // Public API for the Activity to call
     fun processAudioFile(fileUri: Uri): Flow<Int> = flow {
-        // Run on background thread
-        withContext(Dispatchers.IO) {
-            for (progress in 1..100) {
-                delay(100) // Fake processing
-                emit(progress)
-            }
+        for (progress in 1..100) {
+            delay(100) // Illustrative processing
+            emit(progress)
         }
-    }
+    }.flowOn(Dispatchers.IO) // import kotlinx.coroutines.flow.flowOn
 }
 ```
 *Note: The Activity binds to this service, gets the `LocalBinder`, calls `processAudioFile()`, and collects the Flow. If the Activity unbinds, the Service is destroyed, and the `lifecycleScope` is cancelled automatically.*
@@ -151,7 +148,7 @@ This is the most common architectural debate in Android background execution.
 - **Use Foreground Service when:** 
     - The work is user-initiated, critical, and must begin *instantly*.
     - The user must explicitly know it is happening (Music Player, GPS tracking, Active Phone Call).
-    - It needs to run completely uninterrupted for a long period.
+    - It represents ongoing user-visible work that meets the selected service type and start prerequisites; process survival and uninterrupted execution are not guaranteed.
 - **Use `WorkManager` when:**
     - The work is deferrable (can happen an hour from now).
     - The work requires constraints (e.g., "Only run when connected to unmetered Wi-Fi and charging").
@@ -161,8 +158,8 @@ This is the most common architectural debate in Android background execution.
 ## Failure Modes
 
 - **The `ForegroundServiceStartNotAllowedException`:**
-  Since Android 12, if your app receives a Push Notification while in the background, and you try to call `startForegroundService()`, the app will immediately crash.
-  *(Fix: You can no longer start Foreground Services from the background. You must use `WorkManager` for background-triggered tasks).*
+  On Android 12+ with target API 31+, a background start without an applicable exemption can throw ForegroundServiceStartNotAllowedException. Check the delivered FCM priority: high-priority delivery can qualify for an exemption, but a message may be downgraded.
+  *(Choose WorkManager for deferrable work; for a legitimate foreground-service case, verify the current exemption and all type/permission prerequisites.)*
 - **Leaking the Service:**
   Returning `START_STICKY` from `onStartCommand` tells the OS: "If you kill me for memory, restart me as soon as possible." If you do this but fail to re-initialize your background threads properly upon restart, the Service sits in memory forever doing nothing.
   *(Fix: Default to `START_NOT_STICKY` unless you have an explicit strategy for state restoration upon OS-initiated restarts).*
@@ -174,7 +171,7 @@ This is the most common architectural debate in Android background execution.
 When reviewing background execution logic, a Staff engineer focuses strictly on OS compliance and battery life:
 
 1.  **Do we even need a Service?** I actively reject PRs adding Services for simple file downloads or network syncs. 95% of background work should be routed through `WorkManager`. Services should be reserved exclusively for continuous user-facing tasks (audio, VoIP, active location tracking).
-2.  **Android 14 Validation:** I verify that every single Foreground Service has an explicit type declared in the Manifest, and that the code checks for the exact runtime permissions required by that specific type *before* calling `startForeground()`.
+2. **Android 14 validation:** For target API 34+, verify declared service types, their permissions and applicable runtime prerequisites before starting foreground work.
 3.  **Process Isolation:** Sometimes, developers put a Service in a separate process (`android:process=":background"` in the Manifest) thinking it will prevent the Main app from lagging. I remind them that the new process *still has a Main Thread*, and IPC overhead usually makes performance worse. Multi-process architecture must be heavily justified.
 
 ## Common Misconceptions
@@ -185,9 +182,9 @@ When reviewing background execution logic, a Staff engineer focuses strictly on 
 ## Probing Questions
 
 1.  Why does putting heavy network logic directly inside a Service's `onStartCommand()` cause an Application Not Responding (ANR) crash?
-2.  Explain the concept of a "Foreground Service Type" introduced in Android 14. Why did Google implement this restriction?
+2. Explain foreground-service types and the additional requirements on Android 14 for apps targeting API 34+.
 3.  Describe the difference between a "Started" Service and a "Bound" Service in terms of lifecycle management.
-4.  If your app is in the background and receives an FCM Push Notification, why will calling `startForegroundService()` cause a fatal crash on Android 12+?
+4. Under what conditions can an FCM-triggered foreground-service start fail on Android 12+?
 5.  What is the architectural purpose of returning `START_STICKY` versus `START_NOT_STICKY` from `onStartCommand()`?
 6.  How does the Android OS distinguish between a Background Service it can kill immediately and a Foreground Service it should keep alive?
 7.  In modern Android development, what is the primary alternative to using a Service for deferrable, long-running tasks like database synchronization?
@@ -199,12 +196,12 @@ When reviewing background execution logic, a Staff engineer focuses strictly on 
 
 1. **Why does putting heavy network logic directly inside a Service's `onStartCommand()` cause an Application Not Responding (ANR) crash?**
    A Service runs on the Main UI Thread of its hosting process by default. Heavy synchronous I/O blocks the thread, preventing the UI from responding to input and causing an ANR.
-2. **Explain the concept of a "Foreground Service Type" introduced in Android 14. Why did Google implement this restriction?**
-   It requires declaring the specific hardware or use case (e.g., `location`, `camera`) the service uses. Google added it to prevent developers from abusing Foreground Services to keep apps alive without actually performing the stated user-facing task.
+2. **What additional type requirements apply on Android 14 with target API 34+?**
+   Declare the appropriate foreground-service type and permissions and meet its type-specific prerequisites. Types existed before Android 14; the target-34 checks strengthen enforcement for the declared use case.
 3. **Describe the difference between a "Started" Service and a "Bound" Service in terms of lifecycle management.**
    A "Started" service runs indefinitely until `stopSelf()` is called explicitly. A "Bound" service's lifecycle is tied to its clients; it is destroyed automatically when all clients unbind.
-4. **If your app is in the background and receives an FCM Push Notification, why will calling `startForegroundService()` cause a fatal crash on Android 12+?**
-   Android 12 banned starting Foreground Services while the app is in the background to prevent invisible battery drain and malicious background execution.
+4. **When can an FCM-triggered foreground-service start fail?**
+   With target API 31+, the background-start restriction applies unless a documented exemption is satisfied. A genuinely high-priority FCM message can qualify, but delivery can be downgraded; type-specific permissions and prerequisites still apply.
 5. **What is the architectural purpose of returning `START_STICKY` versus `START_NOT_STICKY` from `onStartCommand()`?**
    `START_STICKY` tells the OS to restart the service automatically if it was killed for memory, but without redelivering the original intent. `START_NOT_STICKY` tells the OS not to restart it, which is safer if you can't guarantee a clean state restoration.
 6. **How does the Android OS distinguish between a Background Service it can kill immediately and a Foreground Service it should keep alive?**
@@ -223,3 +220,9 @@ When reviewing background execution logic, a Staff engineer focuses strictly on 
 - [`workmanager.md`](workmanager.md) — The modern replacement for 90% of Service use cases.
 - [`battery-optimizations.md`](battery-optimizations.md) — The strict rules that govern when Services are killed.
 - [`the-binder.md`](../os-internals/the-binder.md) — The IPC mechanism that powers Bound Services.
+
+### Official verification references
+
+- [Primary documentation or owning implementation](https://developer.android.com/about/versions/14/changes/fgs-types-required)
+- [Primary documentation or owning implementation](https://developer.android.com/develop/background-work/services/fgs/restrictions-bg-start)
+- [Primary documentation or owning implementation](https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines.flow/flow.html)

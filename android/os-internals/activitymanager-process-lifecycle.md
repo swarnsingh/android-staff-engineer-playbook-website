@@ -48,7 +48,7 @@ Android ranks processes by user impact. Simplified:
 
 | Importance | Example | Kill risk |
 |---|---|---|
-| Foreground | Resumed activity, running receiver, foreground service | Lowest |
+| Foreground | Resumed activity, active receiver, executing service lifecycle callback | Lowest |
 | Visible | Paused but visible activity | Low |
 | Service | Started service doing background work | Medium |
 | Cached | No active component, kept for speed | High |
@@ -198,7 +198,7 @@ Staff rule: every critical flow should define what survives process death and ho
 1. **How does Android start a new app process?**
    The `ActivityManagerService` sends a request to the Zygote daemon to `fork()` itself. The new child process inherits preloaded framework classes, loads the app's APK, creates the Application class, and launches the initial component.
 2. **What makes a process foreground, visible, service, or cached?**
-   It depends on the active components. A resumed activity or foreground service makes it foreground. A paused but visible activity makes it visible. A started background service makes it a service process. A process with no active components becomes cached.
+   A resumed activity, active receiver or executing service lifecycle callback can establish foreground importance. A startForeground service is classed as visible; a background started service has service importance. Bindings and other components may raise the effective level.
 3. **Why is `onDestroy()` not a persistence callback?**
    Because the OS can (and frequently does) kill the Linux process directly when memory is low without executing any teardown lifecycle methods like `onDestroy()`.
 4. **What survives configuration change but not process death?**

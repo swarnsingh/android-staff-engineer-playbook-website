@@ -4,9 +4,9 @@
 
 "Jank" is the colloquial term for dropped frames during UI rendering. It manifests as stuttering animations, delayed scroll responses, and an overall feeling that the app is "cheap" or "laggy."
 
-To a user, Jank is frustrating. To a Staff Engineer, Jank is a mathematical failure to meet the 16.6-millisecond deadline. 
+Jank is a failure to present frames at the expected cadence. A 60Hz refresh interval is about 16.67ms, but actual deadlines and pipeline dependencies must come from the measured frame.
 
-Android devices attempt to draw the screen 60 times per second (60Hz), or increasingly, 120 times per second (120Hz). This means the Main Thread has exactly **16.6ms** (or **8.3ms** on 120Hz screens) to execute all layout, measurement, and drawing calculations for the current frame. If the Main Thread takes 17ms, the OS misses the display refresh window, the previous frame stays on the screen, and the user perceives a stutter.
+At 60Hz the display interval is about 16.67ms, and at 120Hz about 8.33ms. These are simplified refresh intervals, not exact Main-thread budgets: app, GPU and system work overlap. Diagnose the expected deadline and actual presentation in FrameTimeline.
 
 ## Why It Matters
 
@@ -43,7 +43,7 @@ To eliminate Jank, you must understand the Android Rendering Pipeline:
 4.  **Draw:** The UI elements generate drawing commands (DisplayLists).
 5.  **Sync/Render:** The Main Thread passes the DisplayLists to the `RenderThread`, which converts them into GPU commands (OpenGL/Vulkan) and swaps the buffer to the screen.
 
-All of this must happen in `< 16.6ms`.
+The stages must meet the actual frame's expected deadline; a fixed 60Hz arithmetic model does not establish the responsible stage.
 
 ## Mental Model
 
@@ -74,13 +74,13 @@ fun BadScrollEffect(scrollState: ScrollState) {
     // Every time the user scrolls 1 pixel, this entire function Recomposes!
     val offset = scrollState.value 
     
-    Box(modifier = Modifier.offset(y = offset.dp)) {
+    Box(modifier = Modifier.offset(y = with(LocalDensity.current) { offset.toDp() })) {
         HeavyImage()
     }
 }
 ```
 
-If the user scrolls at 60fps, Compose will re-run the `HeavyImage` function 60 times a second. The CPU spikes, you breach the 16.6ms limit, and the scroll janks.
+Reading scroll state in composition invalidates that composition scope. A nested HeavyImage may still be skipped according to its parameters and compiler mode. Deferring the read to the offset lambda can avoid that composition invalidation; measure the remaining layout/draw cost.
 
 ### The Staff Fix (Deferring State Reads)
 
@@ -119,10 +119,10 @@ fun UserProfile(user: User) { ... }
 
 If the parent recomposes, Compose looks at `user.tags`. `List` is an interface. Compose cannot guarantee that the `List` hasn't been mutated by another thread (it might be an `ArrayList` under the hood). Because Compose cannot prove the `List` is immutable, it marks the `User` class as **Unstable**.
 
-When a class is Unstable, Compose *always* recomposes the `UserProfile` function, even if the data didn't change at all. If `UserProfile` is complex, you drop frames.
+With strong skipping enabled, restartable composables with unstable arguments can be skipped using identity comparisons. Without that mode, unstable parameters can prevent skipping. Invalidation, execution and frame latency are separate observations.
 
 **The Fix:**
-You must use immutable collections (like `kotlinx.collections.immutable.ImmutableList`) or annotate the class with `@Stable` or `@Immutable` to promise the compiler it won't change.
+Use truly immutable models or observable mutation. Immutable collection structure does not make mutable elements immutable. Stable/Immutable annotations assert contracts; they do not make a mutable implementation correct.
 
 ## Tradeoffs
 
@@ -135,7 +135,7 @@ You must use immutable collections (like `kotlinx.collections.immutable.Immutabl
     - *Pros:* Infinite items without crashing.
     - *Cons:* It has to compose new items *just in time* as the user scrolls. If the item takes 10ms to compose, scrolling will jank.
 
-*Staff Note:* In a `LazyColumn`, always provide a `key` to the `items()` block. If you don't, and you delete item #2, Compose might recompose items #3 through #1000 because it lost track of their identity.
+*Staff note:* Stable unique keys preserve identity and remembered state when visible items move. They do not promise that every item avoids recomposition; off-screen uncomposed rows are not all executed after deletion.
 
 ## Failure Modes
 
@@ -143,18 +143,18 @@ You must use immutable collections (like `kotlinx.collections.immutable.Immutabl
   Drawing a pixel is expensive. If you draw a white background on the Activity, a gray background on the Fragment, a white background on the Card, and a white background on the Image... the GPU paints the exact same pixel 4 times per frame. This is "Overdraw."
   *(Fix: Enable "Debug GPU Overdraw" in Developer Options. Your screen should be blue/green. If it is deep red, you are dropping frames due to painting useless pixels).*
 - **Garbage Collection (GC) Thrashing:**
-  If you allocate a new `String` or `Rect` object inside the `onDraw` method of a custom view, or inside a tight `@Composable` loop, you will create 10,000 objects per second. The JVM will panic and trigger a "Stop-The-World" Garbage Collection to clean up RAM. The Main Thread is physically halted for 5-10ms. You instantly drop a frame.
+  Allocation churn can increase GC and frame pressure. An allocation in onDraw does not guarantee a missed frame; measure allocation rate, pause phases and expected/actual frame timing before changing ownership or caching.
   *(Fix: Never allocate objects inside draw loops or tight scroll listeners. Pre-allocate and reuse them).*
 - **Testing in Debug Mode:**
   Compose Debug builds perform drastically more validation checks than Release builds. A scroll that janks terribly in Debug might be buttery smooth in Release.
-  *(Fix: Never profile Jank on a Debug build. You must compile an APK with `buildTypes { release { debuggable true } }` or use the official `Macrobenchmark` library).*
+  *(Profile a non-debuggable, profileable release-equivalent target, for example through Macrobenchmark. Debuggable builds change runtime behavior and are unsuitable as a release performance baseline.)*
 
 ## Staff Engineer Thinking
 
 When reviewing code for Jank, a Staff engineer uses metrics, not feelings.
 
 1.  **Macrobenchmark:** I enforce CI pipelines that run `Macrobenchmark` tests on physical devices in the cloud (Firebase Test Lab). These tests literally measure the 99th percentile frame times (`P99 FrameDuration`) of a scroll operation. If a PR increases the P99 time from 12ms to 18ms, the PR is automatically rejected.
-2.  **Systrace / Perfetto:** When Jank is reported in production, I do not guess. I use `Perfetto` to capture a trace. Perfetto provides a visual timeline of the 16.6ms window. I can see exactly which function (Measure, Layout, or a random GC event) breached the deadline.
+2. **Perfetto:** Compare the expected/actual frame and inspect app, RenderThread, GPU and scheduling dependencies. A long Main slice can explain a miss, but the refresh interval alone does not prove the responsible function.
 3.  **The "Release" Rule:** I frequently remind developers that R8 (ProGuard) strips dead code and inline functions. R8 optimization is required to hit 60fps in complex Compose apps.
 
 ### Jank as an SLI
@@ -173,7 +173,7 @@ CI macrobenchmarks catch deterministic regressions. Production telemetry catches
 ## Common Misconceptions
 
 - **"My phone has a 120Hz screen, so Jank is less noticeable."** The opposite is true. On a 120Hz screen, the deadline is 8.3ms. If you miss it, the frame drops. Because the user is accustomed to extreme smoothness, a single stutter on a 120Hz display is jarringly obvious compared to a 60Hz display.
-- **"Coroutines fix Jank because they run in the background."** Coroutines fix *ANRs* (5-second freezes). If you launch a Coroutine on `Dispatchers.Main` to do a heavy mathematical calculation, it will still block the Main Thread and cause Jank.
+- **"Coroutines fix jank because they run in the background."** A scope does not guarantee background execution. Blocking or CPU-heavy work on Main still stalls frames and can exceed a monitored ANR deadline; use the right dispatcher and ownership.
 
 ## Probing Questions
 
@@ -182,7 +182,7 @@ CI macrobenchmarks catch deterministic regressions. Production telemetry catches
 3.  In Jetpack Compose, what are the three distinct phases of rendering, and why is it important to know which phase you are triggering?
 4.  Why does reading a `ScrollState` value directly inside a `@Composable` function body cause severe Jank? How do you fix it?
 5.  What does it mean for a Compose data class to be marked as "Unstable," and how does a standard Kotlin `List` trigger this?
-6.  Explain "Garbage Collection Thrashing" and why instantiating objects inside an `onDraw` method guarantees dropped frames.
+6.  Explain "Garbage Collection Thrashing" and how repeated allocations in onDraw can contribute to missed frames.
 7.  What is "Overdraw," and how can you use Developer Options on your physical device to detect it?
 8.  Why is it fundamentally incorrect to profile UI performance (Jank) using a "Debug" APK build?
 9.  How does the `key` parameter in a Compose `LazyColumn` prevent unnecessary recompositions when items are added or removed?
@@ -191,7 +191,7 @@ CI macrobenchmarks catch deterministic regressions. Production telemetry catches
 ## Answer Key
 
 1. **What is the mathematical significance of the 16.6ms deadline in Android UI rendering?**
-   Android devices traditionally refresh at 60Hz. 1000 milliseconds / 60 frames = 16.6 milliseconds per frame. The OS must complete all Measure, Layout, and Draw calculations within this window, or it drops the frame.
+   At 60Hz the refresh interval is about 16.67ms. App/GPU/system work overlaps; use actual expected frame deadlines rather than interpreting this arithmetic as an exact Main-thread allowance.
 2. **Explain the concept of VSYNC and how it prevents "screen tearing" and regulates frame rendering.**
    VSYNC (Vertical Synchronization) is a hardware signal sent periodically by the display. It tells the OS to swap the rendered buffer to the screen and triggers the start of the next 16.6ms frame calculation, ensuring UI updates stay perfectly in rhythm with the hardware.
 3. **In Jetpack Compose, what are the three distinct phases of rendering, and why is it important to know which phase you are triggering?**
@@ -199,20 +199,30 @@ CI macrobenchmarks catch deterministic regressions. Production telemetry catches
 4. **Why does reading a `ScrollState` value directly inside a `@Composable` function body cause severe Jank? How do you fix it?**
    Reading it directly causes the entire Composable function to re-run (Recomposition) every time the scroll changes by 1 pixel. Fix it by deferring the read to the Layout phase by passing a lambda to a Modifier (e.g., `Modifier.offset { ... }`).
 5. **What does it mean for a Compose data class to be marked as "Unstable," and how does a standard Kotlin `List` trigger this?**
-   An Unstable class cannot be proven immutable by the Compose compiler. Because `List` is an interface, it could be a mutable `ArrayList` under the hood. Compose plays it safe and forces recomposition every time, causing Jank.
-6. **Explain "Garbage Collection Thrashing" and why instantiating objects inside an `onDraw` method guarantees dropped frames.**
-   Creating objects in a tight loop (like `onDraw` called 60 times a second) rapidly fills memory, forcing the Garbage Collector to constantly run. "Stop-the-world" GC pauses the Main Thread, blowing past the 16.6ms deadline.
+   List does not express an immutable collection contract. Strong skipping can still skip a restartable composable with an unstable argument by identity; establish observable state/immutability and inspect the compiler report before adding annotations.
+6. **Explain "Garbage Collection Thrashing" and how repeated allocations in onDraw can contribute to missed frames.**
+   Repeated allocations can increase collection work and pause pressure. Whether they miss a frame depends on workload, allocation rate, runtime and device; inspect a trace rather than infer a guaranteed pause duration.
 7. **What is "Overdraw," and how can you use Developer Options on your physical device to detect it?**
    Overdraw happens when the GPU paints the same pixel multiple times per frame (e.g., stacked backgrounds). Enable "Debug GPU Overdraw" in Developer Options; areas painted dark red indicate heavy, wasteful rendering.
 8. **Why is it fundamentally incorrect to profile UI performance (Jank) using a "Debug" APK build?**
    Debug builds disable R8 (ProGuard) optimizations, skip dead code stripping, and contain heavy internal validation checks (especially in Compose), causing artificial Jank that will not exist in production.
 9. **How does the `key` parameter in a Compose `LazyColumn` prevent unnecessary recompositions when items are added or removed?**
-   By default, Compose uses positional indexing. If an item is added at the top, every item shifts and recomposes. The `key` parameter provides a stable unique identity, allowing Compose to intelligently move items without recomposing them.
+   Keys preserve stable identity and state across item moves; content and observed state still determine recomposition. Lazy layouts do not execute every off-screen item.
 10. **Describe the difference between the impact of a 200ms Main Thread blockage (Jank) versus a 5000ms Main Thread blockage (ANR).**
-    A 200ms blockage causes severe Jank (dropping roughly 12 frames), resulting in a visual stutter. A 5000ms blockage triggers an ANR (Application Not Responding), prompting the OS to freeze the app and show a force-close dialog.
+     A 200ms Main-thread block can visibly stall frames. A longer block can also cause an ANR if a monitored operation exceeds its applicable deadline; five seconds is not a universal stopwatch, and ANR handling does not always kill or freeze the process.
 
 ## Further Reading
 
-- [`anrs.md`](anrs.md) — What happens when Jank gets so bad it triggers an OS-level crash.
+- [`anrs.md`](anrs.md) — Context-specific responsiveness deadlines and ANR diagnosis.
 - [`baseline-profiles.md`](baseline-profiles.md) — How to pre-compile Compose code to eliminate startup Jank.
 - [Android Developers: Inspect CPU Activity with Systrace](https://developer.android.com/topic/performance/tracing)
+
+### Official verification references
+
+- [Primary documentation or owning implementation](https://developer.android.com/develop/ui/compose/performance/bestpractices)
+- [Primary documentation or owning implementation](https://developer.android.com/develop/ui/compose/performance/stability/fix)
+- [Primary documentation or owning implementation](https://developer.android.com/develop/ui/compose/performance/stability/strongskipping)
+- [Primary documentation or owning implementation](https://developer.android.com/topic/performance/anrs/diagnose-and-fix-anrs)
+- [Primary documentation or owning implementation](https://developer.android.com/topic/performance/benchmarking/macrobenchmark-overview)
+- [Primary documentation or owning implementation](https://developer.android.com/topic/performance/memory-overview)
+- [Primary documentation or owning implementation](https://perfetto.dev/docs/data-sources/frametimeline)

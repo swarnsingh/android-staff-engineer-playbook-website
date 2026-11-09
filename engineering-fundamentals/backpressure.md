@@ -45,7 +45,7 @@ If the queue is **bounded**, full-queue behavior must be specified. There are fo
 
 1. **Block.** Producer is suspended (or blocked) until the queue has space. The producer's rate is implicitly slowed to match the consumer's rate. This is the "natural" form of backpressure — it propagates upstream automatically.
 2. **Drop new.** New items are rejected when the queue is full. The producer continues at its own rate; some data is lost. Used when stale data is preferable to stale users (UI events, sensor readings, telemetry).
-3. **Drop old.** New items replace the oldest queued items. The consumer always sees the most recent data. Used when only the latest value matters (mouse position, "current" telemetry value).
+3. **Drop old.** When the pending buffer is full, a new item replaces its oldest pending item. Work already being processed continues. Used when skipping intermediate pending values is acceptable; cancelling active work is a separate policy.
 4. **Buffer to disk / spill.** When the in-memory queue fills, overflow goes to durable storage. Trades latency for capacity; defers — does not solve — the producer-faster-than-consumer problem.
 
 A fifth policy — *fail fast / error* — is a variant of "drop new" where the producer is informed of the drop and can decide what to do.
@@ -77,7 +77,7 @@ What happens next is the policy:
 
 - **Block:** station 2 stops. Station 1 will fill the buffer in front of station 2, then it stops too. The whole line slows to station 3's rate.
 - **Drop new:** station 2 keeps producing but drops the piece into a bin. The line runs at station 2's rate; downstream gets only what station 3 can keep up with.
-- **Drop old:** the buffer between stations 2 and 3 evicts old pieces in favor of new ones. Station 3 only ever works on the *latest* piece.
+- **Drop old:** the buffer replaces older pending pieces when full. The piece already at station 3 continues unless a separate cancellation policy stops it.
 - **Spill:** completed pieces stack on the floor next to station 3 until someone moves them to a warehouse. Eventually the warehouse is full and you have the same problem.
 
 The factory operator's job is to make this choice *explicitly*. The choice not to choose is also a choice: it usually means "block until things break," which is the worst of the four.
@@ -89,7 +89,7 @@ The factory operator's job is to make this choice *explicitly*. The choice not t
 ### Bounded queue with blocking
 
 ```kotlin
-val queue = LinkedBlockingQueue<Event>(capacity = 100)
+val queue = java.util.concurrent.LinkedBlockingQueue<Event>(100)
 
 // Producer
 fun produce(event: Event) {
@@ -107,7 +107,7 @@ Simplest case. Producer blocks when full, consumer blocks when empty. Backpressu
 ### Bounded queue with explicit policy
 
 ```kotlin
-val queue = LinkedBlockingQueue<Event>(capacity = 100)
+val queue = java.util.concurrent.LinkedBlockingQueue<Event>(100)
 
 fun produce(event: Event) {
     val accepted = queue.offer(event, 100, TimeUnit.MILLISECONDS)
@@ -182,7 +182,7 @@ Each arrow has a buffer size and a policy. The policies do not have to be the sa
 ## Production Example
 
 - **TCP itself.** The most-used backpressure mechanism in computing history. Every TCP connection in the world implements window-based flow control.
-- **Kafka consumers.** Consumers control their own rate by committing offsets. The broker holds messages; the consumer pulls only as fast as it can process.
+- **Kafka consumers.** Polling, fetch limits and partition pause/resume control consumption; committed offsets record recovery progress. Committing less often does not itself slow fetching or processing.
 - **HTTP/2 flow control.** Per-stream and per-connection windows. Browsers, CDNs, and gRPC all rely on this.
 - **gRPC streaming.** Built on HTTP/2 flow control; suspend/resume is implicit in the framework.
 - **Akka Streams / Reactor.** JVM frameworks where every operator participates in backpressure negotiation.
@@ -215,19 +215,19 @@ val searchResults = searchInput
     }
 ```
 
-For pipelines that must not drop data:
+For an in-memory broadcast to active subscribers, with bounded lag:
 
 ```kotlin
-val uploadQueue = MutableSharedFlow<UploadJob>(
+val progressUpdates = MutableSharedFlow<UploadProgress>(
     replay = 0,
     extraBufferCapacity = 100,
-    onBufferOverflow = BufferOverflow.SUSPEND  // backpressure all the way up
+    onBufferOverflow = BufferOverflow.SUSPEND  // suspends for slow active subscribers
 )
 ```
 
-The `SUSPEND` overflow strategy implements true backpressure — the caller of `emit()` is suspended until space is available. This is the right choice when *every* item must reach the consumer.
+With slow active subscribers, `emit()` can suspend when their allowed lag fills the buffer. With no subscribers, only `replay` values are retained; here `replay = 0`, so emissions are lost. Use a bounded channel for an in-process single-consumer handoff, and persisted operations plus acknowledgements when work must survive collector gaps or process death.
 
-See [`../android/architecture/flow.md`](../android/architecture/flow.md), [`../android/concurrency/shared-flow-and-state-flow.md`](../android/concurrency/shared-flow-and-state-flow.md), [`../android/concurrency/shared-flow-and-state-flow.md`](../android/concurrency/shared-flow-and-state-flow.md).
+See [`../android/architecture/flow.md`](../android/architecture/flow.md), [`../android/concurrency/shared-flow-and-state-flow.md`](../android/concurrency/shared-flow-and-state-flow.md).
 
 ---
 
@@ -236,7 +236,7 @@ See [`../android/architecture/flow.md`](../android/architecture/flow.md), [`../a
 **Block (suspend)**
 
 - Pro: no data loss; the slowest consumer sets the rate end-to-end.
-- Con: producer is slowed down (sometimes blocked) — unacceptable for real-time UI threads.
+- Con: the producing operation waits. Coroutine suspension can release the UI thread; a blocking queue call on that thread cannot. Bound outstanding work and never replace a suspended producer with unbounded per-item launches.
 
 **Drop new**
 
@@ -245,7 +245,7 @@ See [`../android/architecture/flow.md`](../android/architecture/flow.md), [`../a
 
 **Drop old**
 
-- Pro: consumer always sees the most recent value.
+- Pro: pending older values can be replaced by newer ones; an item already being processed is not automatically replaced or cancelled.
 - Con: intermediate values lost; not suitable for event streams where order matters.
 
 **Buffer to disk**
@@ -273,7 +273,7 @@ See [`../android/architecture/flow.md`](../android/architecture/flow.md), [`../a
 
 **Backpressure deadlock.** Producer is blocked on a full queue; consumer is blocked on something the producer holds. Mitigation: be very wary of producer ↔ consumer mutual dependencies; design so the consumer never needs the producer to do anything.
 
-**Producer disconnected from backpressure.** A producer running on a separate dispatcher, or fed by a non-suspending source, doesn't see backpressure. Mitigation: end-to-end means *end-to-end* — every stage participates.
+**Producer disconnected from backpressure.** Launching detached per-item work or bridging a non-suspending callback without an explicit overflow response can bypass downstream limits. A dispatcher change by itself does not: a producer on another dispatcher can still suspend on a bounded channel. Trace admission and buffering across every boundary.
 
 **Stale-by-design data.** "Drop old" or "conflate" policies hide that the system is overloaded. The user sees "the latest" values but never knows that earlier values were dropped. Mitigation: monitor drop rates; alert when they exceed threshold.
 
@@ -284,9 +284,9 @@ See [`../android/architecture/flow.md`](../android/architecture/flow.md), [`../a
 ## Performance Considerations
 
 - **CPU:** Backpressure mechanics are cheap; coordination cost is per-item lock or atomic.
-- **Memory:** The dominant cost. A bounded queue's memory ceiling is `capacity × avg_item_size`. Size accordingly.
+- **Memory:** Queue capacity bounds the number of queued references, not total pipeline memory. Budget maximum retained item sizes, in-flight processing, producer-held items, pending sends and every other buffer; `capacity × average_item_size` is only an estimate.
 - **Throughput:** Backpressure reduces throughput to the slowest consumer's rate. This is the *point* — uncontrolled throughput crashes the system.
-- **Latency:** A queue near capacity adds latency. The closer to capacity, the more. Operating below 50-70% utilization keeps latency predictable.
+- **Latency:** Queueing depends on burstiness, service-time distribution, admission and utilization. Measure queue age and end-to-end tails for the actual workload; a universal 50–70% utilization band cannot guarantee predictable latency.
 - **Battery (mobile):** Polling-based backpressure (busy-wait on the queue) burns battery; suspension-based backpressure (await on a semaphore) doesn't.
 
 ---
@@ -294,8 +294,8 @@ See [`../android/architecture/flow.md`](../android/architecture/flow.md), [`../a
 ## Reliability Considerations
 
 - **Load shedding** is a specialized backpressure policy. When the system is overloaded, explicitly reject some work to keep the rest flowing.
-- **Bulkheads** isolate failures: each subsystem has its own bounded queue, so a slow consumer in one path can't starve the others.
-- **Circuit breakers** prevent calling a saturated consumer at all; the breaker trips when downstream queues fill.
+- **Bulkheads** reserve or limit resources by subsystem. Separate bounded queues help, but shared executors, connections, memory or downstream capacity can still couple paths; verify the actual isolation boundary.
+- **Circuit breakers** reject calls after their configured health criteria trip; queue fullness is not an automatic universal trigger. Use explicit concurrency limits or admission control to bound in-flight work as well.
 - **Graceful degradation** is what backpressure makes possible. Without it, systems go from "fine" to "crashed" instantly.
 
 See [`fault-tolerance.md`](fault-tolerance.md), [`../patterns/circuit-breaker.md`](../patterns/circuit-breaker.md).
@@ -313,7 +313,7 @@ See [`fault-tolerance.md`](fault-tolerance.md), [`../patterns/circuit-breaker.md
 ## Observability
 
 - **Queue depth.** Gauge per queue. Sustained depth near capacity is the leading indicator of saturation.
-- **Drop count.** Counter for items dropped by the overflow policy. Should be 0 in steady state.
+- **Drop count.** Count or estimate items discarded by each policy and define an acceptable budget. Intentional conflation can discard intermediate values even in healthy steady state; lossless business events need a different contract.
 - **Producer wait time / suspension time.** Histogram of how long producers spent blocked or suspended. Rising wait time = approaching saturation.
 - **Consumer utilization.** What fraction of time the consumer is busy. Approaching 100% means no headroom for bursts.
 - **Pipeline end-to-end latency.** From input to output. A backpressured pipeline operating below capacity has stable latency; near capacity, latency grows.
@@ -340,7 +340,7 @@ Canonical: [`../observability/metrics.md`](../observability/metrics.md), [`../ob
 
 **"Just use a queue."** A queue *is* the backpressure mechanism. Its bounds and overflow policy are the actual decision.
 
-**"Async automatically handles backpressure."** Async makes backpressure *possible* but does not provide it. RxJava 1 famously did not — backpressure was added in RxJava 2 because the original assumption "the consumer can keep up" was wrong in practice.
+**"Async automatically handles backpressure."** Async does not by itself bound outstanding work. RxJava 1 already had backpressure support and documented which sources/operators honored it; RxJava 2 separated backpressure-aware Flowable from Observable. Inspect the actual API contract.
 
 **"Drop old is always fine for UI."** For position-like data (cursor, scroll, current location), yes. For event data (gestures, taps), no — dropping a tap is dropping a user action.
 
@@ -368,7 +368,7 @@ Canonical: [`../observability/metrics.md`](../observability/metrics.md), [`../ob
 1.  **A `Channel(UNLIMITED)` in Kotlin. Why is this almost always wrong?**
     It creates an unbounded queue. If a producer outpaces the consumer, the queue grows infinitely, eventually exhausting memory and causing an OutOfMemoryError (OOM).
 2.  **Compare `buffer(DROP_OLDEST)` and `conflate()` in Flow. When would you use each?**
-    `conflate()` drops intermediate values when the consumer is slow, ensuring only the latest value is processed (capacity 1). `buffer(DROP_OLDEST)` maintains a buffer of N items and drops the oldest when full. Use `conflate` for position data; use `buffer` when you need a window of recent history.
+    `conflate()` retains the latest pending value while current collector work continues. An explicit positive `buffer(capacity = N, onBufferOverflow = DROP_OLDEST)` can retain N pending values and discards the oldest pending value on overflow. Use conflation for replaceable current state; use a bounded recent window only when losing earlier pending values is acceptable.
 3.  **End-to-end backpressure means what, specifically? Why does middle-of-pipeline backpressure fail?**
     It means the backpressure signal propagates from the final sink all the way back to the initial source. Middle-of-pipeline backpressure only shifts the buffering problem upstream, eventually causing upstream buffers to overflow.
 4.  **The producer is a hardware sensor at 100 Hz; the consumer is a network upload at 10 Hz. Which policy do you choose, and why?**
@@ -384,7 +384,7 @@ Canonical: [`../observability/metrics.md`](../observability/metrics.md), [`../ob
 9.  **You're designing a telemetry SDK. What backpressure policy do you choose, and how do you avoid silently dropping events?**
     Use a bounded queue with a "Drop New" or "Buffer to Disk" policy. To avoid silent drops, increment a local counter of dropped events and piggyback this metric on the next successful payload.
 10. **The consumer is a UI render at 60 Hz; the producer is location updates at 200 Hz. Justify a backpressure choice.**
-    "Conflate" (Drop old). The UI can only draw 60 frames per second. Processing every location update is wasted CPU, and drawing stale updates introduces lag. Conflation guarantees the next frame gets the freshest location.
+    If only the current position matters, conflate pending updates so the consumer can skip obsolete positions. A value already being rendered is not cancelled by conflate, and neither the operator nor a 60 Hz display guarantees that the next frame uses the newest sample. Preserve all samples when the application needs a complete route or audit trail.
 
 ---
 
@@ -396,8 +396,8 @@ In this repository:
 - [`queues.md`](queues.md) — the substrate; this file describes what to do *with* queues.
 - [`latency-vs-throughput.md`](latency-vs-throughput.md) — backpressure trades throughput for stability.
 - [`fault-tolerance.md`](fault-tolerance.md) — backpressure is a fault-tolerance technique.
-- [`../patterns/circuit-breaker.md`](../patterns/circuit-breaker.md) — the breaker is triggered by upstream backpressure signals.
-- [`../android/architecture/flow.md`](../android/architecture/flow.md), [`../android/concurrency/shared-flow-and-state-flow.md`](../android/concurrency/shared-flow-and-state-flow.md), [`../android/concurrency/shared-flow-and-state-flow.md`](../android/concurrency/shared-flow-and-state-flow.md) — Android-specific Flow operators.
+- [`../patterns/circuit-breaker.md`](../patterns/circuit-breaker.md) — a separate health-based admission mechanism; it does not automatically propagate demand or bound concurrency.
+- [`../android/architecture/flow.md`](../android/architecture/flow.md), [`../android/concurrency/shared-flow-and-state-flow.md`](../android/concurrency/shared-flow-and-state-flow.md) — Android-specific Flow operators.
 - [`../mobile-system-design/telemetry-sdk.md`](../mobile-system-design/telemetry-sdk.md) — designing a telemetry SDK around backpressure.
 
 External:
@@ -405,3 +405,19 @@ External:
 - *Reactive Streams Specification* (reactive-streams.org). The vendor-neutral spec; defines the negotiation protocol.
 - *Designing Data-Intensive Applications* by Martin Kleppmann, Chapter 11. Stream-processing backpressure.
 - Roman Elizarov, *Backpressure and Cold Flows*. Kotlin-specific overview.
+
+### Official verification references
+
+The corrections in this chapter were checked against the following primary references.
+
+- [kotlinlang.org: -shared-flow](https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines.flow/-shared-flow/)
+- [kotlinlang.org: buffer.html](https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines.flow/buffer.html)
+- [kafka.apache.org: KafkaConsumer.html](https://kafka.apache.org/41/javadoc/org/apache/kafka/clients/consumer/KafkaConsumer.html)
+- [www.reactive-streams.org: www.reactive-streams.org](https://www.reactive-streams.org/)
+- [github.com: Backpressure](https://github.com/ReactiveX/RxJava/wiki/Backpressure)
+- [resilience4j.readme.io: circuitbreaker](https://resilience4j.readme.io/docs/circuitbreaker)
+- [kotlinlang.org: conflate.html](https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines.flow/conflate.html)
+- [kotlinlang.org: collect-latest.html](https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines.flow/collect-latest.html)
+- [sre.google: handling-overload](https://sre.google/sre-book/handling-overload/)
+- [kotlinlang.org: functions.html#named-arguments](https://kotlinlang.org/docs/functions.html#named-arguments)
+- [sre.google: addressing-cascading-failures](https://sre.google/sre-book/addressing-cascading-failures/)

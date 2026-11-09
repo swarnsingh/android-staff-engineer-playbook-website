@@ -44,7 +44,7 @@ This is a work queue. It is not a UI state holder, not a navigation mechanism by
 
 ### Send and receive suspend instead of blocking threads
 
-`send` suspends when the channel cannot accept a value. `receive` suspends when the channel has no value. Suspension preserves threads, but it still holds coroutine resources and can stall business logic if capacity is chosen carelessly.
+With the default suspending overflow policy, `send` suspends when the channel cannot accept another value; dropping overflow policies may discard values instead. `receive` waits when an open channel has no value, and a closed, drained channel reports closure. Suspension does not block the thread, but still retains coroutine resources and can stall business logic.
 
 ```kotlin
 val channel = Channel<String>() // rendezvous: no buffer
@@ -121,7 +121,7 @@ If the network is offline and the app keeps queuing events in memory, the proces
 
 ## Closing and Cancellation
 
-Closing a channel means no more values will be sent. Receivers can still drain already-buffered values.
+Closing rejects new send/trySend attempts. Buffered values remain receivable, and sends already suspended before close are not aborted by close. After these values drain, receive reports closure. Use cancellation when the owner must abort pending work instead.
 
 ```kotlin
 val channel = Channel<Int>(capacity = 16)
@@ -182,34 +182,84 @@ sealed interface CartCommand {
     data class Checkout(val replyTo: CompletableDeferred<CheckoutResult>) : CartCommand
 }
 
+class CartStoppedException(cause: Throwable? = null) :
+    IllegalStateException("CartActor stopped", cause)
+
+class CheckoutRequestCancelledException(cause: CancellationException) :
+    IllegalStateException("Checkout was cancelled while its actor remained active", cause)
+
 class CartActor(
     scope: CoroutineScope,
     private val checkout: CheckoutService
 ) {
-    private val commands = Channel<CartCommand>(capacity = Channel.BUFFERED)
+    private val commands = Channel<CartCommand>(
+        capacity = Channel.BUFFERED,
+        onUndeliveredElement = { command ->
+            if (command is CartCommand.Checkout) {
+                command.replyTo.completeExceptionally(CartStoppedException())
+            }
+        }
+    )
 
     init {
-        scope.launch {
+        val worker = scope.launch {
             var items = emptyList<Item>()
             for (command in commands) {
                 when (command) {
                     is CartCommand.Add -> items = items + command.item
                     is CartCommand.Remove -> items = items.filterNot { it.id == command.id }
                     is CartCommand.Checkout -> {
-                        command.replyTo.complete(checkout.submit(items))
+                        try {
+                            currentCoroutineContext().ensureActive()
+                            val result = checkout.submit(items)
+                            // A finished checkout keeps its result, even if shutdown began meanwhile.
+                            command.replyTo.complete(result)
+                        } catch (error: CancellationException) {
+                            try {
+                                currentCoroutineContext().ensureActive()
+                            } catch (stopped: CancellationException) {
+                                // Owner/worker shutdown is an ordinary error to an active caller.
+                                command.replyTo.completeExceptionally(CartStoppedException(stopped))
+                                throw stopped
+                            }
+                            // A service-local timeout did not cancel the worker. Fail one request.
+                            command.replyTo.completeExceptionally(CheckoutRequestCancelledException(error))
+                        } catch (error: IOException) {
+                            command.replyTo.completeExceptionally(error)
+                        } catch (error: Throwable) {
+                            command.replyTo.completeExceptionally(error)
+                            throw error // Preserve the owner's unexpected-failure policy.
+                        }
                     }
                 }
             }
         }
+        worker.invokeOnCompletion { cause ->
+            // Runs even when cancellation prevented the worker body from starting.
+            val stopped = CancellationException("CartActor stopped")
+            if (cause != null) stopped.initCause(cause)
+            commands.cancel(stopped)
+        }
+    }
+
+    private suspend fun send(command: CartCommand) {
+        currentCoroutineContext().ensureActive()
+        try {
+            commands.send(command)
+        } catch (error: CancellationException) {
+            // Preserve this caller's own cancellation; translate cancellation of the channel.
+            currentCoroutineContext().ensureActive()
+            throw CartStoppedException(error)
+        }
     }
 
     suspend fun add(item: Item) {
-        commands.send(CartCommand.Add(item))
+        send(CartCommand.Add(item))
     }
 
     suspend fun checkout(): CheckoutResult {
         val reply = CompletableDeferred<CheckoutResult>()
-        commands.send(CartCommand.Checkout(reply))
+        send(CartCommand.Checkout(reply))
         return reply.await()
     }
 }
@@ -290,7 +340,10 @@ If a worker catches exceptions and continues, the sender may believe work succee
 ```kotlin
 for (work in queue) {
     runCatching { upload(work) }
-        .onFailure { error -> logger.warn(error) }
+        .onFailure { error ->
+            if (error is CancellationException) throw error
+            logger.warn(error)
+        }
 }
 ```
 
@@ -312,7 +365,7 @@ fun workerProcessesQueuedItems() = runTest {
     worker.enqueue(1)
     worker.enqueue(2)
 
-    advanceUntilIdle()
+    runCurrent() // Run queued backgroundScope tasks at the current virtual time.
 
     assertEquals(listOf(1, 2), processed)
 }
@@ -343,3 +396,13 @@ assertEquals(expected, result.getOrThrow())
 - [`../android/concurrency/shared-flow-and-state-flow.md`](../../android/concurrency/shared-flow-and-state-flow.md) - Hot-flow decision guide.
 - [Kotlin API: Channel](https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines.channels/-channel/)
 - [Kotlin API: select](https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines.selects/select.html)
+
+### Official verification references
+
+- [Primary documentation or owning implementation](https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines.channels/-send-channel/close.html)
+- [Primary documentation or owning implementation](https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines.channels/-send-channel/send.html)
+- [Primary documentation or owning implementation](https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines/-coroutine-start/-d-e-f-a-u-l-t/)
+- [Primary documentation or owning implementation](https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines/-job/invoke-on-completion.html)
+- [Primary documentation or owning implementation](https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines/ensure-active.html)
+- [Primary documentation or owning implementation](https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-test/kotlinx.coroutines.test/-test-scope/background-scope.html)
+- [Primary documentation or owning implementation](https://kotlinlang.org/docs/cancellation-and-timeouts.html)

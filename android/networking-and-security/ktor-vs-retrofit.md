@@ -39,8 +39,8 @@ graph LR
 ```
 
 Two layers:
-- **Retrofit** — declarative API interface, code-generated implementation, response converters.
-- **OkHttp** — actual HTTP/2/3 client, connection pool, interceptor chain.
+- **Retrofit** — declarative service interface, runtime Java proxy and method parsing, with body converters.
+- **OkHttp** — HTTP client with HTTP/1.1 and HTTP/2 transport, connection pooling and interceptors; an HTTP_3 enum value does not establish native HTTP/3 support.
 
 You can use OkHttp alone (for raw HTTP), but rarely Retrofit alone. They're sold separately, designed to compose.
 
@@ -83,7 +83,7 @@ val api: UserApi = retrofit.create(UserApi::class.java)
 val user = api.getUser("u_123")
 ```
 
-Annotations describe each call. Retrofit's code generator (or proxy) creates the implementation. Type-safe; refactor-safe; concise.
+Annotations describe each call. Standard Retrofit implements the service interface through a Java dynamic proxy at runtime, parses and caches method metadata, and delegates calls to OkHttp. A converter may separately generate adapters for body serialization; that is not Retrofit interface code generation.
 
 ### Ktor — imperative
 
@@ -125,57 +125,113 @@ The mechanism for cross-cutting concerns (auth, logging, retry, caching).
 
 ### OkHttp interceptor chain
 
-```kotlin
-val client = OkHttpClient.Builder()
-    .addInterceptor(LoggingInterceptor())
-    .addInterceptor(AuthInterceptor(tokenProvider))
-    .addInterceptor(RetryInterceptor(maxAttempts = 3))
-    .authenticator(TokenRefreshAuthenticator(tokenProvider))
-    .build()
+The store, interceptor, authenticator and refresh adapter below are the [session-bound implementation in Retrofit and OkHttp](retrofit-and-okhttp.md#production-example). Each login owns a fresh store and client; no callback reads a global current account. The refresh adapter has independent origin and I/O bounds and no auth interceptor, authenticator, or request-body logger.
 
-class AuthInterceptor(private val tokens: TokenProvider) : Interceptor {
-    override fun intercept(chain: Interceptor.Chain): Response {
-        val token = tokens.current() ?: return chain.proceed(chain.request())
-        val req = chain.request().newBuilder()
-            .header("Authorization", "Bearer $token")
-            .build()
-        return chain.proceed(req)
-    }
-}
+```kotlin
+fun newSessionOkHttp(
+    store: SessionTokenStore,
+    apiOrigin: HttpUrl,
+    refreshApi: AuthApi,
+): OkHttpClient = OkHttpClient.Builder()
+    .followRedirects(false)
+    .followSslRedirects(false)
+    .retryOnConnectionFailure(false)
+    .callTimeout(30, TimeUnit.SECONDS)
+    .addInterceptor(AuthInterceptor(store, apiOrigin))
+    .authenticator(TokenAuthenticator(store, apiOrigin, refreshApi))
+    .build()
 ```
 
-OkHttp has two chains: **application interceptors** (top of stack, see your code's request shape) and **network interceptors** (bottom, see actual wire-level request after retries / redirects). The split matters for logging.
-
-Special case: `Authenticator` handles 401 → refresh → retry automatically. Tightly coupled to OkHttp's retry policy.
+OkHttp application interceptors wrap a logical call; network interceptors see individual network exchanges. `Authenticator` supplies a bounded follow-up after a 401, or declines with `null` so the caller receives the response. Unlike the Ktor sample below, this `TokenAuthenticator` can replay a write with a replayable request body after a 401. Use it on a write path only when the API contract makes replay safe, for example with a server-enforced idempotency key. Keep general 5xx retry separate and limited to retry-safe requests.
 
 ### Ktor plugins
 
+This Android/JVM example reuses `SessionTokenStore`, `SessionTokens` and the bounded synchronous `AuthApi` adapter above. It deliberately uses `Dispatchers.IO` for that blocking adapter. A common-code implementation needs an equivalent suspending platform adapter. Configure the token endpoint separately; it must never pass through this authenticated resource client.
+
 ```kotlin
-val client = HttpClient(OkHttp) {
-    install(Logging) {
-        logger = Logger.SIMPLE
-        level = LogLevel.HEADERS
-    }
-    install(ContentNegotiation) {
-        json(Json { ignoreUnknownKeys = true })
-    }
-    install(Auth) {
-        bearer {
-            loadTokens { BearerTokens(tokens.access, tokens.refresh) }
-            refreshTokens {
-                val newTokens = refreshTokenApi.refresh(oldTokens?.refreshToken)
-                BearerTokens(newTokens.access, newTokens.refresh)
+fun newSessionKtorClient(
+    store: SessionTokenStore,
+    apiOrigin: Url,
+    refreshApi: AuthApi,
+): HttpClient {
+    require(apiOrigin.protocol == URLProtocol.HTTPS)
+    fun URLBuilder.isApiOrigin(): Boolean =
+        build().let { it.protocol == apiOrigin.protocol &&
+            it.host.equals(apiOrigin.host, ignoreCase = true) && it.port == apiOrigin.port }
+
+    return HttpClient(OkHttp) {
+        followRedirects = false
+        engine {
+            config {
+                followRedirects(false)
+                followSslRedirects(false)
+                retryOnConnectionFailure(false)
             }
         }
-    }
-    install(HttpRequestRetry) {
-        retryOnServerErrors(maxRetries = 3)
-        exponentialDelay()
+        install(Logging) {
+            level = LogLevel.HEADERS
+            sanitizeHeader { name ->
+                name.equals(HttpHeaders.Authorization, ignoreCase = true) ||
+                    name.equals(HttpHeaders.Cookie, ignoreCase = true) ||
+                    name.equals(HttpHeaders.SetCookie, ignoreCase = true)
+            }
+        }
+        install(ContentNegotiation) { json(Json { ignoreUnknownKeys = true }) }
+        install(Auth) {
+            bearer {
+                loadTokens { store.current()?.let { BearerTokens(it.accessToken, it.refreshToken) } }
+                sendWithoutRequest { it.url.isApiOrigin() }
+                refreshTokens {
+                    if (response.request.method !in setOf(HttpMethod.Get, HttpMethod.Head) ||
+                        response.request.content !is OutgoingContent.NoContent) return@refreshTokens null
+                    // Finish a bounded rotation and conditional commit even if its caller cancels.
+                    withContext(NonCancellable) {
+                        withContext(Dispatchers.IO) refresh@ {
+                            val current = store.current() ?: return@refresh null
+                            val retry = if (current.accessToken != oldTokens?.accessToken) {
+                                current
+                            } else {
+                                val replacement = refreshApi.refreshSynchronouslyOrNull(current.refreshToken)
+                                if (replacement == null) {
+                                    store.invalidateIfCurrent(current)
+                                    return@refresh null
+                                }
+                                store.replaceIfCurrent(current, replacement) ?: return@refresh null
+                            }
+                            if (store.current() != retry) null
+                            else BearerTokens(retry.accessToken, retry.refreshToken)
+                        }
+                    }
+                }
+            }
+        }
+        install(HttpRequestRetry) {
+            maxRetries = 2
+            retryOnExceptionIf { _, _ -> false }
+            retryIf { request, response ->
+                request.method in setOf(HttpMethod.Get, HttpMethod.Head) &&
+                    request.content is OutgoingContent.NoContent &&
+                    response.status.value in setOf(502, 503, 504) &&
+                    response.headers[HttpHeaders.RetryAfter] == null
+            }
+            exponentialDelay()
+        }
+        install(HttpTimeout) { requestTimeoutMillis = 30_000 }
+    }.also { client ->
+        client.plugin(HttpSend).intercept { request ->
+            if (!request.url.isApiOrigin()) throw IOException("Outside session API origin")
+            if (store.current() == null) throw IOException("Session ended")
+            execute(request)
+        }
     }
 }
 ```
 
-Plugins are first-class. The DSL is cleaner. Many plugins ship with Ktor (`Auth`, `Logging`, `ContentNegotiation`, `HttpTimeout`, `HttpRequestRetry`, `HttpCache`, `Resources`, `WebSockets`).
+`sendWithoutRequest` controls preemptive attachment; it is not an origin firewall for a later 401 challenge. The send guard rejects other schemes, hosts and ports before network I/O, and redirects are disabled at both layers. Keep this client private to the session's API adapter; public/content calls use another client. Ktor's bearer plugin coordinates concurrent 401s, while the store's conditional replacement prevents logout or account switch from restoring old credentials. Only confirmed terminal credential rejection returns `null` from the refresh adapter; transient failures throw `IOException` and retain tokens.
+
+`NonCancellable` surrounds only the bounded refresh/commit, not the whole call or a detached coroutine. Cancellation can wait for that section to finish; it does not cancel an already-performed server rotation. Logout invalidates the store before closing the client and clearing its auth cache. A request already past the guard can still be in flight: cancel old-session calls and reject old-session results at persistence/UI boundaries. Test that storage implementations preserve the same atomic guarantees. A timeout or process death after server-side rotation is ambiguous and can require re-login under the IdP's recovery policy.
+
+Header sanitisation does not redact secrets embedded in URLs or arbitrary response headers. Keep tokens out of URLs and disable or further restrict logging for sensitive endpoints. The token endpoint has no body logging. The retry example permits only bodyless reads after the selected HTTP responses and returns `Retry-After` responses for caller scheduling. Thrown I/O failures propagate to the caller without retry. This example also declines authentication follow-ups for writes or request bodies. A production write path needs an explicit replay-safety contract. Test the combined deadline and attempt budget.
 
 ### Equivalence and gotchas
 
@@ -269,11 +325,13 @@ When a Retrofit+OkHttp application selects Ktor's OkHttp engine, the migration r
 Plug in a converter factory:
 
 ```kotlin
-.addConverterFactory(MoshiConverterFactory.create(moshi))
-.addConverterFactory(KotlinSerializationConverter(Json))
+// Choose kotlinx.serialization for this instance.
+// import retrofit2.converter.kotlinx.serialization.asConverterFactory
+// import okhttp3.MediaType.Companion.toMediaType
+.addConverterFactory(Json.asConverterFactory("application/json".toMediaType()))
 ```
 
-Multiple converters per Retrofit instance.
+A Retrofit instance can register multiple converter factories, but selection follows order and supported types. Moshi assumes it can handle all types; place any specialized factories before it, or choose one general JSON converter for the instance.
 
 ### Ktor
 
@@ -289,7 +347,7 @@ install(ContentNegotiation) {
 }
 ```
 
-Both work with kotlinx.serialization. Both work with Moshi. The mechanics differ but the result is the same: `response.body<User>()` works.
+Both support kotlinx.serialization through their respective converters. Retrofit also has an official Moshi converter. Ktor documents first-party kotlinx.serialization, Gson and Jackson integrations; Moshi would require a separate integration rather than an assumed first-party converter.
 
 For shared KMP models, `kotlinx.serialization` is a common default because it supports Kotlin multiplatform. Moshi is JVM-oriented; other formats or platform adapters remain possible when their target and maintenance constraints fit.
 
@@ -398,7 +456,7 @@ Or via `expectSuccess = true`:
 
 ```kotlin
 val client = HttpClient(OkHttp) {
-    expectSuccess = true   // 4xx/5xx throw RedirectResponseException, ClientRequestException, ServerResponseException
+    expectSuccess = true   // 3xx: RedirectResponseException; 4xx: ClientRequestException; 5xx: ServerResponseException
 }
 
 try {
@@ -514,8 +572,8 @@ The same boundary-and-adapter approach can support a reverse migration when Andr
 | Brand-new SDK shipped to Android consumers | Retrofit + OkHttp | Larger ecosystem; familiar to consuming apps |
 | Backend-shared client library targeting JVM + Android | Ktor | One client, two platforms |
 | App with heavy real-time (chat, live trading) | Ktor | Unified WebSocket + SSE + HTTP API |
-| App with strict APK size limits | Retrofit + OkHttp | Smaller method count + bytecode |
-| New team, no legacy code, KMP optional later | Ktor | Migration to KMP later is free |
+| App with strict APK size limits | Compare complete release builds | Measure the selected engine, converters/plugins, dependencies and R8 output against the same product budget |
+| New team, no legacy code, KMP optional later | Evaluate Ktor for shared client code | Shared APIs can reduce migration work; target engines, authentication, serialization and tests still need implementation and validation |
 | Existing Retrofit codebase, no KMP plans | Stay on Retrofit | Migration cost > benefits |
 | OkHttp-specific tuning needed (connection pool sizes, TLS-specific quirks) | Retrofit + OkHttp | Direct OkHttp access; Ktor still allows but adds a layer |
 | Want one library for HTTP/WebSocket/SSE | Ktor | Three protocols in one client |
@@ -524,48 +582,19 @@ The same boundary-and-adapter approach can support a reverse migration when Andr
 
 ## Production Patterns
 
-### Pattern 1: Ktor with cached OkHttp tuning
+### Pattern 1: Reuse the session Ktor factory
 
 ```kotlin
-val client = HttpClient(OkHttp) {
-    engine {
-        config {
-            connectTimeout(15, TimeUnit.SECONDS)
-            readTimeout(15, TimeUnit.SECONDS)
-            connectionPool(ConnectionPool(maxIdleConnections = 10, keepAliveDuration = 5, TimeUnit.MINUTES))
-            cache(Cache(File(context.cacheDir, "http-cache"), 10 * 1024 * 1024))
-        }
-    }
-    install(Logging) { level = LogLevel.HEADERS }
-    install(ContentNegotiation) { json() }
-    install(Auth) {
-        bearer {
-            loadTokens { BearerTokens(authStore.access, authStore.refresh) }
-            refreshTokens { /* call auth API */ }
-        }
-    }
-    install(HttpRequestRetry) {
-        retryOnServerErrors(maxRetries = 3)
-        exponentialDelay()
-    }
-    install(HttpTimeout) {
-        requestTimeoutMillis = 30_000
-    }
-}
+// These values are captured for this login; they are not a mutable global account.
+val client = newSessionKtorClient(sessionStore, Url("https://api.example.com/"), refreshApi)
 ```
 
-### Pattern 2: Retrofit with full OkHttp interceptor chain
+Add measured transport/cache tuning inside that factory, retaining its origin, logging, refresh and retry policies. Retire it on logout; do not copy an abbreviated auth block that omits those policies.
+
+### Pattern 2: Retrofit with the session OkHttp factory
 
 ```kotlin
-val okHttp = OkHttpClient.Builder()
-    .connectTimeout(15, TimeUnit.SECONDS)
-    .readTimeout(15, TimeUnit.SECONDS)
-    .cache(Cache(File(context.cacheDir, "http-cache"), 10 * 1024 * 1024))
-    .addInterceptor(LoggingInterceptor())
-    .addInterceptor(AuthInterceptor(authStore))
-    .authenticator(TokenRefreshAuthenticator(authStore, refreshApi))
-    .addInterceptor(RetryInterceptor(maxAttempts = 3))
-    .build()
+val okHttp = newSessionOkHttp(sessionStore, "https://api.example.com/".toHttpUrl(), refreshApi)
 
 val retrofit = Retrofit.Builder()
     .baseUrl("https://api.example.com/")
@@ -603,9 +632,9 @@ Same `UserRepository` runs on iOS, Android, JVM, and JS. Retrofit can't do this.
 | Symptom | Cause | Fix |
 |---|---|---|
 | Ktor migration painful for 50+ endpoints | Lift-and-shift instead of incremental wrap-adapter | Wrap Retrofit interface; migrate endpoint-at-a-time |
-| Ktor `body<T>()` returns malformed object | `ignoreUnknownKeys = true` masks schema mismatch | Use `coerceInputValues = false`; explicit field validation |
+| Ktor body<T>() accepts an unexpected payload | Unknown properties, coercion/defaults and missing domain validation are different policies | Set ignoreUnknownKeys for extra-field compatibility, coerceInputValues for supported coercions, and validate required domain semantics with contract fixtures |
 | OkHttp `Authenticator` competes with Ktor's `Auth` plugin | Both attached; double-refresh | Pick one layer — Auth plugin OR OkHttp Authenticator |
-| `HttpRequestRetry` retries on 401 | Plugin retries before Auth refresh | Configure: `retryIf { request, response -> response.status.value !in 400..499 }` |
+| HttpRequestRetry retries an undesired response | Custom retry predicates are broader than the intended transient failures | For retry-safe requests, retryIf { _, response -> response.status.value in 500..599 }; bound attempts and handle auth separately. retryOnServerErrors itself only retries 5xx |
 | Different engines on Android vs iOS for KMP | OkHttp on Android, Darwin on iOS | Expected; test on both |
 | Release artifact exceeds its size budget after a stack change | Engine, plugins, converters, transitive dependencies, or keep rules changed | Compare reproducible release artifacts and dependency/R8 reports; remove only unused components |
 | Parsing contributes to frame latency | Deserialization or mapping executes on a frame-sensitive path | Profile the selected engine/converter and move owned CPU work to an appropriate dispatcher when needed |
@@ -614,7 +643,7 @@ Same `UserRepository` runs on iOS, Android, JVM, and JS. Retrofit can't do this.
 | Scope cancellation still delivers a result or leaks work | Adapter/engine/version integration does not propagate cancellation as expected | Test the maintained selected versions and fix the integration; do not infer behavior from a major-version label |
 | Ktor connection leak | Forgot to use `use { }` for streaming responses | `client.prepareGet(url).execute { response -> ... }` |
 | Retrofit/Kotlin integration fails after a toolchain update | Unsupported or incompatible library/compiler combination | Check the maintained release compatibility notes and upgrade through a tested dependency change |
-| Bearer token attached to refresh-token request | `Auth` plugin's refresh endpoint also intercepted | Use a separate HttpClient for refresh; or exclude path from Auth |
+| Bearer token attached to refresh-token request | `Auth` plugin's refresh endpoint also intercepted | Use a separate bounded refresh client with no Auth, automatic retry, or body logging; an explicitly marked refresh request can avoid auth recursion but still needs its own origin and logging policy |
 
 ---
 
@@ -672,7 +701,7 @@ Same `UserRepository` runs on iOS, Android, JVM, and JS. Retrofit can't do this.
 10. **Coroutine cancellation: prove a `viewModelScope.cancel()` actually cancels an in-flight HTTP request.**
    Hold a test response open, cancel the owning job, assert prompt coroutine cancellation and no later delivery, and inspect server/engine events for request or stream cancellation. Do not require the pooled TCP connection to close: an implementation may retain a healthy connection for reuse.
 11. **Both stacks have an `Auth` story. When does it accidentally retry the refresh endpoint itself? How to prevent?**
-   This happens if the token refresh request itself is routed through the same client/interceptor handling auth, causing an infinite 401 loop. Prevent it by using a separate un-intercepted client for the refresh call.
+   This happens if the token refresh request itself is routed through the same client/interceptor handling auth, causing an infinite 401 loop. Use a dedicated bounded refresh client without auth handling or body logging. In Ktor, `markAsRefreshTokenRequest()` also excludes a request from auth retry; it does not establish origin trust or make refresh retries safe.
 12. **A team wants Ktor "to be modern." No KMP plans. Walk through your code-review pushback.**
    Ask for the concrete problem, alternatives, representative spike, migration/rollback plan, ownership, and measurable success criteria. KMP is one possible benefit, not the only one; reject a migration whose demonstrated value does not exceed its compatibility, learning, artifact, and operational cost.
 
@@ -694,4 +723,23 @@ Same `UserRepository` runs on iOS, Android, JVM, and JS. Retrofit can't do this.
 - [Retrofit repository and documentation](https://github.com/square/retrofit) — official.
 - [OkHttp repository and documentation](https://github.com/square/okhttp) — official.
 - [Ktor + KMP guide](https://kotlinlang.org/docs/multiplatform-mobile-ktor-sqldelight.html) — KMP integration.
-- [Roman Elizarov — Network architecture in KMP apps](https://elizarov.medium.com/) — design patterns.
+- [Ktor — Creating a cross-platform mobile application](https://ktor.io/docs/client-create-multiplatform-application.html) — shared networking in KMP.
+
+### Official verification references
+
+- [Primary documentation or owning implementation](https://github.com/square/okhttp/blob/master/okhttp/src/commonJvmAndroid/kotlin/okhttp3/Protocol.kt)
+- [Primary documentation or owning implementation](https://github.com/square/retrofit/blob/trunk/retrofit-converters/moshi/src/main/java/retrofit2/converter/moshi/MoshiConverterFactory.java)
+- [Primary documentation or owning implementation](https://github.com/square/retrofit/blob/trunk/retrofit/src/main/java/retrofit2/Retrofit.java)
+- [Primary documentation or owning implementation](https://github.com/square/retrofit/tree/trunk/retrofit-converters/kotlinx-serialization)
+- [Primary documentation or owning implementation](https://kotlinlang.org/api/kotlinx.serialization/kotlinx-serialization-json/kotlinx.serialization.json/-json-builder/)
+- [Primary documentation or owning implementation](https://ktor.io/docs/client-request-retry.html)
+- [Primary documentation or owning implementation](https://ktor.io/docs/client-response-validation.html)
+- [Primary documentation or owning implementation](https://ktor.io/docs/client-serialization.html)
+- [Primary documentation or owning implementation](https://raw.githubusercontent.com/square/retrofit/trunk/retrofit/src/main/java/retrofit2/Retrofit.java)
+
+- [Ktor bearer authentication](https://ktor.io/docs/client-bearer-auth.html) — callbacks, concurrent refresh, and refresh-request marking.
+- [Ktor token caching](https://ktor.io/docs/client-auth.html#token-caching) — cached credentials and explicit clearing.
+- [Ktor client logging](https://ktor.io/docs/client-logging.html) — sensitive-header sanitisation.
+- [Ktor HttpSend interception](https://ktor.io/docs/client-http-send.html) and [redirect policy](https://ktor.io/docs/client-redirect.html) — send guards and disabling redirects.
+- [Kotlin NonCancellable](https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines/-non-cancellable/) — protecting a bounded commit without launching detached work.
+- [Ktor 3.6.0 retry implementation](https://github.com/ktorio/ktor/blob/3.6.0/ktor-client/ktor-client-core/common/src/io/ktor/client/plugins/HttpRequestRetry.kt) — separate response and exception predicates; this example explicitly disables exception retries.

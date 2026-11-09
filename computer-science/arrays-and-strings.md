@@ -291,7 +291,7 @@ Use `Locale.ROOT` for protocol identifiers, cache keys, and case-insensitive int
 5. **How does sliding window turn a nested-loop problem into O(n)?**
    It maintains a contiguous range by advancing start and end pointers sequentially, ensuring each element is processed at most twice rather than re-scanning entire sub-ranges.
 6. **Why can mutating a list inside `UiState` break Compose updates?**
-   Compose relies on reference equality to detect changes. Mutating the same list instance means the reference doesn't change, causing Compose to skip recomposition.
+   `mutableStateOf` compares old and new values with `equals()` by default, and a list always equals itself, so writing back the same mutated instance records no change and Compose does not recompose. Snapshot state also cannot see in-place changes to a plain list.
 7. **How would you process a 500MB file without a 500MB `ByteArray`?**
    By streaming the data using an `InputStream` and processing it in small chunks (e.g., using a fixed-size buffer) rather than loading it all into memory at once.
 8. **When is a simple O(n) scan better than a hash map?**

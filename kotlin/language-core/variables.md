@@ -22,9 +22,9 @@ Two problems:
 1. **The wrong default is mutable.** Most local variables are assigned once. Forcing developers to type `final` every time they want safe behavior creates friction.
 2. **`final` is one-dimensional.** `final List<String>` says "the reference doesn't change" but says nothing about the list contents. Java has no way to express "fully immutable" without a third-party type (`Collections.unmodifiableList`, Guava's `ImmutableList`, Java 9's `List.of`).
 
-Kotlin's design: flip the default. Use `val` for read-only bindings (the common case) and `var` only when reassignment is needed. Keep the type-system orthogonal: `val xs: List<Int>` doesn't promise immutability — it promises the reference can't be reassigned, AND that `xs` is declared as the read-only interface `List<Int>` rather than `MutableList<Int>`. To get full immutability, both must apply.
+Kotlin's design: flip the default. Use `val` for read-only bindings (the common case) and `var` only when reassignment is needed. Keep the type-system orthogonal: `val xs: List<Int>` doesn't promise immutability — it promises the reference can't be reassigned, AND that `xs` is declared as the read-only interface `List<Int>` rather than `MutableList<Int>`. For full immutability, the underlying object graph must also be immutable.
 
-The reward: concurrency-safe code by default. A `val name: String` is safe to share across coroutines; a `val xs: List<Int>` is safe as long as the underlying implementation is also immutable (which it is for `listOf(...)`).
+A read-only binding reduces reassignment, but shared data still needs safe publication and an appropriate immutability or synchronization contract. `listOf(...)` returns a read-only interface; it does not guarantee deep immutability.
 
 ---
 
@@ -64,7 +64,7 @@ tags.add("android")  // ok — we're mutating the contents, not reassigning tags
 tags = mutableListOf()  // error — reassignment forbidden
 ```
 
-This is the single most common source of confusion. To get **value-level** immutability, use immutable types (`List<T>` over `MutableList<T>`, `Map<K, V>` over `MutableMap<K, V>`), or use `kotlinx.collections.immutable` for guaranteed-immutable variants.
+This is the single most common source of confusion. To restrict callers to reads, expose `List<T>` or `Map<K, V>`. For immutable collection structure, use an immutable implementation such as `kotlinx.collections.immutable`; elements may still be mutable.
 
 ### 2. `const val` is for compile-time constants
 
@@ -105,7 +105,7 @@ Restrictions:
 - Only on `var` (not `val`).
 - Only on non-nullable types (no `Int?`, no `String?`).
 - Only on object references — not primitives (`Int`, `Long`, `Boolean`).
-- Not allowed for top-level properties (must be inside a class).
+- Allowed for class-body properties, top-level properties, and local variables.
 - Not allowed for `val` because the compiler can't know the val was set.
 
 If you access `lateinit var` before initializing it:
@@ -167,7 +167,7 @@ Top-level `val`s are compiled to private static fields with public getters (or, 
 Think of variable declaration as **answering two questions**:
 
 1. **Will this binding be reassigned?** If no → `val`. If yes → `var`.
-2. **Does the value need to be fully immutable, or just the reference?** Reference only → use mutable or read-only types as fits. Full immutability → use only immutable types (`List`, `Map`, `Set`, immutable data classes).
+2. **Does the value need to be fully immutable, or just the reference?** Reference only → use mutable or read-only types as fits. Full immutability → use immutable implementations and immutable elements; read-only interfaces and `data class` alone do not guarantee this.
 
 Then, three orthogonal axes:
 
@@ -400,13 +400,14 @@ object NetworkConfig {
 val connection = HttpClient.connect(NetworkConfig.BASE_URL)
 ```
 
-All three values are inlined at every call site. Reflection on `NetworkConfig` won't even show them as ordinary fields — they appear as constants. Refactoring (renaming `BASE_URL`) requires recompiling every dependent file.
+All three values are inlined at Kotlin use sites. They also remain JVM constant fields visible through reflection. Recompile consumers when changing their values so they do not retain old literals.
 
 ### Lazy database initialization
 
 ```kotlin
-object AppDatabase {
-    val instance: Database by lazy {
+// AppDatabase is an app-defined @Database class extending RoomDatabase.
+object AppDatabaseProvider {
+    val instance: AppDatabase by lazy {
         Room.databaseBuilder(appContext, AppDatabase::class.java, "app.db")
             .addMigrations(MIGRATION_1_2, MIGRATION_2_3)
             .fallbackToDestructiveMigration()
@@ -435,7 +436,7 @@ class HomeFragment : Fragment() {
 }
 ```
 
-Hilt sets `imageLoader` in the generated `Fragment_HiltModules$KeyModule_BindUseInstance` code before `onViewCreated` runs. Without `lateinit`, the property would need to be nullable (`var imageLoader: ImageLoader? = null`) and every use would need null-handling.
+Hilt injects the Fragment's fields in `onAttach`, before this `onViewCreated` use. Without `lateinit`, the property would need to be nullable (`var imageLoader: ImageLoader? = null`) and every use would need null-handling.
 
 ### Backing property for UI state
 
@@ -499,7 +500,7 @@ Inlined constants prevent typos in event names. Renaming them requires touching 
 **`const val`**
 
 - Pro: zero runtime overhead, usable in annotations.
-- Con: changing the value is a binary-incompatible change for callers — every caller must recompile.
+- Con: existing binaries retain the old inlined value. Recompile consumers to adopt a changed value; this is a behavioral compatibility risk, not automatically a linkage break.
 
 **`lateinit var`**
 
@@ -509,7 +510,7 @@ Inlined constants prevent typos in event names. Renaming them requires touching 
 **`by lazy`**
 
 - Pro: deferred initialization; thread-safe by default; no nullable type.
-- Con: small overhead per access (synchronization, even after init in SYNCHRONIZED mode); not usable on `var`; the block can't be cancelled or reset.
+- Con: delegate access has overhead; on JVM, SYNCHRONIZED uses a volatile fast path after initialization. The standard lazy delegate cannot be reset and does not provide coroutine cancellation.
 
 ---
 
@@ -519,13 +520,13 @@ Inlined constants prevent typos in event names. Renaming them requires touching 
 
 **`lateinit` accessed before initialization.** A test runs without going through Hilt's injection; `lateinit var imageLoader` is null; first access throws. Mitigation: use `::imageLoader.isInitialized` in defensive code, or restructure tests to inject manually.
 
-**`by lazy` blocking the main thread.** A `val db by lazy { Room.databaseBuilder(...).build() }` is first accessed on the UI thread during a frame; the build takes 200ms; ANR. Mitigation: trigger lazy initialization off-main during startup, or use a coroutine + `Dispatchers.IO`.
+**`by lazy` blocking the main thread.** A `val db by lazy { Room.databaseBuilder(...).build() }` is first accessed on the UI thread during a frame; the build takes 200ms; missed frames and visible jank. Longer blocking can also contribute to an ANR. Mitigation: trigger lazy initialization off-main during startup, or use a coroutine + `Dispatchers.IO`.
 
 **Captured `var` extending object lifetime.** A short-lived counter is captured by a long-lived lambda; the `Ref.IntRef` lives as long as the lambda; if the lambda is held by a global handler, the counter never GCs. Mitigation: prefer capturing `val`s when possible; audit lambdas in long-lived containers.
 
 **`const val` accidentally treated as runtime configuration.** A team adds `const val FEATURE_FLAG = true` thinking they can toggle at runtime; the constant is inlined at compile time; flipping it requires rebuilding and redeploying. Mitigation: use a real config source (Remote Config, BuildConfig fields, DataStore) for runtime-changeable values.
 
-**Top-level `val` circular dependency.** `val A = B + 1` and `val B = A * 2` at top level can deadlock or NPE during class loading. Mitigation: use `by lazy` to break the cycle.
+**Top-level `val` circular dependency.** In one file, the compiler rejects `val A = B + 1` before `B` is initialized. Split across files, it compiles and one value silently reads `0`; with several threads, class initialization can deadlock. Remove the cycle. `by lazy` only moves it: two lazies that read each other overflow the stack.
 
 **Smart cast unavailable on `var`.** Code like `if (state != null) { state.use() }` fails to compile if `state` is a `var` property the compiler can't prove won't be reassigned. Mitigation: copy to a local val: `val s = state; if (s != null) s.use()`.
 
@@ -537,7 +538,7 @@ Inlined constants prevent typos in event names. Renaming them requires touching 
 - **`@JvmField` skips the getter.** Useful for hot read paths from Java; loses encapsulation.
 - **`const val` is zero-cost.** Inlined as a literal.
 - **`lateinit` adds one null-check per read.** Negligible.
-- **`by lazy` SYNCHRONIZED mode synchronizes on every read after init.** Use `LazyThreadSafetyMode.NONE` for single-threaded access (UI thread) for free reads.
+- **JVM SYNCHRONIZED lazy checks a volatile value after initialization without taking its initialization lock.** Use NONE only when all initialization and access are confined to one thread.
 - **Captured `var`s incur `Ref` allocation.** Each closure that captures a mutable variable allocates a `Ref` wrapper. In tight loops, avoid capturing `var`s.
 - **Top-level `val`s share one `<clinit>`-time initialization.** Expensive computations there delay class loading for the entire file's first use.
 
@@ -586,7 +587,7 @@ Inlined constants prevent typos in event names. Renaming them requires touching 
 
 **Use the backing property pattern for any mutable state exposed across module boundaries.** `private val _state` + `val state: StateFlow<T>` is the prevailing pattern. It separates "who can mutate" from "who can read."
 
-**Treat `const val` as part of the public ABI.** Renaming, changing values, or removing them is a binary-incompatible change. Keep them stable; never use them for runtime configuration.
+**Treat public `const val` as API.** Renaming or removing its field can break binary consumers; changing its value can leave existing consumers using old inlined literals. Use a runtime configuration source for runtime changes.
 
 **Watch for `var` in shared state.** A `var` property accessible from multiple coroutines is a race condition waiting to happen. Use `MutableStateFlow`, `AtomicReference`, or `atomicfu` (for low-level, lock-free concurrent variable updates without boxing overhead), or a coroutine-bounded actor instead.
 
@@ -602,7 +603,7 @@ Inlined constants prevent typos in event names. Renaming them requires touching 
 
 **"`lateinit var` works on `val`."** No — `val` must be initialized at declaration or in the constructor. `lateinit` only works on `var`.
 
-**"`by lazy` is free after the first access."** With `LazyThreadSafetyMode.SYNCHRONIZED` (the default), each access acquires a lock to check if initialized. For UI-thread-only code, use `LazyThreadSafetyMode.NONE`.
+**"`by lazy` is free after the first access."** The JVM implementation still reads its cached value through the delegate, but does not acquire the initialization lock once initialized. NONE removes thread-safety guarantees.
 
 **"Captured variables are pass-by-value."** Captured `val`s of objects share the reference. Captured `var`s are wrapped in a `Ref` and shared by reference too. Captured local primitives in `var`s share via the `Ref`.
 
@@ -644,7 +645,7 @@ Inlined constants prevent typos in event names. Renaming them requires touching 
 7. **Why does `if (myVar != null) myVar.length` fail to smart-cast when `myVar` is a `var` property?**
    Because `myVar` is a `var`, a concurrent thread could potentially reassign it to `null` between the `!= null` check and the subsequent `.length` access, causing an NPE. The compiler conservatively rejects the smart cast.
 8. **You have a circular initialization between two top-level `val`s. How does the JVM behave at class loading? How do you fix it?**
-   At class loading, the JVM executes the static `<clinit>` block top-to-bottom. If `A` tries to read `B` before `B` is initialized, it reads `B`'s default value (e.g., `null` or `0`), causing an unexpected `NullPointerException` or logical error during initialization. Fix it by changing one or both to `val A by lazy { ... }` so initialization is deferred until access.
+   At class loading, the JVM executes the static `<clinit>` block top-to-bottom. If `A` tries to read `B` before `B` is initialized, it reads `B`'s default value (e.g., `null` or `0`), causing an unexpected `NullPointerException` or logical error during initialization. Fix the dependency graph so initialization is acyclic. Lazy initialization can defer work but does not resolve mutually recursive value definitions.
 9. **Explain the backing property pattern and why teams use it for state holders.**
    The backing property pattern pairs a `private val _state = MutableStateFlow(...)` with a `public val state: StateFlow = _state`. Teams use it to strictly enforce unidirectional data flow: the class itself can freely mutate the internal state, but external callers are forced to observe the read-only projection and use intent functions (e.g., `increment()`) to request changes.
 10. **A `const val APP_VERSION = "1.0.0"` is referenced by 50 modules. You change it to `"1.0.1"`. Which modules need to be recompiled?**
@@ -671,3 +672,14 @@ External:
 - *Effective Kotlin* by Marcin Moskała — Items 1–5 cover mutability and Kotlin's safety story.
 - *Kotlin in Action* by Dmitry Jemerov & Svetlana Isakova — Chapter 4 on classes, objects, and properties.
 - [Kotlin type checks and casts](https://kotlinlang.org/docs/typecasts.html) — current smart-cast rules and limitations.
+
+### Official verification references
+
+- [Primary documentation or owning implementation](https://dagger.dev/hilt/android-entry-point.html)
+- [Primary documentation or owning implementation](https://developer.android.com/topic/performance/vitals/anr)
+- [Primary documentation or owning implementation](https://developer.android.com/training/data-storage/room#database)
+- [Primary documentation or owning implementation](https://docs.oracle.com/javase/specs/jls/se17/html/jls-12.html#jls-12.4.2)
+- [Primary documentation or owning implementation](https://github.com/JetBrains/kotlin/blob/v2.2.21/libraries/stdlib/jvm/src/kotlin/util/LazyJVM.kt)
+- [Primary documentation or owning implementation](https://kotlinlang.org/docs/collections-overview.html)
+- [Primary documentation or owning implementation](https://kotlinlang.org/docs/compatibility-guide-17.html)
+- [Primary documentation or owning implementation](https://kotlinlang.org/docs/data-classes.html)

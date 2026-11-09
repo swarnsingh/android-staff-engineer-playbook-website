@@ -4,14 +4,14 @@
 
 An Application Not Responding (ANR) error is the single worst user experience in Android. It is a catastrophic failure where the Operating System detects that your application's Main Thread has been completely blocked for an extended period.
 
-When this happens, the OS literally halts your app, grays out the screen, and presents the user with a brutal dialog box: *"App isn't responding. Close app or Wait?"* 
+ANR handling depends on the monitored operation, visibility and system policy. It may produce a dialog or background diagnostic; detection does not universally freeze or kill the process.
 
 A Staff Engineer understands that ANRs are not just "slow code." They are fundamental architectural failures involving Synchronous I/O, Deadlocks, or abusive BroadcastReceivers. Google Play Console heavily penalizes apps with high ANR rates, aggressively down-ranking them in search results.
 
 ## Why It Matters
 
 If an app crashes with a `NullPointerException`, the app dies instantly. The user can reopen it. 
-If an app ANRs, the app freezes. The user taps the screen 5 times, nothing happens, they get angry, the OS shows the dialog, they force-kill the app, and they leave a 1-star review.
+An input ANR can coincide with an unresponsive UI; a component ANR can occur without visible UI. Inspect the reason, traces and user-perceived metric instead of assuming identical UI/process handling.
 
 ANRs are often invisible to the developer during testing because developers test on $1000 flagship phones. In production, users run your app on $150 budget devices in battery-saving mode, where flash storage is incredibly slow. A file write that takes 2ms on a Pixel 8 might take 6000ms on a budget device, triggering a massive ANR.
 
@@ -19,16 +19,16 @@ ANRs are often invisible to the developer during testing because developers test
 
 In the early days of Android, ANRs were the leading cause of user abandonment. The OS rules were simple but unforgiving:
 - **Input Dispatching Timeout:** 5 seconds. If the user touches the screen and the Main Thread cannot process the event within 5 seconds, ANR.
-- **BroadcastReceiver Timeout:** 10 seconds. If a BroadcastReceiver's `onReceive()` takes longer than 10 seconds on the Main Thread, ANR.
-- **Service Timeout:** 20 seconds. If a Service takes longer than 20 seconds to execute `onCreate` or `onStartCommand` on the Main Thread, ANR.
+- **Broadcast receiver timeout:** Depends on intent priority and Android release. Before Android 14, foreground-priority broadcasts use 10 seconds and background-priority broadcasts 60 seconds. Android 14+ permits 10–20 and 60–120 seconds respectively depending on CPU starvation. `goAsync()` still requires `finish()` within the same timeout.
+- **Execute-service timeout:** Default 20 seconds for foreground service execution and 200 seconds for background service execution, including cold startup and the relevant lifecycle callback. This is distinct from the foreground-service promotion timeout and service-type running-duration limits.
 
-Over the years, Google shifted architecture away from these traps. They deprecated `SharedPreferences` (a massive source of I/O ANRs) in favor of `DataStore`. They pushed developers away from `Services` to `WorkManager`. Yet, ANRs still plague the Play Store today.
+DataStore is recommended for many small-data use cases because it offers asynchronous, transactional APIs. SharedPreferences is not formally deprecated or universally forbidden; inspect its blocking and lifecycle-write behavior.
 
 ## First Principles
 
 1.  **The Main Thread Rule:** The Main Thread (UI Thread) must *only* be used for UI updates and responding to user input.
 2.  **I/O is Evil:** Network calls, Database queries, and File Reads/Writes are fundamentally unpredictable. They must never touch the Main Thread.
-3.  **The ANR Traces File:** When an ANR occurs, the OS dumps the entire thread state of the app into a file (`/data/anr/traces.txt`). This file is the forensic evidence required to solve the crime.
+3.  **The ANR Traces File:** Older Android versions used `/data/anr/traces.txt`; newer releases use `/data/anr/anr_*` files. Access depends on build/device privileges. Use bug reports and Play diagnostics, or `ApplicationExitInfo` on API 30+ when an ANR trace is available, rather than assuming every production app can read `/data/anr`.
 
 ## Mental Model
 
@@ -36,7 +36,7 @@ Think of the Main Thread as the **Cashier at a busy Supermarket**.
 - The Cashier's only job is to scan items and take money (Process UI Events).
 - If the Cashier decides to personally run to the warehouse in the back to fetch a new box of cereal (Disk I/O), the line stops.
 - Customers (Touch Events) start piling up. They tap their watches.
-- After 5 seconds of the line not moving, the Store Manager (Android OS) steps in, fires the Cashier, and shuts down the register (The ANR Dialog).
+- If a monitored operation misses its applicable deadline, the manager reports a responsiveness failure. A dialog or process termination is not inevitable for every ANR.
 
 The Cashier should have radioed a warehouse worker (Background Thread) to get the cereal.
 
@@ -60,13 +60,13 @@ sequenceDiagram
 
 An ANR is observed by the system when a monitored operation exceeds its context-specific responsiveness deadline; the main-thread trace explains the block, while surrounding evidence identifies why it occurred.
 
-The OS runs an internal watchdog system called the `InputDispatcher`.
+For input dispatch, InputReader and InputDispatcher in system_server deliver events through the app window's input channel. InputDispatcher tracks whether dispatched input is acknowledged within the applicable deadline; it does not insert a message directly into the app's MessageQueue.
 1.  The user taps the screen. The hardware sends an interrupt to the OS kernel.
-2.  The OS Kernel routes the event to the `InputDispatcher`.
-3.  The `InputDispatcher` queues the event in your app's Main Thread `MessageQueue`.
+2. InputReader interprets kernel input and InputDispatcher selects the target window.
+3. Input is delivered through the window's input channel and integrated with the app Looper.
 4.  The `InputDispatcher` starts a 5-second timer.
 5.  If your Main Thread `Looper` processes the event and replies before the timer hits 0, the timer is cancelled.
-6.  If the Main Thread is stuck in a `while(true)` loop or blocked on a `Mutex`, the timer hits 5 seconds. The OS fires the ANR.
+6. Main can miss the deadline through a CPU loop, blocking I/O or a contended JVM monitor/Lock. kotlinx.coroutines Mutex suspends a waiter without blocking its thread; a separate dependency can still prevent UI progress.
 
 ### Forensic Traces
 
@@ -120,7 +120,7 @@ If the flash storage is slow, `onStop` takes 6 seconds. BOOM. ANR.
 A massive source of ANRs comes from code you didn't write. Ad Networks, Analytics trackers, and crash reporters often execute synchronous initialization logic on the Main Thread during `Application.onCreate()`.
 
 - **Tradeoff:** Do you initialize the Ads SDK on the Main Thread to ensure ads are ready immediately (revenue), or do you initialize it on a background thread (stability)?
-- **The Staff Decision:** You must mandate background initialization for all 3rd party SDKs unless they explicitly require the Main Thread. If they require the Main Thread and cause ANRs, you rip them out of the app. The revenue lost from Play Store down-ranking due to ANRs always exceeds the revenue gained from that specific ad network.
+- **SDK policy:** Inspect required initialization and threading contracts, trace the blocked dependency, and defer optional work where supported. Escalate an SDK that violates responsiveness budgets; commercial impact requires product evidence.
 
 ## Failure Modes
 
@@ -136,7 +136,7 @@ A massive source of ANRs comes from code you didn't write. Ad Networks, Analytic
 - **Deadlock with Synchronized:**
   Thread A (Main) holds Lock 1 and waits for Lock 2.
   Thread B (Background) holds Lock 2 and waits for Lock 1.
-  Both threads freeze forever. If Thread A is the Main Thread, it's an instant ANR.
+  Both threads wait indefinitely. Main can miss a monitored operation's responsiveness deadline; ANR detection is not instantaneous.
   *(Fix: Avoid nested locks. Always acquire locks in the exact same mathematical order across all threads).*
 - **Main Thread Initialization (`Application.onCreate`):**
   If you do 3 seconds of heavy setup in your `Application` class, the app will take 3 seconds to show the first frame. If the user starts tapping the blank screen out of frustration, the 5-second timer starts.
@@ -147,7 +147,7 @@ When attacking an ANR spike in production, a Staff engineer does not guess.
 
 1.  **Google Play Console / Crashlytics:** I look at the aggregated ANR traces. Are they concentrated on specific Android versions (e.g., Android 8)? Are they concentrated on low-RAM devices?
 2.  **Thread State Analysis:** I read the trace. Is the Main Thread `Runnable` (doing a massive mathematical loop)? Is it `Sleeping` (`Thread.sleep()`)? Or is it `Blocked` (waiting on a lock)? The state dictates the fix.
-3.  **Strict Mode:** I enforce `StrictMode` during debug builds. `StrictMode` instantly crashes the app with a bright red error if *any* developer attempts to perform Network or Disk I/O on the Main Thread. This catches 90% of ANR causes before they ever merge into the `main` branch.
+3. **StrictMode:** Configure detectDiskReads/detectDiskWrites/detectNetwork and choose penaltyLog or penaltyDeath deliberately in debug. Detection and penalties are policy-specific; this is not a measured 90% ANR detector.
 
 ### Release-gating ANRs
 
@@ -165,8 +165,8 @@ Do not page every ANR threshold crossing. Page when the app is currently unusabl
 
 ## Common Misconceptions
 
-- **"If my app is in the background, it can't ANR."** False. If your app is in the background, and a `BroadcastReceiver` fires, and you block the thread for 10 seconds, the OS will silently record a "Background ANR." While the user won't see the dialog, Google Play Console *will* penalize your app's vitals score just as heavily.
-- **"I can just increase the 5-second timeout limit."** Impossible. The 5-second Input Dispatching timeout is hardcoded into the Android OS kernel (ActivityManager). You cannot bypass it or change it.
+- **"If my app is in the background, it cannot ANR."** False. A broadcast or service can exceed its applicable timeout without visible UI. Broadcast priority flags and OS version determine the broadcast deadline; `goAsync()` does not remove it.
+- **"I can increase the timeout from my app."** Apps do not have a supported setting to extend the system input-dispatch ANR deadline. This mechanism belongs to Android framework/system services, not an application-controlled timer; do not describe ActivityManager as the kernel.
 
 ## Probing Questions
 
@@ -184,28 +184,38 @@ Do not page every ANR threshold crossing. Page when the app is currently unusabl
 ## Answer Key
 
 1. **What is the fundamental difference in user experience and OS handling between a standard Crash (Exception) and an Application Not Responding (ANR) error?**
-   A crash instantly kills the app, allowing a quick restart. An ANR freezes the UI, making the app unresponsive until the OS forcefully intervenes with an angry dialog box, causing severe user frustration.
+   An uncaught exception normally terminates the process. An ANR reports a monitored responsiveness failure; UI impact, dialog display and process handling depend on the operation and system policy.
 2. **Explain the role of the Android OS `InputDispatcher` and the 5-second timer in triggering an ANR.**
-   The `InputDispatcher` routes touch events to the app's Main Thread. It starts a 5-second timer; if the Main Thread is blocked and cannot process the event before the timer expires, the OS triggers an ANR.
+   InputReader/InputDispatcher in system_server deliver events to the target window over an input channel and track acknowledgement. The default input-dispatch deadline is commonly five seconds; inspect the actual reason and system configuration.
 3. **Why does `SharedPreferences.apply()`, which claims to be asynchronous, frequently cause ANRs during Activity lifecycle transitions?**
    `apply()` schedules async disk writes, but during `onStop()`, the OS strictly waits for all pending writes to finish. If flash storage is slow, the Main Thread blocks, easily breaching the 5-second limit.
 4. **If an ANR trace shows the Main Thread in a `Blocked` state waiting on a lock, what are your next steps to debug the issue?**
    Find the lock's memory address in the trace, identify which background thread currently holds it, and investigate why that background thread hasn't released the lock (e.g., deadlock or massive I/O).
 5. **How does Android's `StrictMode` API help teams prevent ANRs before they reach production?**
-   `StrictMode` monitors the Main Thread during development and will intentionally crash the app if a developer accidentally attempts to perform Disk or Network I/O, catching ANR-inducing code instantly.
+   StrictMode detects configured violations and applies the selected penalties. penaltyLog logs; penaltyDeath terminates for configured violations. It does not detect all ANRs.
 6. **Describe a scenario where a `BroadcastReceiver` running in an application with no visible UI can still trigger an ANR.**
-   If a background `BroadcastReceiver` takes longer than 10 seconds to execute its `onReceive()` method (which runs on the Main Thread), the OS will silently record a "Background ANR" and penalize the app.
+   An app without visible UI can exceed a broadcast-processing deadline. Use intent priority and OS version to determine the timeout; asynchronous work obtained with goAsync must still call finish in time. UI visibility alone does not select a ten-second deadline.
 7. **Why is initializing complex Third-Party SDKs inside `Application.onCreate()` a massive risk for generating ANRs?**
    `Application.onCreate()` runs synchronously on the Main Thread before any UI appears. Heavy third-party SDKs doing disk/network I/O here can easily freeze the app long enough to trigger an ANR.
 8. **Explain how a classic "Deadlock" between the Main Thread and an IO Thread will trigger an ANR.**
-   The Main Thread grabs Lock A and waits for Lock B. The IO Thread grabs Lock B and waits for Lock A. Both freeze permanently. Since the Main Thread is stuck, the 5-second timer expires, causing an ANR.
+   The cycle prevents both threads from progressing. If Main cannot satisfy a monitored operation before its applicable deadline, Android reports an ANR; inspect the actual reason rather than a universal five-second timer.
 9. **If you decode a massive 4K JPEG image from the local disk inside a `viewModelScope.launch { }` block without changing the dispatcher, what happens to the Main Thread?**
-   `viewModelScope` defaults to `Dispatchers.Main`. The disk read and image decoding will happen synchronously on the Main Thread, freezing the UI and almost certainly causing an ANR on slower devices.
+   The scope alone does not move blocking reads or CPU decode off Main. It can stall frames and may cause an ANR when a monitored deadline is exceeded. Use an owned main-safe I/O/compute boundary.
 10. **Describe the business impact (Google Play Vitals) of having a high ANR rate, even if those ANRs occur silently in the background.**
-    Google Play Console monitors the overall ANR rate. If it crosses the "bad behavior" threshold (usually ~0.47%), the algorithm aggressively down-ranks the app in search results, devastating user acquisition and revenue.
+    Distinguish user-perceived ANR rate from overall/background diagnostics. Play's published bad-behavior thresholds and cohort rules apply to specific metrics and can change; use the current Vitals definition rather than applying one number to every ANR.
 
 ## Further Reading
 
-- [`jank.md`](jank.md) — The precursor to an ANR. A blocked thread for 16ms causes Jank; blocked for 5000ms causes an ANR.
-- [`threads-and-looper.md`](../concurrency/threads-and-looper.md) — The underlying MessageQueue that the `InputDispatcher` monitors.
-- [`datastore.md`](../data-and-di/datastore.md) — The Google-mandated architectural fix for `SharedPreferences` ANRs.
+- [`jank.md`](jank.md) — Frame deadlines versus context-specific responsiveness deadlines.
+- [`threads-and-looper.md`](../concurrency/threads-and-looper.md) — App Looper integration and blocking work.
+- [`datastore.md`](../data-and-di/datastore.md) — Asynchronous small-data storage and its tradeoffs.
+
+### Official verification references
+
+- [Primary documentation or owning implementation](https://developer.android.com/reference/android/content/SharedPreferences)
+- [Primary documentation or owning implementation](https://developer.android.com/reference/android/os/StrictMode.ThreadPolicy.Builder)
+- [Primary documentation or owning implementation](https://developer.android.com/topic/performance/anrs/diagnose-and-fix-anrs)
+- [Primary documentation or owning implementation](https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines.sync/-mutex/lock.html)
+- [Primary documentation or owning implementation](https://source.android.com/docs/core/interaction/input)
+- [Primary documentation or owning implementation](https://support.google.com/googleplay/android-developer/answer/9844486)
+- [Android ANR diagnosis and trace collection](https://developer.android.com/topic/performance/vitals/anr)

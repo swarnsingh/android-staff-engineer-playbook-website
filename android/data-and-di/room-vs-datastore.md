@@ -87,11 +87,11 @@ val MIGRATION_2_3 = object : Migration(2, 3) {
 
 Room.databaseBuilder(context, AppDatabase::class.java, "app.db")
     .addMigrations(MIGRATION_2_3)
-    .fallbackToDestructiveMigration(false)    // never silently drop user data
+    // No destructive fallback: retain and test every supported migration path.
     .build()
 ```
 
-Schema migrations are tested via the `RoomMigrationTestHelper`:
+Schema migrations are tested with `androidx.room.testing.MigrationTestHelper`:
 
 ```kotlin
 @Rule @JvmField
@@ -109,7 +109,7 @@ val helper = MigrationTestHelper(
 }
 ```
 
-Migrations are the most common source of "app crashes on update" bugs. **Always test them.** `fallbackToDestructiveMigration(true)` deletes user data — never enable for a shipping app without explicit consent.
+Missing or incorrect migrations can break upgrades. Register and test supported paths. Calling fallbackToDestructiveMigration enables a destructive fallback; its Boolean argument selects all tables versus only Room-managed tables. Omit the fallback when user data must be preserved.
 
 ### Room Auto-Migrations (since 2.4)
 
@@ -260,7 +260,7 @@ fun observeAll(): Flow<List<UserEntity>>
 val prefs: Flow<UserPrefs> = store.data
 ```
 
-Room's `Flow` emits on any change to tables referenced by the query. DataStore's `Flow` emits on any `updateData` call. Both honor structured concurrency — cancelled scopes detach observers cleanly.
+Room invalidates an observable query when an observed table changes. DataStore updates its stored state when the transformed value differs; an unchanged updateData result does not imply a new emission. Collection lifetime still belongs to the caller's scope.
 
 In a Composable:
 
@@ -332,7 +332,7 @@ See [`../patterns/repository.md`](../../patterns/repository.md) for the broader 
 
 ## Backup Behavior
 
-Default Android Auto Backup includes both Room DBs and DataStore files under the app's `files/` directory. Whether you want this:
+By default, eligible Room database files in databases/ and DataStore files in app-specific files storage can be included in Auto Backup. Configure the applicable backup rules, including dataExtractionRules on Android 12+ and the appropriate legacy rules, and decide what should restore:
 
 | Data | Backup? | Why |
 |---|---|---|
@@ -398,7 +398,7 @@ val Context.userPrefsStore: DataStore<UserPrefs> by dataStore(
             SharedPreferencesMigration(context, "legacy_prefs") { sp, proto ->
                 proto.toBuilder()
                     .setTheme(ThemeMode.valueOf(sp.getString("theme") ?: "THEME_MODE_SYSTEM"))
-                    .setPushNotificationsEnabled(sp.getBoolean("notifications") ?: true)
+                    .setPushNotificationsEnabled(sp.getBoolean("notifications", true))
                     .build()
             },
         )
@@ -421,7 +421,7 @@ For Room: there's no automatic migrator from SharedPreferences. Read the prefs o
 | App crashes on update with "no such column" | Room migration missing | Add a `Migration` + test with `MigrationTestHelper` |
 | Auth token leaks via Auto Backup | Backup not excluded | `android:fullBackupContent="@xml/backup_rules"` + exclude |
 | Room queries block UI | Used non-suspend DAO from Main | Mark DAO methods `suspend` or return `Flow` |
-| Crash: `CorruptionException` reading DataStore | File partially written (process killed mid-update) | Set `corruptionHandler = ReplaceFileCorruptionHandler { default }` |
+| CorruptionException reading DataStore | Serializer rejected unreadable or incompatible bytes | Diagnose the bytes/schema/storage cause; choose ReplaceFileCorruptionHandler only when losing the old data is an acceptable recovery policy |
 | DataStore writes happen in random order | Multiple writers racing | DataStore is single-writer; serialize via single repository |
 | Two DataStores defined for the same file | `by dataStore(filename = ...)` declared in two modules | Make one canonical; delete duplicates |
 | Room migration test passes, prod crashes | Test DB had different schema | Always start migration tests from the previous shipped version's schema |
@@ -485,7 +485,7 @@ For Room: there's no automatic migrator from SharedPreferences. Read the prefs o
 10. **Compare schema evolution: Room migrations vs Protobuf field number rules. Which is safer for SDK consumers?**
     Protobuf is safer. It ignores unknown fields and gracefully handles missing ones via defaults using stable field numbers. Room requires explicit SQL migrations; if versions mismatch between what the SDK expects and what is on disk, Room throws an exception and fails to open.
 11. **You see crashes from `CorruptionException` on DataStore. Walk through likely causes and fixes.**
-    It usually happens when the device powers off or the process is brutally killed during a write. Fix it by configuring a `ReplaceFileCorruptionHandler` in the DataStore factory to provide a safe fallback default rather than crashing the app.
+     DataStore uses a temporary file and atomic replacement. A killed process during an update does not normally leave a partially overwritten destination. Inspect invalid/incompatible bytes or actual storage failures. A replacement handler resets the value, so define a recovery/data-loss policy rather than silently discarding authoritative data.
 12. **A team wants to store user analytics events locally before upload. Room or DataStore? Why?**
     Room. Analytics are append-only lists that require querying for unsent events, batching, and deleting by ID after upload. DataStore rewriting the entire file on every event append would be catastrophic for performance.
 
@@ -505,4 +505,13 @@ For Room: there's no automatic migrator from SharedPreferences. Read the prefs o
 - [Android Developers — Save data with DataStore](https://developer.android.com/topic/libraries/architecture/datastore) — official guide.
 - [Android Developers — Room overview](https://developer.android.com/training/data-storage/room) — official guide.
 - [SQLCipher for Android](https://www.zetetic.net/sqlcipher/sqlcipher-for-android/) — encryption deep dive.
-- [Florina Muntenescu — DataStore patterns](https://medium.com/androiddevelopers/) — Google DevRel deep dives.
+- [Florina Muntenescu and Rohit Sathyanarayana — Prefer storing data with Jetpack DataStore](https://android-developers.googleblog.com/2020/09/prefer-storing-data-with-jetpack.html) — Android Developers Blog.
+
+### Official verification references
+
+- [Primary documentation or owning implementation](https://developer.android.com/identity/data/autobackup)
+- [Primary documentation or owning implementation](https://developer.android.com/reference/kotlin/androidx/datastore/migrations/SharedPreferencesView)
+- [Primary documentation or owning implementation](https://developer.android.com/reference/kotlin/androidx/room/RoomDatabase.Builder)
+- [Primary documentation or owning implementation](https://developer.android.com/training/data-storage/room/migrating-db-versions)
+- [Primary documentation or owning implementation](https://raw.githubusercontent.com/androidx/androidx/androidx-main/datastore/datastore-core/src/commonMain/kotlin/androidx/datastore/core/DataStoreImpl.kt)
+- [Primary documentation or owning implementation](https://raw.githubusercontent.com/androidx/androidx/androidx-main/datastore/datastore-core/src/jvmAndAndroidMain/kotlin/androidx/datastore/core/FileStorage.kt)

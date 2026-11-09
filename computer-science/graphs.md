@@ -18,7 +18,7 @@ Three observations made graphs inevitable:
 2. **Algorithms on graphs solve problems that look nothing like graphs at first.** Shortest path solves driving directions, but also network routing, currency arbitrage, dependency resolution order, and minimum-effort task scheduling. Topological sort decides build order, but also course prerequisites and recipe instructions. Recognizing "this problem is a graph problem" unlocks a vast library of algorithms.
 3. **DAGs are an architectural primitive.** Most software-engineering tasks that depend on ordering — what to build first, what to load first, what to evaluate first — are DAG problems. Without graph theory, every team would invent ad-hoc dependency resolution; with it, we have proven algorithms (Tarjan, Kahn) and proven languages of expression (Gradle, Bazel, Make).
 
-The mobile-specific motivation: build performance and dependency injection both scale linearly (or worse) with graph complexity. A misconfigured Gradle build with a wide diamond dependency runs in O(n²) compile units. A Dagger graph with deeply nested dependencies takes seconds to wire on app startup. Understanding the underlying graph helps you diagnose and fix the slowness instead of just suffering it.
+The mobile-specific motivation: build performance and dependency injection both scale linearly (or worse) with graph complexity. A change to the public API (the ABI) of a widely used module recompiles every module that depends on it, while changes limited to method bodies or private members let Gradle skip recompiling those dependents. Dagger resolves and validates its graph at compile time, but eagerly creating a deep graph of objects at startup still costs launch time. Understanding the underlying graph helps you diagnose and fix the slowness instead of just suffering it.
 
 The cost of getting graphs wrong: cycles in build systems (Gradle refuses to compile), cycles in DI (Dagger fails with a long error), cycles in recursive component composition (Compose blows the stack). Graphs are powerful, but their failure modes are loud and unforgiving.
 
@@ -52,7 +52,7 @@ The arc: from a single puzzle (1736) to abstract math (19th century) to practica
     C --+  D
 ```
 
-Four vertices: A, B, C, D. Five edges: A-B, A-C, B-C, B-D, and so on. An edge can be **undirected** (no arrow), **directed** (A → B but not B → A), and **weighted** (each edge has a number, often a cost or distance).
+Four vertices: A, B, C, D. Four edges: A-B, A-C, B-C and B-D. An edge can be **undirected** (no arrow), **directed** (A → B but not B → A), and **weighted** (each edge has a number, often a cost or distance).
 
 ### 2. Representation: adjacency list vs adjacency matrix
 
@@ -204,7 +204,7 @@ fun <T> topologicalSort(graph: Graph<T>): List<T>? {
 }
 ```
 
-The algorithm: repeatedly take any node with in-degree zero (nothing depends on it left), output it, decrement its neighbors' in-degrees. If a cycle exists, no node ever reaches in-degree zero and the sort fails — exactly what we want for cycle detection.
+The algorithm: repeatedly take any node with in-degree zero (nothing depends on it left), output it, decrement its neighbors' in-degrees. If a cycle exists, the nodes on it never reach in-degree zero, so the output is shorter than the vertex count and the sort fails — exactly what we want for cycle detection.
 
 ### Dijkstra's shortest path
 
@@ -289,9 +289,9 @@ flowchart TB
 // :feature:profile depends on :core:network
 ```
 
-When you run `./gradlew :app:assembleDebug`, Gradle builds the dependency DAG and runs a topological sort. The result: build `:core:network` and `:core:database` first (in parallel — no dependency between them), then `:feature:checkout` and `:feature:profile`, then `:app`. Total time is bounded by the longest path through the DAG.
+When you run `./gradlew :app:assembleDebug`, Gradle builds the dependency DAG and runs a topological sort. The result: build `:core:network` and `:core:database` first (in parallel when parallel execution is enabled — there is no dependency between them), then `:feature:checkout` and `:feature:profile`, then `:app`. Total time is bounded by the longest path through the DAG.
 
-If you accidentally make `:feature:checkout` depend on `:app`, the DAG becomes cyclic. Gradle's build planner refuses to compile and prints the cycle: "Circular dependency between :app, :feature:checkout."
+If you accidentally make `:feature:checkout` depend on `:app`, the DAG becomes cyclic. Gradle refuses to run the build and reports a circular dependency, listing the tasks involved.
 
 ### Dagger/Hilt's compile-time graph
 
@@ -318,7 +318,7 @@ A* with straight-line distance as heuristic runs in milliseconds on devices with
 
 A social network represents users as vertices and friendships as undirected edges. "People you may know" runs a BFS from your vertex, ranking 2-hop neighbors (friends of friends) by number of paths to them. The fewer hops and the more mutual friends, the higher the rank.
 
-For LinkedIn's scale, this is implemented with optimized graph databases (Neo4j, ArangoDB) or specialized in-memory engines (Facebook's TAO).
+At that scale, it runs on specialized in-house graph systems, such as LinkedIn's LIquid or Facebook's TAO.
 
 ---
 
@@ -432,7 +432,7 @@ Each `@Composable` function corresponds to a node in a runtime tree (technically
 ## Security Considerations
 
 - **Graph traversal of attacker-controlled structure.** Parsing a graph from untrusted input must enforce depth limits and node counts. Many JSON parsing libraries enable this by default.
-- **Social-graph privacy.** Friend-of-friend queries can leak private connections. The 2014 Facebook Cambridge Analytica scandal exemplified the failure: an app harvesting friends-of-friends data revealed information about people who hadn't consented.
+- **Social-graph privacy.** Friend-of-friend queries can leak private connections. The Cambridge Analytica case (data collected in 2014, made public in 2018) exemplified the failure: an app harvesting friends-of-friends data revealed information about people who hadn't consented.
 - **Side-channel via graph traversal time.** Algorithm timing can leak structural information about private graphs. For sensitive contexts, use constant-time traversals.
 - **DDOS via complete subgraphs.** A user submitting a "friends list" that's a complete graph causes O(n²) work on the server. Rate-limit graph operations.
 
@@ -443,7 +443,7 @@ Each `@Composable` function corresponds to a node in a runtime tree (technically
 - **Module-build-time DAG.** Gradle exposes build graphs via `--scan`; use them to identify bottleneck modules.
 - **Dagger error messages.** When a binding fails, Dagger prints the request chain — the path through the DI graph that led to the broken edge. Read it forward and backward to find where to fix.
 - **A* / Dijkstra metrics.** Track average nodes-explored-per-query in routing. Sudden increases indicate heuristic degradation or graph changes.
-- **Recomposition counters.** Compose tooling (`androidx.compose.runtime.tooling`) reports counts per node; widespread recompositions on a single state change indicate hoisting too high.
+- **Recomposition counters.** Android Studio's Layout Inspector shows recomposition and skip counts per composable; widespread recompositions on a single state change indicate hoisting too high.
 
 ---
 

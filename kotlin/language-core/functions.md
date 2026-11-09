@@ -26,7 +26,7 @@ Java 8 added lambdas as a special compile-time conversion to *functional interfa
 
 Kotlin took the opposite path. Functions are values with a structural type — `(Int, String) -> Boolean` is the type of any function from `(Int, String)` to `Boolean`, regardless of what interface backs it. You don't pick an interface; you write a function type. The conversion to a Java interface happens only at the JVM boundary, transparently.
 
-The win is composability: function values can be combined, partially applied, returned from factories, stored in maps keyed by event type, swapped at runtime, and tested by injecting fake functions. The cost is some allocation overhead — every lambda you pass creates a small `Function` instance — which Kotlin's `inline` keyword exists to eliminate when needed.
+The win is composability: function values can be combined, partially applied, returned from factories, stored in maps keyed by event type, swapped at runtime, and tested by injecting fake functions. The cost is some allocation overhead — capturing lambdas can create function objects, while non-capturing lambdas may be cached or inlined — which Kotlin's `inline` keyword exists to eliminate when needed.
 
 ---
 
@@ -130,7 +130,7 @@ val printer: (String) -> Unit = System.out::println
 val asString: (Int) -> String = Int::toString
 ```
 
-Function references are cheaper than lambdas — they're equivalent to passing a `Function` instance backed by a real named method, with no captured scope.
+Function-reference cost depends on the reference and call site. Bound references such as System.out::println capture a receiver; inlining and caching can eliminate allocation for either syntax.
 
 ### 5. Higher-order functions
 
@@ -224,7 +224,7 @@ fun main() {
 }
 ```
 
-Decompiled:
+Illustrative class-based lowering (`-Xlambdas=class`); Kotlin/JVM 2.0+ defaults to invokedynamic:
 
 ```java
 public static void greetAll(List<String> names, Function1<String, Unit> greet) {
@@ -244,8 +244,8 @@ public static void main() {
 
 Three observations:
 1. **A function type becomes a `FunctionN` interface.** `(String) -> Unit` is `Function1<String, Unit>` — the `1` is the arity.
-2. **A lambda is an anonymous class.** Per call site, a class is generated implementing the matching `FunctionN`. The `invoke` method holds the body.
-3. **Captured variables become fields.** `prefix` is captured by reference and stored in the anonymous class instance. Every call to `greetAll` allocates a new instance.
+2. **Lowering depends on the backend/options.** This sketch shows class-based lowering. Kotlin/JVM 2.0+ normally uses invokedynamic for ordinary lambdas.
+3. **Captured values are stored in the function object.** `prefix` is a `val`, so its value is copied in. Because the lambda captures, each evaluation creates a new function object. A non-capturing lambda is created once and reused.
 
 This per-call allocation is what `inline` eliminates.
 
@@ -287,9 +287,9 @@ list.filter(::isEven)         // function reference
 list.filter { isEven(it) }    // wrapper lambda
 ```
 
-The function reference compiles to a *single* generated class that implements `Function1<Int, Boolean>` and calls `isEven`. The class is cached — every use of `::isEven` references the same singleton.
+`filter` is `inline`, so neither form creates a function object: both compile into a loop that calls `isEven` directly. The difference matters only for non-inline parameters, where a non-capturing reference or lambda is created once and reused.
 
-The wrapper lambda compiles to a new anonymous class per call site, also implementing `Function1<Int, Boolean>`. Functionally identical, but the reference is cheaper.
+The wrapper lambda can also be cached, and filter is inline, so either form can be compiled directly into its loop without a function-object allocation. Neither syntax is a universal performance winner.
 
 When the function reference is to a method on an instance (`obj::method`), the reference does need to capture `obj`, so it allocates per usage.
 
@@ -315,7 +315,7 @@ A `suspend` function is a normal function whose last parameter is a `Continuatio
 flowchart LR
     Source["fun greetAll(names, greet: (String) -> Unit)"]
     Compile["Compiler"]
-    NonInline["Non-inline: greet becomes Function1 param.<br/>Each lambda call site allocates an anonymous class."]
+    NonInline["Non-inline: greet is a Function1 parameter.<br/>Lowering and caching determine allocations."]
     Inline["Inline: greet's call sites are replaced<br/>with the lambda body. Zero allocations."]
 
     Source --> Compile
@@ -375,7 +375,7 @@ PrimaryButton(
 )
 ```
 
-The lambda is captured into the Composer's slot table and re-invoked on subsequent compositions. Compose recomposition relies on lambda *identity* — when `onClick` is structurally the same closure (capturing the same values), Compose can skip recomposing the child. See [`recomposition-and-state.md`](../../android/compose/recomposition-and-state.md) for the lambda-stability story.
+The onClick callback runs when clicked, not automatically on recomposition. The Compose compiler can memoize lambdas; strong skipping includes unstable captures, comparing them by identity and stable captures by equality. This supports reuse without replacing event semantics. See [`recomposition-and-state.md`](../../android/compose/recomposition-and-state.md) for the lambda-stability story.
 
 ### Strategy pattern as a function
 
@@ -554,14 +554,14 @@ val scaled = v * 2.0                    // Vec(8.0, 12.0)
 
 **Disadvantages**
 
-- **Lambda allocation.** Without `inline`, each lambda passed allocates a `FunctionN` instance. In tight loops this matters.
+- **Lambda allocation.** Escaping captures may require function objects; non-capturing lambdas may be reused. Inspect allocation evidence in hot paths.
 - **Captured variables become heap state.** A `count` captured by a lambda becomes a `Ref.IntRef` field on the lambda class. This can extend object lifetimes unexpectedly.
 - **Stack traces are obscured.** Anonymous lambda classes appear as `MyClass$myFun$1.invoke(MyClass.kt:42)` in stack traces. Less clear than named methods.
 - **`inline` increases bytecode size.** Each call site duplicates the body. Large inline functions bloat the APK.
 
 **When not to use higher-order functions**
 
-- When the behavior must be substitutable at runtime by external configuration (use an interface and dependency injection).
+- When a protocol needs multiple related operations or nominal identity, an interface may be clearer. Single function values can also be injected or selected at runtime.
 - When the function would be called millions of times per second and even a function-pointer call is too expensive — but this almost never matters in Android, where the JIT handles function dispatch efficiently after warmup.
 - For complex multi-method protocols (e.g., a stream consumer that needs `onNext`, `onError`, `onComplete`) — use an interface instead.
 
@@ -596,7 +596,7 @@ fun process(list: List<Int>) {
 - **Inline a hot-path higher-order function.** `inline` eliminates lambda allocation entirely. Use it for any function whose lambda is called >100x per second.
 - **Don't inline a 200-line function.** Bytecode duplication explodes. Inline keeps lambdas cheap, but the function body itself is duplicated at every call site.
 - **Use `noinline` for lambda parameters you don't immediately invoke.** If you store the lambda in a field or pass it to another non-inline function, marking it `noinline` keeps the inlining tractable.
-- **Function references are usually faster than equivalent lambdas.** A single cached singleton instance vs a new allocation per call site. Compiler often optimizes both equally, but the reference form is the safer default.
+- **Choose references or lambdas for clarity.** Either can be inlined or reused; bound captures and generated code determine cost. Compare actual allocation evidence when performance matters.
 - **`tailrec` avoids stack growth.** For algorithms naturally expressed recursively (parsing, tree walks), `tailrec` is faster and safer than direct recursion.
 - **Default arguments compile to dispatch methods.** A function with five default arguments and one optional override emits a synthetic helper that calls the main version with appropriate defaults. Negligible cost, but visible in profilers.
 
@@ -605,7 +605,7 @@ fun process(list: List<Int>) {
 ## Reliability Considerations
 
 - **Prefer function references in public APIs.** They're greppable (`::login` is searchable), traceable, and have stable stack traces.
-- **Lambdas in coroutine scopes can leak.** A `launch { ... }` lambda captures everything in scope. If the lambda is long-lived, those captures stay alive. Audit captures in `GlobalScope.launch { ... }` calls.
+- **Lambdas in coroutine scopes can extend lifetimes.** A launch lambda retains values it actually captures, which can include an enclosing receiver. If the lambda is long-lived, those captures stay alive. Audit captures in `GlobalScope.launch { ... }` calls.
 - **Use `fun interface` for behaviors with named semantics.** A `Predicate` reads more clearly than a `(T) -> Boolean` in API docs, even though they're functionally identical.
 - **Don't pass `() -> Unit` if you also need cancellation, errors, or progress.** Use a coroutine or a typed interface. A single function value can't model multi-shot semantics.
 
@@ -639,13 +639,13 @@ For Compose, lambda identity affects recomposition skipping. Tools like the Comp
 
 **Don't write helper interfaces when a function will do.** Java teams often write `interface ResultTransformer { Result transform(Input i); }` as a pattern habit. In Kotlin, this is `(Input) -> Result`. Push back on PRs introducing single-method interfaces unless there's a Java consumer.
 
-**Watch for lambda-stability anti-patterns in Compose.** Inline lambdas with mutable captures defeat recomposition skipping. Tools like the Compose Compiler Reports catch this; CI should fail on unexpected `unstable` lambdas in hot Composables.
+**Check lambda reuse in Compose.** Strong skipping automatically remembers lambdas, including unstable captures. Use compiler/runtime evidence to diagnose unexpected work instead of assuming every mutable capture defeats skipping.
 
 ---
 
 ## Common Misconceptions
 
-**"Lambdas are free."** Each non-inline lambda allocates a `FunctionN` object. In tight loops this matters; for occasional calls (button clicks), it's negligible.
+**"Lambdas are free."** Captures and escaping function objects can have allocation/dispatch costs, but non-capturing lambdas may be reused and inline arguments can avoid objects. Measure hot paths.
 
 **"`inline` means faster always."** Inlining is a tradeoff: zero call overhead, but bytecode duplication. For a function called once per second, inlining is wasteful.
 
@@ -687,11 +687,11 @@ For Compose, lambda identity affects recomposition skipping. Tools like the Comp
 5. **Explain why `inline fun foo(noinline block: () -> Unit)` would be useful.**
    It is useful when the enclosing function `foo` needs to be inlined (perhaps it has other parameters or uses reified types), but the `block` lambda cannot be inlined because it is stored in a field, passed to a background thread, or passed to a non-inline function. The `noinline` modifier prevents the compiler from copying the lambda's body, letting it survive as a `Function0` object.
 6. **You see `obj::method` in code. What's the runtime cost of that expression — is a new object allocated each time?**
-   Yes, a new object is allocated each time it evaluates, because the function reference must capture the specific `obj` instance to invoke the method on. (Unlike `Class::method` which compiles to a cached singleton).
+   A bound reference retains obj and may allocate when it escapes. Inlining, memoization, or runtime optimization can eliminate or reuse that allocation; do not assume one allocation per evaluation in optimized code.
 7. **What does `tailrec` require of the recursive call, and what happens if it can't be applied?**
    `tailrec` requires the recursive call to be the absolute last operation performed in the function before returning. If there is any computation after the recursive call returns (like `n * factorial(n - 1)`), it cannot be applied. The compiler will issue a warning and fall back to standard, stack-consuming recursion.
 8. **In Compose, why does `Button(onClick = { viewModel.click() })` sometimes defeat recomposition skipping? How do you keep it stable?**
-   If `viewModel` is considered unstable (e.g., an interface or a class with mutable `var` properties), the lambda captures an unstable reference. Compose generates a new lambda instance on every recomposition because it cannot guarantee the captured state hasn't changed. You keep it stable by using method references `onClick = viewModel::click` (if the ViewModel is stable) or by passing only stable primitives or explicitly `@Stable` parameters to the composable.
+   With strong skipping, Compose remembers lambdas with unstable captures too; the unchanged ViewModel instance can reuse the callback. Earlier compiler modes had stricter reuse rules. A method reference is not a universal fix: inspect the compiler mode and keep capture/lifetime semantics correct.
 9. **What does the function type `String.(Int) -> Boolean` mean, and how does it differ from `(String, Int) -> Boolean`?**
    `String.(Int) -> Boolean` is a lambda with a receiver. Inside the lambda, the `String` is available as `this`, and it takes an `Int` parameter. It differs from `(String, Int) -> Boolean` syntactically: you call it like an extension function `myString.lambda(myInt)`. At the bytecode level, they both compile to `Function2<String, Int, Boolean>`.
 10. **You have `fun fetch(callback: (Result) -> Unit)`. Five years later you need to add progress reporting. How would you evolve the API without breaking existing callers?**
@@ -718,3 +718,9 @@ External:
 - Kotlin Documentation: [Inline functions](https://kotlinlang.org/docs/inline-functions.html) — when to inline and what crossinline/noinline mean.
 - *Effective Kotlin* by Marcin Moskała — Items 19–25 on functional programming idioms.
 - [Kotlin functional interfaces (`fun interface`)](https://kotlinlang.org/docs/fun-interfaces.html) — current language documentation.
+
+### Official verification references
+
+- [Primary documentation or owning implementation](https://developer.android.com/develop/ui/compose/performance/stability/strongskipping)
+- [Primary documentation or owning implementation](https://kotlinlang.org/docs/lambdas.html#closures)
+- [Primary documentation or owning implementation](https://kotlinlang.org/docs/whatsnew20.html#generation-of-lambda-functions-using-invokedynamic)

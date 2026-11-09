@@ -4,13 +4,13 @@
 
 Serialization is the process of converting complex in-memory data structures (like objects or object graphs) into a flat sequence of bytes so they can be transmitted across a network, saved to a disk, or passed between processes. Deserialization is the reverse process.
 
-In mobile engineering, you cannot send a Kotlin `User` object directly to a Ruby backend. You must serialize it into a universal format (like JSON or Protocol Buffers) first.
+When a Kotlin client exchanges data with a Ruby backend, both sides need an agreed wire representation, such as JSON or Protocol Buffers. They must also agree on field meaning and evolution; serialization preserves the chosen data representation, not arbitrary object identity or executable behavior.
 
 ## Why It Matters
 
 Mobile apps are inherently disconnected from their data sources. Almost every single piece of data displayed on a screen must first be serialized by the backend, transmitted over the radio, and deserialized by the mobile client. 
 
-If your serialization mechanism is slow, the app drops frames while parsing network responses. If your serialization format is bloated, the user burns through their mobile data cap and waits longer for data to load. If your deserialization logic is brittle, a backend engineer adding a new field will crash your app.
+Parsing large responses on the UI thread can delay rendering. Payload size affects transfer and storage costs. Compatibility depends on the schema and parser policy: adding a field is safe for some readers and rejected by others, so test old-reader/new-writer combinations.
 
 ## Historical Context
 
@@ -19,7 +19,7 @@ In the early days of computing, custom binary formats were the norm. Later, XML 
 ## First Principles
 
 1.  **Translation:** Serialization translates language-specific memory structures into language-agnostic data formats.
-2.  **Size vs. Readability:** Text-based formats (JSON) are easy for humans to debug but consume more bytes. Binary formats (Protobuf) are unreadable without a schema but are incredibly compact and fast.
+2.  **Representation trade-off:** JSON is textual and can be inspected without a binary decoder. Binary formats can save space or parsing work for suitable data, but compactness and speed depend on schema, values, compression and implementation. Measure the actual payload.
 3.  **Forward/Backward Compatibility:** The schema will change. Old mobile apps must not crash when receiving new data structures from the backend.
 
 ## Mental Model
@@ -64,7 +64,7 @@ message User {
   int32 age = 3;
 }
 ```
-The compiler generates Kotlin/Java classes from this file. The resulting payload over the wire is stripped of all keys (`"full_name"` is not sent, only the data and the index `2` are sent), making it magnitudes smaller.
+The compiler generates classes and builders from the schema. Protobuf binary fields carry a field number and wire type rather than textual field names. Strings, lengths and other data still occupy bytes; size savings depend on the message and comparison format, rather than a fixed orders-of-magnitude guarantee.
 
 ## Architecture
 
@@ -91,9 +91,9 @@ graph LR
 
 **IPC (Inter-Process Communication) on Android**
 
-Serialization isn't just for networking; it's how Android components talk to each other. When you pass data between Activities via an `Intent`, it crosses process boundaries (via the Android Binder). The data must be serialized.
+Android also flattens values for Binder transactions and Activity intents, including Activity launches within one app. Parcelable is designed for Android IPC and transient state; Parcel bytes are not a supported general-purpose disk or network format.
 
-Historically, Android used `Serializable` (standard Java, uses slow reflection). The production solution is `Parcelable`.
+Java Serializable and Android Parcelable have different contracts and implementations. Parcelable defines how fields are written to and restored from a Parcel; `@Parcelize` generates that code. Java serialization supports object graphs and customization. Avoid universal speed claims and benchmark representative data when the choice affects performance.
 
 ```kotlin
 @Parcelize // Kotlin compiler plugin generates the serialization code
@@ -118,37 +118,37 @@ val profile = intent.getParcelableExtra<UserProfile>("USER_DATA")
 - *Disadvantages:* Bloated payloads. Parsing requires string manipulation and sometimes reflection, which is CPU intensive.
 
 **Protocol Buffers (Protobuf/gRPC)**
-- *Advantages:* Extremely small payloads. Blazing fast parsing (it's just reading byte offsets). Strong typing guaranteed across backend and mobile.
+- *Advantages:* Numeric field tags and typed generated APIs can reduce representation overhead and support schema-aware tooling. The wire format includes tags, variable-length values and lengths; parsing is not simply reading fixed byte offsets, and a schema cannot guarantee business correctness.
 - *Disadvantages:* Human unreadable. Requires complex build-step integration to compile `.proto` files.
 
 **Java `Serializable` vs Android `Parcelable`**
-- *Serializable:* Zero boilerplate, but uses massive amounts of reflection. Causes GC thrashing and ANRs if passing large objects.
-- *Parcelable:* Highly optimized for Android IPC memory limits.
+- *Serializable:* The marker interface can be convenient for supported object graphs; custom handling, class compatibility and runtime cost still need consideration. Large graphs may allocate heavily, but GC thrashing or ANRs are not inevitable.
+- *Parcelable:* An Android IPC representation with generated or manual field handling. It does not remove Binder transaction-size constraints and should not be used as a long-term persistence format.
 
 ## Failure Modes
 
-- **The Strict Parser Crash:** The backend adds a new field `{"is_premium": true}` to the JSON response. The mobile JSON parser (e.g., Gson) encounters an unknown key and throws an exception, crashing the app. *Parsers must be configured to ignore unknown keys for forward compatibility.*
-- **Implicit Nulls:** The backend drops a field from the JSON. The Kotlin parser creates the object using reflection and leaves a non-nullable Kotlin `String` as `null` in memory. The moment the app touches it, a `NullPointerException` brings the app down.
-- **The Parcelable TransactionTooLargeException:** Serializing a 2MB image or a massive list of data into an Intent. The Android Binder has a strict ~1MB limit per process. Passing massive serialized objects between activities crashes the app. (Fix: Pass IDs and load data from a shared Repository).
+- **Unknown-field policy:** Gson normally skips unknown object fields, and Moshi normally ignores them unless configured to fail. Kotlinx Json rejects unknown keys by default; configure `ignoreUnknownKeys` where additive-field compatibility is intended. Test the exact adapter and schema rather than assuming every parser is strict.
+- **Missing, null and unsafe reflection:** Behavior depends on the adapter. Kotlinx generated serializers reject missing required properties under their default policy; nullable without a default is still required with the default explicitNulls setting. Reflective Gson may create values that violate Kotlin nullability, so validate its output or use a Kotlin-aware adapter. Defaults handle omission only where the serializer contract defines them.
+- **Oversized Binder transactions:** Binder has a currently documented 1 MB transaction buffer shared by transactions in progress for a process. A large payload, or concurrent smaller transactions, can exceed available capacity. The resulting failure depends on the calling API and handling; it is not automatically an app crash. Prefer small IDs or handles and load bulk data from a suitable store.
 
 ## Staff Engineer Thinking
 
 When designing an API contract or data architecture, a Staff engineer asks:
 
-1.  **Do we own both ends?** If we own the backend and the mobile app, and the data payloads are massive (like a real-time multiplayer game), JSON is a massive waste of resources. We should mandate Protocol Buffers or FlatBuffers.
-2.  **Is code generation optimal?** Reflection-based parsers (Gson) are slow at runtime. Code-generation parsers (Moshi with codegen, Kotlinx.Serialization) are fast at runtime but increase build times. For massive apps, the runtime speed is usually prioritized.
+1.  **What do measurements and compatibility require?** Owning both ends allows schema and transport changes, but does not mandate Protobuf or FlatBuffers. Compare actual transfer size, parse/access cost, evolution, tooling and operational support before changing formats.
+2.  **Which adapter runs in production?** Code generation can avoid runtime reflective field discovery; reflection can reduce generated-code setup. Actual speed, code size and build impact depend on models and adapters. Benchmark before treating generation as universally faster.
 3.  **Are we over-serializing?** If a feature requires storing a complex data structure locally just to retrieve it exactly as-is later (e.g., caching a raw API response), it might be faster to just save the raw JSON string to disk rather than deserializing it to an object, saving it to a relational SQLite database, reading it back, and reconstructing the object.
 
 ## Common Misconceptions
 
-- **"JSON is an object."** False. JSON is a String. It only becomes an object after your CPU spends millions of cycles parsing it.
-- **"Serialization is fast enough that it doesn't matter."** False. Deserializing a 500kb JSON payload on the Main Thread is a guaranteed way to drop 10-20 frames and cause visible UI stutter. Always deserialize on a background thread (`Dispatchers.IO`).
+- **"JSON text is already a Kotlin object."** JSON is a textual interchange format whose values can include objects, arrays and scalars. A reader must parse the text before using a typed Kotlin model; the cost depends on the input and implementation.
+- **"Serialization cost never matters."** Large or frequent decoding can delay UI work, but a 500 KB response does not imply a fixed number of dropped frames. Measure it. Move substantial CPU decoding to an appropriate background dispatcher, commonly Default; use IO for blocking I/O. A suspend function alone does not move work off Main.
 
 ## Probing Questions
 
-1.  Why is Android's `Parcelable` significantly faster than Java's `Serializable`?
+1.  How do Android Parcelable and Java Serializable differ, and how should you compare their costs?
 2.  Explain the concept of Forward Compatibility in JSON parsing. How do you prevent an old app from crashing when a new field is added?
-3.  What are Protocol Buffers, and why do they generate significantly smaller network payloads than JSON?
+3.  How do Protocol Buffers encode fields, and when can they reduce payload size compared with JSON?
 4.  Why must you never pass a massive serialized object (like a Bitmap) between Activities via an Intent? What is the architectural solution?
 5.  What is the difference between Reflection-based serialization (e.g., standard Gson) and Code-Generation serialization (e.g., Kotlinx.serialization)?
 6.  If a JSON payload omits a field that is defined as non-nullable in your Kotlin `data class`, what happens during deserialization? How do you defend against this?
@@ -159,26 +159,26 @@ When designing an API contract or data architecture, a Staff engineer asks:
 
 ## Answer Key
 
-1. **Why is Android's `Parcelable` significantly faster than Java's `Serializable`?**
-   `Serializable` relies on heavy Java reflection to inspect object graphs at runtime, whereas `Parcelable` requires explicit, compiled code to write/read specific fields directly to a memory buffer.
+1. **How do Android Parcelable and Java Serializable differ, and how should you compare their costs?**
+   Parcelable writes a defined representation to an Android Parcel; Parcelize can generate the field-handling code. Java serialization traverses supported object graphs with its own compatibility and customization rules. Compare representative models and usage rather than assuming a fixed speed ratio; keep IPC payloads small.
 2. **Explain the concept of Forward Compatibility in JSON parsing. How do you prevent an old app from crashing when a new field is added?**
-   Forward compatibility means an older client can handle newer data structures. You prevent crashes by configuring your JSON parser (e.g., Moshi) to explicitly ignore unknown keys rather than throwing an exception.
-3. **What are Protocol Buffers, and why do they generate significantly smaller network payloads than JSON?**
-   Protobuf is a binary serialization format. It is smaller because it omits text-based keys entirely, transmitting only the raw binary data alongside a numeric index defined by a shared `.proto` schema.
+   Test that the old reader accepts the intended new payload. Gson and Moshi generally ignore unknown keys; Kotlinx Json requires an appropriate unknown-key policy. Ignoring extra fields does not make removed required fields or incompatible type changes safe.
+3. **How do Protocol Buffers encode fields, and when can they reduce payload size compared with JSON?**
+   Protobuf binary fields use numeric field tags and wire types instead of textual names, with encodings such as varints and length-delimited values. This can save space for suitable schemas and values. Compare representative payloads, including compression; a fixed or universal size saving is not guaranteed.
 4. **Why must you never pass a massive serialized object (like a Bitmap) between Activities via an Intent? What is the architectural solution?**
-   Intents pass through the OS Binder, which has a strict ~1MB limit per process; exceeding it causes a `TransactionTooLargeException` crash. The solution is to pass a lightweight ID and read the data from a shared cache or Repository.
+   Activity launch data travels through Binder, whose currently documented 1 MB buffer is shared across in-progress transactions for a process. Avoid bulk payloads; pass a small stable ID or suitable handle and load the data from a store with defined lifetime and access control. Failure is not a guaranteed crash at one fixed object size.
 5. **What is the difference between Reflection-based serialization (e.g., standard Gson) and Code-Generation serialization (e.g., Kotlinx.serialization)?**
-   Reflection parses objects dynamically at runtime, which is CPU intensive. Code-generation creates static parsing code at compile time, resulting in much faster runtime performance at the cost of slightly longer build times.
+   Reflective adapters discover or access members at runtime; generated serializers encode model handling ahead of time. Setup, supported model features, generated code and runtime costs differ. Test the actual adapters and payloads rather than assuming a universal performance result.
 6. **If a JSON payload omits a field that is defined as non-nullable in your Kotlin `data class`, what happens during deserialization? How do you defend against this?**
-   Depending on the parser, it may crash immediately (Moshi) or silently leave a null in a non-nullable field via reflection/Unsafe (Gson), causing a delayed NullPointerException. Defend by defining optional fields with nullable types (`?`) or providing default values.
+   The adapter and configuration decide. Kotlinx normally rejects a missing required field; a declared default makes it optional, while nullable without a default is still required with default explicitNulls. Kotlin-aware Moshi and reflective Gson have different construction rules. Model omission explicitly, validate inputs, and test missing, explicit-null and unknown-field cases separately.
 7. **Explain the tradeoffs of caching raw serialized JSON strings vs caching parsed domain objects in a local database.**
-   Caching raw JSON avoids repeated serialization/deserialization CPU costs if you just need to return the exact response later, but it makes querying individual fields impossible. Caching domain objects in a structured DB (like Room) allows complex queries but requires more upfront processing.
+   Retaining raw JSON can avoid decoding and re-encoding a response that will be reused unchanged; reading it as a domain model still requires decoding. Structured columns support explicit constraints and indexes. JSON fields are also queryable where the store provides JSON functions, including supported SQLite builds; compare query/index support and measured processing cost.
 8. **How does a tool like Charles Proxy intercept and display HTTPS traffic, and why is this harder to do if you use Protocol Buffers instead of JSON?**
-   Charles acts as a Man-in-the-Middle by replacing SSL certificates. It's harder with Protobufs because the intercepted binary payload is unreadable without the specific `.proto` schema file to decode it.
+   An inspection proxy can terminate and re-establish TLS only when the test client trusts its certificate configuration and no other policy blocks it. JSON text is usually easier to inspect; Protobuf values need schema-aware interpretation to recover field names and types. Binary encoding is not encryption.
 9. **What is FlatBuffers, and how does its "zero-copy" deserialization differ from standard Protobufs or JSON?**
-   FlatBuffers allows accessing serialized data directly from the byte buffer without parsing it into intermediate objects in memory, skipping the CPU and memory allocation costs entirely.
+   FlatBuffers supports reading fields from a serialized buffer without first constructing a complete intermediate object graph. Buffer access, bounds/validity checks and application work still cost CPU; APIs that materialize strings or copy data may allocate. Keep the buffer alive for the views that use it.
 10. **Describe the impact of performing JSON deserialization on the Main Thread vs the IO Thread.**
-    Deserializing a large payload on the Main Thread blocks the UI, causing frame drops (jank) or ANRs. Deserializing on the IO Thread frees the Main Thread to maintain 60fps animations while the data is processed.
+    Substantial decoding on Main delays other UI work. Move CPU-heavy decoding to a suitable background dispatcher, commonly Default; use IO for blocking I/O and measure the complete pipeline. Offloading improves responsiveness but does not guarantee a specific frame rate or eliminate contention.
 
 ---
 
@@ -187,3 +187,24 @@ When designing an API contract or data architecture, a Staff engineer asks:
 - [`../patterns/command.md`](../patterns/command.md) — Commands must be serializable to be queued for offline execution.
 - [`../android/architecture/savedstatehandle.md`](../android/architecture/savedstatehandle.md) *(Pending)* — How Android serializes ViewModel state to survive process death.
 - Google Developers: [Parcelables and Bundles](https://developer.android.com/guide/components/activities/parcelables-and-bundles)
+
+### Official verification references
+
+The corrections in this chapter were checked against the following primary references.
+
+- [www.rfc-editor.org: rfc8259](https://www.rfc-editor.org/rfc/rfc8259)
+- [protobuf.dev: encoding](https://protobuf.dev/programming-guides/encoding/)
+- [kotlinlang.org: ignore-unknown-keys.html](https://kotlinlang.org/api/kotlinx.serialization/kotlinx-serialization-json/kotlinx.serialization.json/-json-builder/ignore-unknown-keys.html)
+- [github.com: ReflectiveTypeAdapterFactory.java](https://github.com/google/gson/blob/main/gson/src/main/java/com/google/gson/internal/bind/ReflectiveTypeAdapterFactory.java)
+- [developer.android.com: parcelables-and-bundles](https://developer.android.com/guide/components/activities/parcelables-and-bundles)
+- [docs.oracle.com: serial-arch.html](https://docs.oracle.com/en/java/javase/21/docs/specs/serialization/serial-arch.html)
+- [developer.android.com: TransactionTooLargeException](https://developer.android.com/reference/android/os/TransactionTooLargeException)
+- [github.com: README.md](https://github.com/square/moshi/blob/master/README.md)
+- [flatbuffers.dev: white_paper](https://flatbuffers.dev/white_paper/)
+- [kotlinlang.org: -serializable](https://kotlinlang.org/api/kotlinx.serialization/kotlinx-serialization-core/kotlinx.serialization/-serializable/)
+- [developer.android.com: coroutines-best-practices](https://developer.android.com/kotlin/coroutines/coroutines-best-practices)
+- [developer.android.com: security-config](https://developer.android.com/privacy-and-security/security-config)
+- [kotlinlang.org: serialization-customization-options.html#optional-properties](https://kotlinlang.org/docs/serialization-customization-options.html#optional-properties)
+- [kotlinlang.org: explicit-nulls.html](https://kotlinlang.org/api/kotlinx.serialization/kotlinx-serialization-json/kotlinx.serialization.json/-json-builder/explicit-nulls.html)
+- [github.com: README.md](https://github.com/google/gson/blob/main/README.md)
+- [www.sqlite.org: json1.html](https://www.sqlite.org/json1.html)

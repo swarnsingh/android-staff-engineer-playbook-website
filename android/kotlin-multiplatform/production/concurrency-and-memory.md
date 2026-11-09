@@ -45,21 +45,21 @@ fun brokenExample() {
 ### The Aftermath
 This model was so painful that many early KMP adopters abandoned the platform entirely. Common complaints:
 - Any object passed to a coroutine background thread was auto-frozen.
-- `ViewModel` patterns were impossible — ViewModels need mutable state.
+- Shared mutable-state patterns required careful thread/freeze ownership under the legacy manager; this did not make every ViewModel design impossible.
 - `AtomicReference<T>` was the only way to hold mutable state across threads — ugly, error-prone, and unfamiliar to Android engineers.
 
-**Verdict:** If you encounter `.freeze()`, `isFrozen`, `ensureNeverFrozen()`, or `AtomicReference<T>` in a KMP codebase, you are looking at legacy code. Migrate immediately.
+**Migration:** Freeze-related APIs identify legacy constraints, but AtomicReference is also a current synchronization tool. An atomic reference can safely publish immutable snapshots; it does not make a mutable list's internal operations atomic.
 
 ---
 
 ## 2. Era 2: The New Memory Model (Kotlin 1.7.20+) — The Fix
 
 ### What Changed
-In October 2022, JetBrains shipped the **New Memory Model** as the default. The key changes:
+Kotlin 1.7.20, released on 29 September 2022, made the new Native memory manager the default. The key changes:
 
 1. **No more freezing.** Objects can be shared between threads freely, just like on the JVM.
 2. **A new concurrent Garbage Collector.** The GC can now trace and collect objects that are referenced by multiple threads simultaneously.
-3. **Thread-local storage is optional.** `@ThreadLocal` and `@SharedImmutable` annotations are deprecated.
+3. **Thread-local policy:** SharedImmutable is obsolete under the new manager and can be removed. ThreadLocal is not marked deprecated in the current API; retain it only for an intentional thread-local contract.
 
 ### How the New GC Works
 
@@ -123,7 +123,7 @@ When Swift holds a reference to a Kotlin object:
 - The Kotlin GC sees this as an external root — it will NOT collect the Kotlin object until Swift releases it.
 
 When Kotlin holds a reference to a Swift object:
-- Kotlin GC adds the Swift object to its root set.
+- Kotlin retains the bridged Swift object through a strong reference, which is released according to GC/ARC interop lifetime.
 - Swift ARC thinks the Swift object is still in use and won't deallocate it.
 
 **The Leak Scenario:**
@@ -195,7 +195,7 @@ viewModelScope.launch(Dispatchers.Main) {
 
 As of `kotlinx-coroutines` 1.7.0, `Dispatchers.IO` is available on Kotlin/Native. It creates a background thread pool.
 
-**Before 1.7.0:** `Dispatchers.IO` did not exist on Native. Engineers had to use `Dispatchers.Default`, which has a fixed thread pool size equal to the number of CPU cores. If all cores were occupied with CPU-intensive work and you also needed I/O concurrency, the app would deadlock.
+**Apple dispatchers:** The Darwin Default implementation uses a GCD global queue, not a fixed Kotlin pool sized to CPU count. Blocking/CPU pressure can delay work; starvation is not itself a deadlock. Choose a dispatcher and bound concurrency for the actual workload.
 
 **After 1.7.0:** `Dispatchers.IO` exists on Native with an elastic thread pool (similar to JVM), so I/O-bound operations can scale independently of CPU-bound work.
 
@@ -203,8 +203,8 @@ As of `kotlinx-coroutines` 1.7.0, `Dispatchers.IO` is available on Kotlin/Native
 
 | Property | JVM (Android) | Native (iOS) |
 |---|---|---|
-| Thread pool size | = CPU cores (typically 4-8) | = CPU cores (typically 4-6) |
-| Thread parking | JVM parks idle threads | Native destroys idle threads |
+| Default scheduling | JVM scheduler implementation | GCD global queue on Darwin; do not infer a fixed per-task native thread |
+| Thread lifetime | Runtime-managed | GCD/runtime-managed on Darwin; no thread creation/destruction guarantee per coroutine |
 | Thread creation cost | ~1ms (JVM reuses) | ~5-10ms (OS-level thread creation) |
 | Stack size per thread | 512KB-1MB configurable | 512KB (Apple default) |
 
@@ -238,40 +238,24 @@ class ProfileViewModel {
 
 ### Without SKIE (Manual Collection)
 
-```swift
-@MainActor
-class ProfileViewModelObserver: ObservableObject {
-    private let kotlinVM = ProfileViewModel()
-    @Published var state = ProfileState.companion.initial
-    private var collector: Closeable? = nil
-    
-    func startObserving() {
-        // Create a collector on a Kotlin background thread
-        collector = FlowCollector.collect(
-            flow: kotlinVM.state,
-            onEach: { [weak self] newState in
-                guard let state = newState as? ProfileState else { return }
-                // CRITICAL: Must dispatch to main thread for SwiftUI
-                DispatchQueue.main.async {
-                    self?.state = state
-                }
-            }
-        )
+A manual bridge must provide a real Kotlin cancellation handle. For example, the following application-owned bridge exposes a typed callback and owns its collection scope:
+
+```kotlin
+class ProfileStateBridge(private val state: StateFlow<ProfileState>) {
+    fun observe(onState: (ProfileState) -> Unit): StateObservation {
+        val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main)
+        scope.launch { state.collect { onState(it) } }
+        return StateObservation(scope)
     }
-    
-    deinit {
-        // If you forget this, the Kotlin coroutine runs forever!
-        collector?.close()  // Cancels the Kotlin Job
-    }
+}
+class StateObservation internal constructor(private val scope: CoroutineScope) {
+    fun close() { scope.cancel() }
 }
 ```
 
-**The dangers:**
-1. If `deinit` doesn't call `collector?.close()`, the Kotlin coroutine continues running after the Swift view is deallocated → **memory leak**.
-2. If you forget `DispatchQueue.main.async`, SwiftUI crashes because you're updating `@Published` from a background thread.
-3. The `[weak self]` is mandatory. Without it, the closure captures `self` strongly → cross-boundary reference cycle → neither the Swift object nor the Kotlin Job is ever freed.
+The Swift owner retains StateObservation while visible and calls close on disappearance, not only in deinit. Keep UI publication on MainActor and avoid a strong callback cycle (for example with a weak capture). Publishing from a background context violates SwiftUI's contract; it is not a universal guaranteed-crash diagnostic. The exported Swift names depend on the selected export path, so inspect the generated interface instead of assuming a FlowCollector.collect helper exists.
 
-### With SKIE or Kotlin 2.4 Swift Export
+### With Kotlin 2.4 Swift Export
 
 ```swift
 struct ProfileScreen: View {
@@ -314,7 +298,7 @@ struct ProfileScreen: View {
 3. When Swift's `Task` is cancelled (e.g., View disappears), the bridge cancels the Kotlin collection job.
 4. The Kotlin coroutine throws `CancellationException`, which unwinds the coroutine stack and releases references.
 
-Kotlin 2.4 Swift export enables Flow-to-`AsyncSequence` export by default and preserves public Flow element types. It is still Alpha, so production teams may keep SKIE or explicit wrappers when they need a mature generated Swift API. One important dispatcher detail remains: exported suspend functions and `asAsyncSequence()` use a Kotlin coroutine context backed by `Dispatchers.Default` unless the Kotlin implementation switches context explicitly.
+For SKIE, the generated Flow wrapper is itself an AsyncSequence: iterate viewModel.state directly. The example above is specifically Swift export's asAsyncSequence API. Select one export path, verify its generated types and cancellation behavior, and keep SwiftUI state publication on MainActor. Swift export remains Alpha in Kotlin 2.4.
 
 ```kotlin
 suspend fun loadProfileOnMain(): Profile =
@@ -337,7 +321,7 @@ GlobalScope.launch {
     }
 }
 ```
-On Android, `GlobalScope` leaks are bad but survivable (the process is killed on app close). On iOS, a `GlobalScope` coroutine runs *indefinitely* until the app is killed by the OS. If it holds references to UI objects, memory grows unbounded.
+GlobalScope lacks the screen/feature ownership needed on either platform. Android task removal does not universally kill the process, and suspended iOS apps do not execute indefinitely. Cancel owned scopes and release callbacks when the feature ends.
 
 ### 2. The Main Thread Deadlock
 ```kotlin
@@ -351,7 +335,7 @@ runBlocking(Dispatchers.Main) {
 ```
 
 ### 3. The `Dispatchers.Main.immediate` Assumption
-On Android, `Dispatchers.Main.immediate` skips dispatch if you're already on the main thread. On Kotlin/Native, this behavior exists but with a subtle difference: the "main thread" check uses Apple's `pthread_main_np()` function, which can return false during app initialization before `UIApplicationMain` is called.
+On Darwin the current implementation compares CFRunLoopGetCurrent with CFRunLoopGetMain. Do not infer a pre-UIApplicationMain failure from a different API; avoid runBlocking(Main) and test the actual initialization path.
 
 ---
 
@@ -365,11 +349,11 @@ On Android, `Dispatchers.Main.immediate` skips dispatch if you're already on the
 
 ## Answer Key
 
-1. Replace the atomic container-of-mutable-state with immutable snapshots exposed through `StateFlow`, and serialize mutations with a `Mutex`, actor, or single owner. Atomics remain useful only for genuinely lock-free scalar coordination.
+1. Use StateFlow/serialized mutations or an atomic immutable snapshot according to the contract. AtomicReference remains legitimate; atomically replacing a reference does not protect mutations inside the referenced list.
 2. Swift retains the Kotlin object, Kotlin retains the closure, and the closure retains Swift. ARC cannot see through Kotlin GC ownership and Kotlin GC cannot release an externally retained Swift object; explicitly break the closure/reference cycle.
 3. CPU-bound work can occupy the Default pool and delay the short query. Bound image parallelism, move blocking database calls to an appropriate dispatcher, and prioritize/partition workloads instead of launching unbounded jobs.
 4. Manual bridging continues until its collection job is cancelled. If `close()` is omitted, the collector/bridge and captured Swift view model can remain reachable after the view disappears.
-5. Measure before tuning. The supported default is the `pmcs` collector; allocator paging can be disabled with `kotlin.native.binary.pagedAllocator=false`, safepoint signposts aid Instruments analysis, and `-Xallocator=mimalloc` changes allocator behavior. Each option trades pause/throughput/memory characteristics and must be benchmarked on target devices.
+5. Kotlin 2.4 uses concurrent mark-and-sweep by default; pmcs is a documented fallback. Measure pauses, throughput and memory on target devices before selecting supported GC/allocator options for the pinned compiler.
 
 ## Further Reading
 
@@ -379,3 +363,13 @@ On Android, `Dispatchers.Main.immediate` skips dispatch if you're already on the
 - [Kotlin/Native memory management](https://kotlinlang.org/docs/native-memory-manager.html) — current collector behavior and supported binary options.
 - [Swift/Objective-C ARC integration](https://kotlinlang.org/docs/native-arc-integration.html) — cross-runtime lifecycle and retain-cycle behavior.
 - [`testing-and-mocking.md`](testing-and-mocking.md) — How to test concurrent code in `commonTest` across both runtimes.
+
+### Official verification references
+
+- [Primary documentation or owning implementation](https://developer.android.com/guide/components/activities/process-lifecycle)
+- [Primary documentation or owning implementation](https://github.com/Kotlin/kotlinx.coroutines/blob/master/kotlinx-coroutines-core/nativeDarwin/src/Dispatchers.kt)
+- [Primary documentation or owning implementation](https://kotlinlang.org/api/core/kotlin-stdlib/kotlin.native.concurrent/-thread-local/)
+- [Primary documentation or owning implementation](https://kotlinlang.org/docs/native-migration-guide.html)
+- [Primary documentation or owning implementation](https://kotlinlang.org/docs/native-objc-interop.html)
+- [Primary documentation or owning implementation](https://kotlinlang.org/docs/native-swift-export.html)
+- [Primary documentation or owning implementation](https://skie.touchlab.co/features/flows)

@@ -338,21 +338,32 @@ annotation class LoggedUserScoped
 
 @DefineComponent(parent = SingletonComponent::class)
 @LoggedUserScoped
-interface UserComponent
+interface UserComponent {
+    @DefineComponent.Builder
+    interface Builder {
+        fun userId(@BindsInstance @UserId id: String): Builder
+        fun build(): UserComponent
+    }
+}
+
+@Qualifier @Retention(AnnotationRetention.BINARY)
+annotation class UserId
 
 @LoggedUserScoped
 class UserSessionState @Inject constructor(@UserId val userId: String) {
     // Tied to the LoggedUser component lifetime.
 }
 
+@Singleton
 class SessionManager @Inject constructor(
-    componentBuilder: UserComponent.Builder,
+    private val builders: javax.inject.Provider<UserComponent.Builder>,
 ) {
     private var component: UserComponent? = null
     private var scope: CoroutineScope? = null   // matched coroutine scope
 
     fun login(userId: String) {
-        component = componentBuilder.userId(userId).build()
+        logout() // End the previous explicitly owned session first.
+        component = builders.get().userId(userId).build()
         scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
     }
 
@@ -461,3 +472,7 @@ Both scopes start and end at the same time (login/logout). This is the right sha
 - [Android Developers — Coroutine scopes](https://developer.android.com/topic/libraries/architecture/coroutines) — official.
 - [Hilt — Component scopes](https://developer.android.com/training/dependency-injection/hilt-android#component-scopes) — official.
 - [Manuel Vivo — Cancellation in coroutines](https://medium.com/androiddevelopers/cancellation-in-coroutines-aa6b90163629) — what cancellation really means.
+
+### Official verification references
+
+- [Primary documentation or owning implementation](https://dagger.dev/hilt/custom-components.html)

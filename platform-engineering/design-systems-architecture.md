@@ -40,15 +40,17 @@ graph TD
 // One tier — hardcoded everywhere:
 Button(modifier = Modifier.background(Color(0xFF0052CC)))  // 200 occurrences
 
-// Two tiers — better, but a rebrand still touches every consumer of `primary`:
+// Two tiers — a rebrand is one line (colorPrimary = color_red_500), but you
+// can't restyle only the button without changing every consumer of colorPrimary:
 Button(modifier = Modifier.background(colorPrimary))
 
-// Three tiers — a rebrand changes ONE line in the semantic layer:
+// Three tiers — the rebrand is still one semantic line, and a button-only
+// change is one component-token line:
 Button(modifier = Modifier.background(buttonPrimaryBg))
-// buttonPrimaryBg = colorPrimary = color_red_500  ← only this line changes
+// buttonPrimaryBg = colorPrimary   ← retarget this line to restyle buttons alone
 ```
 
-The third tier is what lets a single Figma update propagate through code without breaking consumers.
+The second tier is what makes a rebrand a one-line change; the third tier is what lets designers change one component from Figma without touching every other consumer of the same semantic token.
 
 ---
 
@@ -88,7 +90,7 @@ data class CompanyShapes(
 )
 ```
 
-`@Immutable` is essential — it tells the Compose compiler the values never change, so recompositions can skip them. Without it, every recomposition treats the token bundle as unstable and re-runs every child.
+`@Immutable` states the contract: once built, these values never change, so Compose may compare them with `equals()` and skip composables whose token arguments are equal. Classes whose properties are all `val`s of stable types (`Color`, `Dp`, `TextStyle`, `Shape`) are usually inferred stable anyway; the annotation matters when a property type can't be inferred (for example, a `List`). With strong skipping (on by default since Kotlin 2.0.20), composables with unstable parameters still skip, but compare those parameters by instance (`===`), so a freshly allocated but equal bundle would not skip.
 
 ### Wiring via `CompositionLocal`
 
@@ -124,7 +126,7 @@ fun CompanyTheme(
 }
 ```
 
-`staticCompositionLocalOf` (not `compositionLocalOf`) — because reading colors should not be observed for recomposition (we never change them in flight; we re-provide the entire theme). This is a measurable perf win on large screens.
+`staticCompositionLocalOf` (not `compositionLocalOf`) — because reading colors should not be observed for recomposition (we never change them in flight; we re-provide the entire theme). Compose doesn't track reads of a static local; changing its value recomposes the whole content lambda where it is provided. Android's guidance is to use it when the value is highly unlikely to change, for the performance benefit.
 
 Engineers then consume tokens by name:
 
@@ -216,7 +218,8 @@ dependencies {
 Enforce with a Lint rule:
 
 ```kotlin
-// :build-logic/convention/.../DesignSystemDetector.kt
+// :core:design-system-lint/src/main/kotlin/.../RawMaterialImportDetector.kt
+// (a pure-Kotlin lint checks module, not build-logic)
 class RawMaterialImportDetector : Detector(), Detector.UastScanner {
     override fun getApplicableUastTypes() = listOf(UImportStatement::class.java)
     override fun createUastHandler(context: JavaContext) = object : UElementHandler() {
@@ -250,7 +253,7 @@ class RawMaterialImportDetector : Detector(), Detector.UastScanner {
 }
 ```
 
-Ship the lint check as part of the design-system module so it auto-applies wherever the design system is consumed.
+Ship the lint check with the design-system module so it auto-applies wherever the design system is consumed: `lintPublish(project(":core:design-system-lint"))` in `:core:design-system` packages the checks as `lint.jar` inside its AAR, and lint applies them in every module that depends on the design system. Import-based checks miss wildcard imports and fully qualified calls; a production rule should also match resolved calls to the Material composables.
 
 ---
 
@@ -271,7 +274,8 @@ val PremiumLightColors = CompanyColors(
     // ...
 )
 
-// :app/MainActivity.kt
+// :app/MainActivity.kt — BRAND is a per-flavor buildConfigField; BuildConfig
+// generation is off by default since AGP 8.0 (buildFeatures { buildConfig = true })
 val colors = when (BuildConfig.BRAND) {
     "default" -> DefaultLightColors
     "premium" -> PremiumLightColors
@@ -294,7 +298,7 @@ Every component in the design system must:
 - Respect text scaling: every `TextStyle` uses `sp`, not `dp`.
 - Handle TalkBack focus order via `Modifier.semantics`.
 
-The platform team's leverage: feature engineers don't think about accessibility; they get it for free as long as they use `CompanyButton`. The price of taking that leverage away (one team builds a raw Button) is one regression that ships to thousands of users.
+The platform team's leverage: feature engineers inherit the component-level baseline (touch targets, contrast, semantics) as long as they use `CompanyButton`; they still own screen-level work such as content descriptions and focus order. The price of taking that leverage away (one team builds a raw Button) is one regression that ships to thousands of users.
 
 Add a Compose Preview that renders every component at 200% text scale + dark mode + RTL:
 
@@ -305,7 +309,7 @@ Add a Compose Preview that renders every component at 200% text scale + dark mod
 annotation class ComponentPreviews
 ```
 
-Tag every design-system component with `@ComponentPreviews` and add a Paparazzi snapshot test that fails CI if pixels drift.
+Annotate each design-system component's preview function with `@ComponentPreviews` (multipreview annotations apply to `@Composable` preview functions, not to the components themselves), and add a Paparazzi snapshot test that fails CI if pixels drift.
 
 ---
 
@@ -317,15 +321,20 @@ The mature setup: designers maintain tokens in Figma (Tokens Studio, Figma Varia
 # .github/workflows/sync-tokens.yml
 name: Sync design tokens
 on:
-  schedule: [{ cron: "0 6 * * 1" }]   # Monday 6am
+  schedule: [{ cron: "0 6 * * 1" }]   # Monday 06:00 UTC
   workflow_dispatch:
+permissions:
+  contents: write        # push the sync branch
+  pull-requests: write   # open the PR (also allow Actions to create PRs in repo settings)
 jobs:
   sync:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - run: ./gradlew :tools:token-sync:run
-      - uses: peter-evans/create-pull-request@v6
+        env:
+          FIGMA_TOKEN: ${{ secrets.FIGMA_TOKEN }}   # needs the file_variables:read scope
+      - uses: peter-evans/create-pull-request@v8
         with:
           title: "chore(tokens): sync from Figma"
           branch: tokens-sync
@@ -334,8 +343,8 @@ jobs:
 
 The `:tools:token-sync` task:
 
-1. Reads Figma's REST API (`/v1/files/<key>/variables/local`).
-2. Maps Figma variables → Kotlin generated source under `:core:design-system/build/generated/tokens/`.
+1. Reads Figma's REST API (`GET /v1/files/:file_key/variables/local`). The Variables REST API is available only to members of Enterprise organizations; on other plans, export tokens with a plugin such as Tokens Studio instead.
+2. Maps Figma variables → checked-in Kotlin source, such as `:core:design-system/src/main/kotlin/.../tokens/GeneratedTokens.kt`. It must not write under `build/`: that directory is ignored by Git, so the pull request would contain nothing.
 3. Runs `./gradlew spotlessApply` to format.
 
 Result: designers never wait on engineers to push a token change. Engineers never type a hex code.
@@ -349,12 +358,12 @@ Treat `:core:design-system` as a public SDK consumed by your own feature teams. 
 | Change type | SemVer | Process |
 |---|---|---|
 | New component or new token | MINOR | Add, ship, announce |
-| New optional parameter on existing component | MINOR | Default value preserves old behavior |
-| Renaming an existing API | MAJOR | `@Deprecated(replaceWith = ...)` for one release; then remove |
+| New optional parameter on existing component | MINOR only if the old signature survives | A default value keeps source compatibility, but the JVM signature changes; keep the old overload (hidden) or the change breaks already-compiled callers |
+| Renaming an existing API | MINOR to add the new name and deprecate the old; MAJOR to remove it | `@Deprecated(replaceWith = ...)`: warning, then error, then hidden; remove only in a major release |
 | Changing default behavior (e.g., button height 44dp → 48dp) | MAJOR | Coordinate rollout; flag in release notes |
 | Removing a component | MAJOR | Six-month deprecation; migration tool |
 
-Publish the design system as a versioned artifact (even internally) using the [`library-versioning.md`](library-versioning.md) playbook. Use [binary-compatibility-validator](https://github.com/Kotlin/binary-compatibility-validator) to detect accidental ABI breaks.
+Publish the design system as a versioned artifact (even internally) using the [`library-versioning.md`](library-versioning.md) playbook. Use ABI validation to detect accidental ABI breaks: the Kotlin Gradle plugin's experimental [`abiValidation`](https://kotlinlang.org/docs/gradle-binary-compatibility-validation.html), or [binary-compatibility-validator](https://github.com/Kotlin/binary-compatibility-validator), which is now in maintenance mode.
 
 ---
 
@@ -455,4 +464,3 @@ Publish adoption like any platform metric. If only half the org uses the design 
 - [Material Design 3 — Design tokens](https://m3.material.io/foundations/design-tokens/overview) — Google's reference vocabulary.
 - [Tokens Studio for Figma](https://tokens.studio/) — token authoring and export.
 - [Now in Android — DS module](https://github.com/android/nowinandroid/tree/main/core/designsystem) — Google's canonical Compose DS structure.
-- [Airbnb Design](https://airbnb.design/) — current official design practice and systems writing.

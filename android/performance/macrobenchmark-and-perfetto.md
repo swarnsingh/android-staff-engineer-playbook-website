@@ -112,10 +112,11 @@ trace("FeedRepository.toUiModels") {
 For coroutines:
 
 ```kotlin
-suspend fun loadFeed() = trace("Feed/load") {
-    withContext(ioDispatcher) {
-        api.fetchFeed()
-    }
+// androidx.tracing:tracing:1.3.0 (1.3.0 moved the tracing-ktx code into tracing)
+// import androidx.tracing.trace
+// Synchronous section stays inside the selected thread's non-suspending block.
+suspend fun loadFeed() = withContext(ioDispatcher) {
+    trace("Feed/loadBlocking") { blockingApi.fetchFeed() }
 }
 ```
 
@@ -201,3 +202,7 @@ Performance budgets should be tied to the lowest device tier you promise, not th
 - [Perfetto documentation](https://perfetto.dev/docs/)
 - [`jank.md`](jank.md) - frame deadlines and jank.
 - [`baseline-profiles.md`](baseline-profiles.md) - profile-guided startup and runtime speed.
+
+### Official verification references
+
+- [Primary documentation or owning implementation](https://developer.android.com/reference/kotlin/androidx/tracing/package-summary)

@@ -141,7 +141,7 @@ val users = dao.observeUsers()
 
 Everything above `flowOn` runs on `Dispatchers.Default`. Everything below it runs in the collector's context unless another boundary is introduced.
 
-Staff-level rule: do not sprinkle `flowOn` randomly. Each `flowOn` creates a concurrency boundary that can change cancellation timing, buffering, and stack traces. Put it at ownership boundaries:
+Staff-level rule: place `flowOn` deliberately. A dispatcher change introduces upstream/downstream coroutines and a channel boundary; a context change without a dispatcher change can remain sequential. Adjacent `flowOn`, `buffer`, and related operators can fuse rather than create one channel per call. Cross-dispatcher cancellation may discard in-flight elements. Put context policy at ownership boundaries:
 
 - DAO/database adapter owns disk dispatcher needs.
 - Repository owns network/disk mapping if it is expensive.
@@ -311,7 +311,7 @@ Good for UI frame-like updates. Be explicit that intermediate values are dropped
 | Operator | Use when | Risk |
 |---|---|---|
 | `collect` | You need every value until cancellation/completion | Never returns for hot flows |
-| `first` | You need the first matching value | Hangs if no value arrives |
+| `first` | You need the first matching value | Waits on a noncompleting flow with no match; throws NoSuchElementException if the flow completes without one |
 | `single` | Exactly one value must exist | Throws if zero or many |
 | `toList` | Finite flow in tests or batch code | Never returns for hot flows |
 | `launchIn(scope)` | You have already used `onEach` and want collection tied to a scope | Easy to hide lifecycle and error handling |
@@ -404,3 +404,8 @@ In production tests, prefer Turbine for Flow assertions and `runTest` for determ
 - [`../android/concurrency/shared-flow-and-state-flow.md`](../../android/concurrency/shared-flow-and-state-flow.md) - hot-flow selection.
 - [Kotlin Flow guide](https://kotlinlang.org/docs/flow.html)
 - [Kotlin API: Flow](https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines.flow/-flow/)
+
+### Official verification references
+
+- [Primary documentation or owning implementation](https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines.flow/first.html)
+- [Primary documentation or owning implementation](https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines.flow/flow-on.html)

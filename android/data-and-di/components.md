@@ -17,7 +17,7 @@ Activity ready → ActivityComponent created (lost on rotation)
    ↓
 Fragment created → FragmentComponent created
    ↓
-Fragment view ready → ViewComponent created
+View created → ViewComponent under ActivityComponent; @WithFragmentBindings uses ViewWithFragmentComponent under FragmentComponent
 ```
 
 When the corresponding Android object is destroyed, its component is too — and every `@Scoped` dependency inside dies with it.
@@ -31,7 +31,7 @@ Hilt pre-generates this hierarchy for you. Dagger required you to write `@Subcom
 | Component | Created | Destroyed | Scope annotation | Default for |
 |---|---|---|---|---|
 | **`SingletonComponent`** | `Application.onCreate` | Process death | `@Singleton` | Retrofit, Room DB, app-wide caches |
-| **`ActivityRetainedComponent`** | First Activity created | Activity finished (NOT rotation) | `@ActivityRetainedScoped` | ViewModels (via `@HiltViewModel`), session-scoped state |
+| **`ActivityRetainedComponent`** | First Activity created | Activity finished (NOT rotation) | `@ActivityRetainedScoped` | Dependencies shared across ViewModels belonging to the retained Activity |
 | **`ActivityComponent`** | Activity created | Activity destroyed (incl. rotation) | `@ActivityScoped` | Per-Activity helpers, ActionBar/Toolbar state |
 | **`ViewModelComponent`** | ViewModel created | ViewModel cleared | `@ViewModelScoped` | Per-screen repositories, use-cases |
 | **`FragmentComponent`** | Fragment created | Fragment destroyed | `@FragmentScoped` | Fragment-specific helpers |
@@ -50,7 +50,8 @@ graph TD
   ActRet --> Activity["ActivityComponent<br/>activity instance"]
   ActRet --> VM["ViewModelComponent<br/>per-ViewModel"]
   Activity --> Fragment["FragmentComponent<br/>fragment instance"]
-  Fragment --> View["ViewComponent<br/>view instance"]
+   Activity --> View["ViewComponent<br/>view instance"]
+   Fragment --> FragmentView["ViewWithFragmentComponent<br/>view using fragment bindings"]
 
   Singleton --> Service["ServiceComponent<br/>service instance"]
 ```
@@ -174,13 +175,13 @@ object DataModule {
 
 ### `ActivityRetainedComponent` — Rotation-Surviving
 
-The component that powers `@HiltViewModel`. Created the first time an Activity is created; lives until that Activity is permanently finished (NOT recreated on rotation).
+The retained component is an ancestor shared by the Activity's ViewModel components. Each Hilt ViewModel is created through its own `ViewModelComponent`; dependencies explicitly annotated `@ActivityRetainedScoped` can be shared across those ViewModels.
 
 ```kotlin
 @HiltViewModel
 class CartViewModel @Inject constructor(
     private val repo: CartRepository,
-) : ViewModel()   // automatically @ActivityRetainedScoped via the @HiltViewModel macro
+) : ViewModel()   // ViewModelComponent supplies the ViewModel dependencies.
 ```
 
 You can also explicitly scope a non-ViewModel object to this lifetime:
@@ -337,13 +338,14 @@ interface UserEntryPoint {
     fun userAnalytics(): UserAnalytics
 }
 
+@Singleton
 class SessionManager @Inject constructor(
-    private val componentBuilder: LoggedUserComponent.Builder,
+    private val builders: javax.inject.Provider<LoggedUserComponent.Builder>,
 ) {
     private var component: LoggedUserComponent? = null
 
     fun login(userId: String) {
-        component = componentBuilder.userId(userId).build()
+        component = builders.get().userId(userId).build()
     }
 
     fun logout() {
@@ -351,7 +353,7 @@ class SessionManager @Inject constructor(
     }
 
     fun prefs(): UserPreferences = component!!
-        .let { EntryPointAccessors.fromGenericComponent(it, UserEntryPoint::class.java) }
+        .let { dagger.hilt.EntryPoints.get(it, UserEntryPoint::class.java) }
         .userPreferences()
 }
 ```
@@ -441,7 +443,7 @@ class SyncWorker @AssistedInject constructor(
 }
 ```
 
-Workers run in a hidden internal component but pull `@Singleton` deps from the main graph.
+HiltWorkerFactory creates a HiltWorker using SingletonComponent bindings; a Worker is not represented by an additional hidden component in the standard Hilt hierarchy.
 
 ---
 
@@ -454,7 +456,7 @@ Workers run in a hidden internal component but pull `@Singleton` deps from the m
 | `@ViewModelScoped` cache resets on rotation | Misunderstanding — ViewModel survives rotation, so the component lives | This is actually correct; `@ViewModelScoped` *does* survive rotation |
 | `@ActivityScoped` state lost on rotation | This is by design | If state should survive rotation, use `@ActivityRetainedScoped` or ViewModel |
 | Compile error: "Scope annotation @X not allowed" | Module/binding installed in wrong component | Match annotation to component (see decision table) |
-| Cannot inject Activity-scoped dep into ViewModel | ViewModel lives in `ActivityRetainedComponent`, not `ActivityComponent` | Re-scope dep to `@ActivityRetainedScoped` or `@Singleton` |
+| Cannot inject Activity-scoped dep into ViewModel | ViewModelComponent is a sibling of ActivityComponent under ActivityRetainedComponent | Use a dependency whose actual owner and scope are valid for the ViewModel; do not retain Activity state in a longer-lived binding |
 | Crash: "Cannot use @AndroidEntryPoint on Application" | Application uses `@HiltAndroidApp`, not `@AndroidEntryPoint` | Use the correct annotation per class type |
 | ContentProvider can't inject deps | ContentProviders aren't `@AndroidEntryPoint`-able directly | Use `EntryPointAccessors.fromApplication` |
 | Custom component never created | Forgot to call `Builder.build()` | Verify lifecycle: build on session start, null out on end |
@@ -486,7 +488,7 @@ Workers run in a hidden internal component but pull `@Singleton` deps from the m
 2. `@ActivityScoped` vs `@ActivityRetainedScoped` — give a concrete example where each is correct, and where mixing them is wrong.
 3. Walk through what happens when you launch a Hilt app: which components get created, in what order, and when each is destroyed.
 4. A `@Module @InstallIn(SingletonComponent::class) provideX(@ActivityContext ctx)` — does this compile? Why or why not?
-5. Why is `@HiltViewModel` scoped to `ActivityRetainedComponent` rather than `ActivityComponent`?
+5. Which component supplies a Hilt ViewModel, and why can it not depend on an ActivityComponent-scoped object?
 6. Walk through `EntryPointAccessors.fromApplication` — what's the underlying mechanism, and why is it preferred over reflective access?
 7. You have a `Session` object that should live from login to logout, regardless of which Activity is on screen. Design the Hilt component for it.
 8. Module installed in two components — when is this right, and when does it indicate a smell?
@@ -505,8 +507,8 @@ Workers run in a hidden internal component but pull `@Singleton` deps from the m
    `Application.onCreate()` creates `SingletonComponent` (destroyed on process death). `Activity.onCreate()` creates `ActivityRetainedComponent` (destroyed when activity finishes), which then builds `ActivityComponent` (destroyed on rotation/destroy). When the activity adds a fragment, `FragmentComponent` is created (destroyed with fragment).
 4. **A `@Module @InstallIn(SingletonComponent::class) provideX(@ActivityContext ctx)` — does this compile? Why or why not?**
    It does not compile. `SingletonComponent` outlives any Activity and is created at app startup. It does not have access to an `@ActivityContext` binding, so Hilt fails the build with a missing binding error.
-5. **Why is `@HiltViewModel` scoped to `ActivityRetainedComponent` rather than `ActivityComponent`?**
-   ViewModels are designed by the Android framework to survive configuration changes (rotation). `ActivityComponent` is destroyed on rotation. Therefore, ViewModels must live in `ActivityRetainedComponent`, which maps to that exact rotation-surviving lifetime.
+5. **Which component supplies a Hilt ViewModel, and why can it not depend on an ActivityComponent-scoped object?**
+   Hilt uses ViewModelComponent for each ViewModel. ViewModelComponent and ActivityComponent are siblings beneath ActivityRetainedComponent. A ViewModel can use bindings from its own component and ancestors, not the Activity sibling. ViewModelStore ownership lets it survive Activity recreation without retaining the old Activity.
 6. **Walk through `EntryPointAccessors.fromApplication` — what's the underlying mechanism, and why is it preferred over reflective access?**
    It casts the given `Context.applicationContext` to the generated `SingletonComponent` interface and returns the requested dependency. It's preferred because it relies on generated code interfaces rather than slow, brittle runtime reflection, ensuring compile-time safety and performance.
 7. **You have a `Session` object that should live from login to logout, regardless of which Activity is on screen. Design the Hilt component for it.**
@@ -534,5 +536,12 @@ Workers run in a hidden internal component but pull `@Singleton` deps from the m
 - [`../../kotlin/language-core/delegation.md`](../../kotlin/language-core/delegation.md) — `by viewModels()` + Hilt.
 - [Hilt — Component hierarchy (official)](https://developer.android.com/training/dependency-injection/hilt-android#component-hierarchy) — official.
 - [Hilt — Component lifetimes (official)](https://developer.android.com/training/dependency-injection/hilt-android#component-lifetimes) — official.
-- [Manuel Vivo — Migrating to Hilt](https://medium.com/androiddevelopers/) — Google DevRel migration playbook.
+- [Dagger — Migrating to Hilt](https://dagger.dev/hilt/migration-guide) — official migration guide.
 - [Dagger / Hilt source](https://github.com/google/dagger) — read the generated code to understand what's happening.
+
+### Official verification references
+
+- [Primary documentation or owning implementation](https://dagger.dev/hilt/components.html)
+- [Primary documentation or owning implementation](https://dagger.dev/hilt/components.html#component-hierarchy)
+- [Primary documentation or owning implementation](https://dagger.dev/hilt/custom-components.html)
+- [Primary documentation or owning implementation](https://developer.android.com/training/dependency-injection/hilt-jetpack#workmanager)

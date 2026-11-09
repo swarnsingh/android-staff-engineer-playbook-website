@@ -221,7 +221,7 @@ For local typeahead:
 1. **Why is binary search O(log n)?**
    Because it halves the search space at each step, requiring at most log₂(n) comparisons to find the target or determine it doesn't exist.
 2. **What invariant must hold before using binary search?**
-   The array must be strictly sorted according to the exact same comparator that the binary search algorithm uses.
+   The array must be sorted according to the exact same comparator that the binary search algorithm uses.
 3. **Why do stable tie-breakers matter for pagination?**
    Without them, items with equal scores can shift positions arbitrarily between requests, causing missing or duplicated items across page boundaries.
 4. **When would you prefer a linear scan over a hash map?**

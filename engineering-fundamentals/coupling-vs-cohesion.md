@@ -115,7 +115,7 @@ If `feature:cart` needs to fetch data, it does *not* depend directly on `core:ne
 
 **ViewBinding vs `findViewById`**
 
-Historically, using `findViewById<TextView>(R.id.title)` coupled the Java/Kotlin code directly to the XML layout structure. If a designer changed the ID or removed the view from XML, the code would compile perfectly but crash at runtime with a `NullPointerException`. The coupling was high, but invisible to the compiler.
+Historically, using `findViewById<TextView>(R.id.title)` coupled the Java/Kotlin code directly to the XML layout structure. If an ID disappears from every resource, the generated R reference can fail compilation. If the ID still exists elsewhere but not in the inflated hierarchy, findViewById can return null and fail when used. The coupling was high, but partly invisible to the compiler.
 
 `ViewBinding` (and later, Jetpack Compose) solves this by explicitly linking the UI definition and the logic, enforcing type safety and null safety at compile time, reducing the brittle runtime coupling.
 
@@ -141,7 +141,7 @@ Historically, using `findViewById<TextView>(R.id.title)` coupled the Java/Kotlin
 When reviewing architecture, a Staff engineer asks:
 
 1.  **What changes together?** If changing file A *always* means changing file B, they are highly coupled. Should they be merged into a single cohesive unit?
-2.  **Is the interface actually hiding anything?** If we have an `interface UserApi` and the only implementation is `RetrofitUserApi`, and the interface methods are annotated with `@GET` and `@Path`, the interface is useless. It hasn't decoupled anything; it has just added boilerplate.
+2.  **Is the interface actually hiding anything?** A Retrofit service interface annotated with @GET and @Path is useful: it declares the HTTP contract and Retrofit generates its implementation. It is intentionally transport-specific. Add a separate application-facing abstraction when callers should not depend on Retrofit types or HTTP details.
 3.  **Feature vs Layer Cohesion:** Grouping by layer (all ViewModels in one package, all DAOs in another) is low cohesion. If I work on "Checkout", I have to open 4 packages. Grouping by feature (CheckoutViewModel and CheckoutDao in the same package) is high cohesion.
 
 ## Common Misconceptions
@@ -165,7 +165,7 @@ When reviewing architecture, a Staff engineer asks:
 ## Answer Key
 
 1.  **How does Dependency Injection (like Dagger/Hilt) directly impact the coupling of an Android application?**
-    It injects dependencies through interfaces rather than concrete implementations, preventing classes from being tied to the instantiation and specific types of their dependencies, thus achieving loose coupling.
+    Dependency injection supplies dependencies from outside the class instead of having it construct or locate them. Both concrete classes and interfaces can be injected. An interface helps substitution when its contract hides details the caller should not know; DI alone does not guarantee loose coupling.
 2.  **Explain the concept of "Shotgun Surgery" and how it relates to cohesion.**
     Shotgun Surgery occurs when a single conceptual change requires edits across many different files. It indicates low cohesion because related logic is scattered rather than being grouped together.
 3.  **Give an example of a "Leaky Abstraction" in an Android networking layer that increases coupling.**
@@ -173,11 +173,11 @@ When reviewing architecture, a Staff engineer asks:
 4.  **Why is "Package by Feature" considered more cohesive than "Package by Layer"?**
     Package by Feature groups all related UI, domain, and data logic for a specific feature in one place, ensuring that files that change together live together (high cohesion). Package by Layer scatters a feature across multiple directories.
 5.  **How do Kotlin's internal visibility modifiers (`internal`) help enforce low coupling in a multi-module architecture?**
-    The `internal` keyword restricts visibility to the current module, preventing other modules from directly coupling to implementation details and forcing them to use public interfaces.
+    In Kotlin source, internal limits access to the compilation module, with documented friend-compilation exceptions such as tests. It helps hide implementation details; it is not a JVM security boundary, and a module's public API need not be a Kotlin interface declaration.
 6.  **If you have two microservices that communicate via a shared database, what kind of coupling is that, and why is it dangerous?**
     This is called "database coupling" or "shared state coupling". It is dangerous because a schema change in one service will silently break the other, creating high implicit coupling.
 7.  **How does the Observer pattern (e.g., Kotlin Flow) reduce coupling between the UI and the data layer compared to using callbacks?**
-    The data layer simply emits a stream of state without knowing who is listening, rather than maintaining a reference to a specific callback interface. The UI layer independently subscribes to the stream.
+    A Flow API can expose values without naming a UI consumer; a callback interface can also do that. Both approaches retain contracts about values, errors and lifetime. Flow adds composition and coroutine cancellation conventions, while correct callback registration and cleanup can also preserve low coupling.
 8.  **Can a class be highly cohesive but also highly coupled? Provide a theoretical example.**
     Yes. A `BitcoinWallet` class might have perfectly focused logic (high cohesion) but depend directly on concrete classes for networking, databases, and cryptography rather than interfaces (high coupling).
 9.  **Why might you intentionally choose to duplicate code across two feature modules rather than extract it into a shared core module?**
@@ -190,3 +190,14 @@ When reviewing architecture, a Staff engineer asks:
 - [`../patterns/adapter.md`](../patterns/adapter.md) — The pattern used to decouple an application from third-party libraries.
 - [`../patterns/repository.md`](../patterns/repository.md) — The pattern used to decouple business logic from data access.
 - [Solid Principles (Single Responsibility)](../principles/single-responsibility.md) — The foundation of high cohesion.
+
+### Official verification references
+
+The corrections in this chapter were checked against the following primary references.
+
+- [developer.android.com: view-binding](https://developer.android.com/topic/libraries/view-binding)
+- [lysine.dev: retrofit](https://lysine.dev/retrofit/)
+- [developer.android.com: dependency-injection](https://developer.android.com/training/dependency-injection)
+- [kotlinlang.org: visibility-modifiers.html](https://kotlinlang.org/docs/visibility-modifiers.html)
+- [kotlinlang.org: -state-flow](https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines.flow/-state-flow/)
+- [kotlinlang.org: callback-flow.html](https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines.flow/callback-flow.html)

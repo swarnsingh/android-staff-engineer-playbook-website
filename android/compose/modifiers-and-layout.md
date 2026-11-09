@@ -31,17 +31,13 @@ Failing to understand the chain makes layouts fragile because a change in order 
 ## First Principles
 
 1.  **The Box Model:** Every Compose element is a box. Modifiers decorate that box.
-2.  **Order Matters:** Modifiers are applied sequentially. Each modifier wraps the previous one.
+2. **Order matters:** Read the chain from the first modifier toward the content. Earlier layout/drawing modifiers form outer layers around later elements; swapping them changes constraints, drawing and input bounds.
 3.  **Single-Pass Measurement:** During a measure pass, constraints travel from parent to child and measured sizes travel back up. A parent normally measures each child once, although a node can be measured again when a later layout pass is requested.
 4.  **Layouts:** `Column` (Vertical), `Row` (Horizontal), and `Box` (Z-Axis overlapping) are the three fundamental building blocks.
 
 ## Mental Model
 
-Think of Modifiers as **Wrapping a Gift**.
-- The `Text` composable is the Gift (a toy car).
-- If you apply `padding(16.dp)` first, you put the car in a clear plastic case that gives it 16dp of breathing room.
-- If you apply `background(Color.Red)` next, you wrap the clear plastic case in Red wrapping paper. (The red is on the *outside* of the padding).
-- If you applied the `background` first, you would wrap the toy car tightly in red paper, and *then* put it in the clear plastic case. (The red is on the *inside* of the padding).
+Read the wrapping from the chain's outside toward the gift. In `padding(16.dp).background(Color.Red)`, padding is the outer layer and the red background is inside it. In `background(Color.Red).padding(16.dp)`, the background is outside the padding and colors that padded area. The Text is the inner content in both cases.
 
 ## Internal Mechanics
 
@@ -152,12 +148,14 @@ In the View era, `ConstraintLayout` often helped flatten complex hierarchies. In
 - **Unbounded same-axis nested scrolling:**
   A vertically scrollable parent gives its content an unbounded maximum height. Placing another vertical lazy or scrollable container inside it without a finite height can throw `IllegalStateException` because the child cannot establish a viewport. `fillMaxHeight()` by itself is not universally a crash; under an unbounded height it cannot manufacture a finite maximum.
   *(Fix: flatten the content into one `LazyColumn`, give the nested scroller a finite height, or nest scrolling in the other axis when the design calls for it.)*
-- **Recomposing Modifiers:**
+- **Reading fast-changing position in composition:**
   ```kotlin
-  // BAD: We create a new lambda object on every single frame!
-  Box(modifier = Modifier.offset { IntOffset(x, y) }) 
+  val xState = remember { mutableIntStateOf(0) }
+  val yState = remember { mutableIntStateOf(0) }
+  // Update these from gesture events; read inside the placement lambda.
+  Box(modifier = Modifier.offset { IntOffset(xState.intValue, yState.intValue) })
   ```
-  *(Fix: As discussed in the [Jank](../performance/jank.md) module, use lambda modifiers to defer state reads to the Layout phase, avoiding Composition phase thrashing).*
+  The lambda overload defers these reads to layout placement, so position changes can avoid recomposition and remeasurement. Reading state earlier and merely capturing the resulting numbers does not defer the original read. Confirm the invalidation path with traces.
 
 ## Staff Engineer Thinking
 
@@ -213,3 +211,7 @@ When reviewing UI code, a Staff engineer focuses on Reusability and the "Modifie
 - [Android Developers: Compose modifiers](https://developer.android.com/develop/ui/compose/modifiers)
 - [Android Developers: Constraints and modifier order](https://developer.android.com/develop/ui/compose/layouts/constraints-modifiers)
 - [Android Developers: Lazy layouts and nested scrolling](https://developer.android.com/develop/ui/compose/lists#avoid-nesting-scrollable)
+
+### Official verification references
+
+- [Primary documentation or owning implementation](https://developer.android.com/develop/ui/compose/phases)

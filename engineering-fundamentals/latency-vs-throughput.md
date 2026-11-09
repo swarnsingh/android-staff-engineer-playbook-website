@@ -53,17 +53,17 @@ L = λ × W
 
 Where:
 - **L** = average number of operations in the system (concurrency)
-- **λ** = throughput (operations arriving per unit time)
+- **λ** = long-run average arrival rate across the chosen system boundary (equal to departure throughput in a stable, loss-accounted system)
 - **W** = average latency (time per operation)
 
-This is one of the few exact, useful formulas in performance engineering. It says: if your throughput goes up and your latency stays the same, the number of concurrent operations in your system goes up. If your concurrency is capped (e.g., by a fixed thread pool), increasing throughput *must* decrease latency or the system saturates.
+This is one of the few exact, useful formulas in performance engineering. It says: if your throughput goes up and your latency stays the same, the number of concurrent operations in your system goes up. For a fixed average number of operations in that boundary, higher throughput implies lower mean time in the system. A thread-pool limit caps running workers, not necessarily queued-plus-running requests; include waiting requests when applying the law.
 
 ### Trade-offs
 
 Most optimizations trade one for the other:
 
 - **Batching:** trades latency (you wait for the batch) for throughput (one batched operation is cheaper than N individual ones).
-- **Caching:** improves both for cache hits; degrades both for cache misses (lookup + miss + store).
+- **Caching:** can avoid source work on hits. Misses add cache-path work; the overall latency and throughput effects depend on hit rate, contention, refresh and miss handling.
 - **Concurrency:** can improve throughput up to a point, then degrades latency due to contention.
 - **Pipelining:** improves throughput; can either improve or worsen per-operation latency depending on contention.
 
@@ -157,55 +157,49 @@ flowchart TB
     Cache --> DB
 ```
 
-In this typical architecture:
-
-- **Cache hit:** ~1 ms latency, very high throughput (cache is in-memory).
-- **Cache miss:** 50-100 ms latency (database query), throughput bounded by database capacity.
-- **Throughput ceiling:** the database. Adding app servers won't help past that point.
-
+In this architecture, measure cache and database latency separately. A hit can avoid a database read; a miss still needs the source lookup and cache-path work. The database is the throughput ceiling only when it is the limiting resource. Adding app servers cannot remove that particular bottleneck.
 A common scaling mistake is to add app servers when the database is the bottleneck. The right move is to reduce database load (caching, query optimization, read replicas).
 
 ---
 
 ## Production Example
 
-- **Google search.** p50 ~200 ms, p99 measured in milliseconds, billions of queries per day. Latency comes from the user-facing front-end; throughput comes from massively parallel back-end fan-out and per-shard caching.
-- **Netflix streaming.** Stream start latency (how fast playback begins) is the headline metric — sub-2-second start is the target. Throughput per CDN node is in the gigabits per second, but the user only cares about their own stream.
-- **Stripe API.** Public SLO: 99% of API requests complete under 250 ms. Throughput is gated by the database; Stripe runs an enormous Postgres cluster with sharding and read replicas to keep latency low while throughput rises.
-- **High-frequency trading.** Microsecond-level latency dominates everything. Throughput per second is modest; latency per order is everything.
-- **Batch ETL pipelines (e.g., Snowflake nightly jobs).** Throughput is paramount; per-row latency is irrelevant.
+Different workloads need different measurements:
 
-The shared lesson: the right metric depends on the workload. A trading system optimized like an ETL pipeline would fail; an ETL pipeline optimized like a trading system would be absurdly expensive.
+- **Interactive search:** measure end-to-end response latency and sustainable query rate together. *The Tail at Scale* explains why fan-out makes slow individual components important to overall responsiveness.
+- **Streaming:** distinguish playback-start delay, rebuffering and sustained delivery rate. A high transfer rate alone does not describe how quickly playback starts.
+- **Transactional APIs:** define latency and availability objectives for the specific operation and load. Do not treat an uncited company-wide percentile or database architecture as a public guarantee.
+- **Trading and batch processing:** both need capacity and deadlines, but the useful time scale and unit of work differ. A batch completion deadline can matter even when per-row latency does not.
 
----
+These are workload categories, not claims about a particular company's current SLO or deployment.
 
 ## Android Example
 
 On Android, latency and throughput live at very different time scales than on the server.
 
-**Frame budget:** 60 fps requires a frame every 16.6 ms. Each frame is a *latency budget*. Anything (layout, draw, decode) that exceeds 16 ms causes a dropped frame — jank. The user perceives 1-2 dropped frames as a glitch and 10+ as broken.
+**Frame budget:** at 60 Hz the display interval is about 16.7 ms; at 120 Hz it is about 8.3 ms. Work on a frame's critical path must meet its deadline. Diagnose late frames with traces rather than assuming every operation has a universal 16 ms allowance or a fixed perceptual threshold.
 
-**Startup latency:** cold start should complete in 5 seconds; warm start in 2; hot resume in 1. These are latency SLOs visible to the user.
+**Startup latency:** Android vitals considers TTID excessive at 5 seconds or longer for cold starts, 2 seconds or longer for warm starts, and 1.5 seconds or longer for hot starts. These are diagnostic thresholds, not recommended product SLOs; set tighter experience goals appropriate to the app.
 
-**Background throughput:** WorkManager batches jobs by network availability and charging state. The throughput of background uploads (e.g., a photo backup) is what users notice over hours and days; the latency of any individual upload is not user-facing.
+**Background throughput:** WorkManager can defer work until configured constraints hold; it is not a promise to batch a fixed number of uploads. Measure aggregate progress and any user-visible completion deadline, since an individual requested upload can also be latency-sensitive.
 
 ```kotlin
-// Latency-sensitive path: must finish in <16 ms
+// Recomposition follows observed state changes; it is not a per-frame callback.
 @Composable
 fun ProfileScreen(user: User) {
-    // Anything here runs every frame during recomposition
     Text(user.displayName)
 }
 
-// Throughput-sensitive path: doesn't matter when each item finishes
-suspend fun uploadAllPhotos(photos: List<Photo>) {
+// Application fragments: Photo and upload are supplied by the app.
+// async needs the CoroutineScope receiver supplied by coroutineScope.
+suspend fun uploadAllPhotos(photos: List<Photo>) = coroutineScope {
     photos.chunked(10).forEach { batch ->
-        batch.map { async { upload(it) } }.awaitAll()
+        batch.map { photo -> async { upload(photo) } }.awaitAll()
     }
 }
 ```
 
-The optimization for each path is different. The first must be O(1) and allocation-free; the second can be O(N) with batching.
+The first path needs sufficiently small measured work for its UI deadline, not a universal O(1) or zero-allocation rule. The upload path bounds concurrency to ten tasks per batch; its appropriate batch size depends on service limits, memory and the completion goal.
 
 See [`../android/performance/jank.md`](../android/performance/jank.md), [`../mobile-system-design/app-startup.md`](../mobile-system-design/app-startup.md), [`../android/concurrency/workmanager.md`](../android/concurrency/workmanager.md).
 
@@ -241,7 +235,7 @@ See [`../android/performance/jank.md`](../android/performance/jank.md), [`../mob
 
 **Throughput saturation under load.** As load approaches capacity, latency rises sharply (queues build up). Past capacity, throughput drops as the system thrashes. Mitigation: load shedding — explicit rejection of requests beyond capacity is better than implicit slowdown.
 
-**Latency amplification under fan-out.** A request that hits 10 downstream services has tail latency dominated by the slowest of the 10. If each has p99 = 100 ms, the overall p99 is closer to 250-300 ms. Mitigation: parallel fanout; hedged requests; aggressive timeouts on the slowest paths.
+**Latency amplification under fan-out.** When a parent waits for every parallel child, its completion time includes the maximum child latency. With independent children each having a 1% chance of exceeding 100 ms, ten children have a 1 − 0.99¹⁰ ≈ 9.6% chance that at least one exceeds that threshold. Their individual p99 values do not determine the parent p99 in milliseconds; the full distributions and dependence matter.
 
 **Coordinated omission in benchmarks.** Many benchmark tools measure latency only when they're not stalled. Real systems experience full queue wait time. Use load generators that pre-schedule requests and measure end-to-end time (e.g., wrk2, k6).
 
@@ -258,7 +252,7 @@ The whole topic is performance. The framing tools:
 - **Latency profile:** a histogram, not a number. Plot p50/p95/p99/p99.9. If you can only see one, see p99.
 - **Throughput curve:** plot throughput vs offered load. The curve flattens at saturation; the inflection point is the operating limit.
 - **Concurrency:** track the number of in-flight operations. Use Little's Law (`L = λ × W`) to sanity-check.
-- **Bottleneck analysis:** which resource is at 100% when the system saturates? That's the bottleneck.
+- **Bottleneck analysis:** inspect queueing, contention and resource demand at saturation. A serialized lock, one saturated core or a downstream concurrency cap can limit throughput while aggregate CPU utilization remains below 100%.
 
 ---
 
@@ -266,7 +260,7 @@ The whole topic is performance. The framing tools:
 
 Latency and throughput interact with reliability:
 
-- **Timeouts** must be set with the latency distribution in mind. A timeout below p99 will fail 1% of legitimate requests. A timeout above p99.9 fails to protect against pathological tail latency. The right value is usually p99 + headroom.
+- **Timeouts** need an acceptable false-timeout rate, measured latency distribution and an end-to-end deadline. Include network and connection-establishment work. A percentile can inform the choice, but neither p99 + padding nor p99.9 is a universal safe timeout.
 - **Retries** add load. Retrying every failed request can amplify a partial outage into a total one. Use bounded retries with backoff ([`../patterns/retry.md`](../patterns/retry.md)).
 - **Capacity planning** is a throughput question. Reliability under load comes from being well *below* saturation in steady state.
 - **Tail latency reduction** is a reliability technique. Hedged requests, request cancellation, and load shedding are all tail-latency tools.
@@ -327,7 +321,7 @@ Canonical: [`../observability/metrics.md`](../observability/metrics.md), [`../ob
 ## Probing Questions
 
 1. Define p99 latency in your own words. Why does it matter more than the mean?
-2. A system handles 1,000 requests per second with p50 = 50 ms. What's the average concurrency? (Apply Little's Law.)
+2. A stable system handles 1,000 requests per second with mean time in the system = 50 ms. What is its average queued-plus-running concurrency? (Apply Little's Law.)
 3. Throughput drops as load increases past some point. Why?
 4. A request that fans out to 5 services, each with p99 = 100 ms. Estimate the request's overall p99. Why is your estimate higher than 100 ms?
 5. You have 100 ms latency budget for a screen. Network round-trip is 40 ms, deserialization is 8 ms, render is 12 ms. Where should you invest optimization effort?
@@ -343,12 +337,12 @@ Canonical: [`../observability/metrics.md`](../observability/metrics.md), [`../ob
 
 1. **Define p99 latency in your own words. Why does it matter more than the mean?**
    p99 is the time within which 99% of requests complete (1% are slower). It matters more than the mean because in high-traffic or fan-out systems, the long tail (p99) dictates the experience for a massive number of users, whereas the mean hides extreme outliers.
-2. **A system handles 1,000 requests per second with p50 = 50 ms. What's the average concurrency? (Apply Little's Law.)**
+2. **A stable system handles 1,000 requests per second with mean time in the system = 50 ms. What is its average queued-plus-running concurrency? (Apply Little's Law.)**
    Using $L = \lambda \times W$, $1000 \text{ req/s} \times 0.05 \text{ seconds} = 50$ concurrent operations.
 3. **Throughput drops as load increases past some point. Why?**
    The system reaches saturation, leading to extreme resource contention (CPU context switching, lock contention, GC thrashing), which degrades both latency and the rate of completed operations.
 4. **A request that fans out to 5 services, each with p99 = 100 ms. Estimate the request's overall p99. Why is your estimate higher than 100 ms?**
-   It will be higher because the parent request is gated by the *slowest* of the 5 calls. If each independently has a 1% chance of being slow, the chance that *at least one* is slow is much higher (~4.9%), meaning the overall p99 will be substantially worse than 100 ms.
+   No numeric parent p99 can be computed from these child p99 values alone. Under independent calls with exactly 1% probability of exceeding 100 ms, at least one exceeds it with probability 1 − 0.99⁵ ≈ 4.9%. The parent tail depends on the rest of the distributions and any correlation or orchestration overhead.
 5. **You have 100 ms latency budget for a screen. Network round-trip is 40 ms, deserialization is 8 ms, render is 12 ms. Where should you invest optimization effort?**
    Investigate the remaining 40 ms of unaccounted time first (queue wait, server processing, etc.). If you must pick from the listed ones, optimize the network (40ms), as it's the dominant component.
 6. **Why does retrying every failed request risk amplifying a partial outage?**
@@ -358,7 +352,7 @@ Canonical: [`../observability/metrics.md`](../observability/metrics.md), [`../ob
 8. **A team adds caching and sees mean latency drop. What might *not* have improved? Why?**
    Tail latency (p99) might not have improved, because the 1% of cache misses still suffer the full downstream latency plus the new overhead of the cache lookup.
 9. **Define a sensible timeout for an operation with p50 = 100 ms, p99 = 500 ms, p99.9 = 2 seconds. Justify.**
-   Around 600-700 ms. Setting it above p99 protects 99% of valid requests, but setting it as high as p99.9 (2s) risks tying up client resources for too long on pathological outliers.
+   The percentiles alone do not determine one correct timeout. Choose an acceptable false-timeout rate and fit the client's end-to-end deadline, network allowance, connection setup and bounded retry budget. For example, a dependency-only 2-second cutoff corresponds roughly to the supplied p99.9, but may exceed the user-facing deadline.
 10. **How would you detect "coordinated omission" in a benchmark? Why does it matter?**
     Use a tool that measures full end-to-end time based on a fixed schedule (e.g., wrk2). It matters because coordinated omission hides real-world queueing delays by pausing the load generator when the system stalls, painting a falsely optimistic picture of latency.
 
@@ -381,3 +375,20 @@ External:
 - Jeff Dean and Luiz Barroso, *The Tail at Scale*. CACM, 2013. The seminal paper on why p99 matters in distributed systems.
 - Gil Tene, *How NOT to Measure Latency*. Conference talks on coordinated omission and percentile measurement.
 - John Little's original 1961 paper on Little's Law. Surprisingly readable for a foundational queueing result.
+
+### Official verification references
+
+The corrections in this chapter were checked against the following primary references.
+
+- [web.eng.ucsd.edu: Little.pdf](https://web.eng.ucsd.edu/~massimo/ECE158A/Handouts_files/Little.pdf)
+- [aws.amazon.com: caching-challenges-and-strategies](https://aws.amazon.com/builders-library/caching-challenges-and-strategies/)
+- [research.google: the-tail-at-scale](https://research.google/pubs/the-tail-at-scale/)
+- [sre.google: monitoring-distributed-systems](https://sre.google/sre-book/monitoring-distributed-systems/)
+- [developer.android.com: rendering](https://developer.android.com/topic/performance/rendering)
+- [developer.android.com: launch-time](https://developer.android.com/google/play/vitals/launch-time)
+- [developer.android.com: define-work](https://developer.android.com/develop/background-work/background-tasks/persistent/getting-started/define-work)
+- [developer.android.com: state](https://developer.android.com/develop/ui/compose/state)
+- [kotlinlang.org: coroutine-scope.html](https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines/coroutine-scope.html)
+- [xlinux.nist.gov: bigOnotation.html](https://xlinux.nist.gov/dads/HTML/bigOnotation.html)
+- [developer.android.com: coroutines-best-practices](https://developer.android.com/kotlin/coroutines/coroutines-best-practices)
+- [aws.amazon.com: timeouts-retries-and-backoff-with-jitter](https://aws.amazon.com/builders-library/timeouts-retries-and-backoff-with-jitter/)

@@ -32,6 +32,7 @@ The UI observes local state. Network updates local state.
 
 ```kotlin
 class ProductRepository(
+    private val database: RoomDatabase, // androidx.room.RoomDatabase; owns this DAO
     private val dao: ProductDao,
     private val api: ProductApi
 ) {
@@ -41,7 +42,7 @@ class ProductRepository(
 
     suspend fun refreshProducts() {
         val response = api.getProducts()
-        dao.withTransaction {
+        database.withTransaction { // import androidx.room.withTransaction
             dao.upsertProducts(response.items.map(ProductDto::toRow))
             dao.updateSyncMetadata(SyncMetadata.now())
         }
@@ -210,3 +211,7 @@ Add tests for:
 - [`../../mobile-system-design/offline-sync.md`](../../mobile-system-design/offline-sync.md) - durable outbox and sync design.
 - [`../concurrency/workmanager.md`](../concurrency/workmanager.md) - durable background work.
 - [Android Developers: Guide to app architecture](https://developer.android.com/topic/architecture)
+
+### Official verification references
+
+- [Primary documentation or owning implementation](https://developer.android.com/jetpack/androidx/releases/room#2.1.0-alpha05)

@@ -207,7 +207,7 @@ The TV analogy gets inverted. **You don't have a remote anymore — you have dir
 
 Google's stated motivations for Nav 3 (rough public summary):
 
-1. **KMP friendliness.** `NavController` is Android-specific. The Navigation 3 runtime and its Compose-state-backed `NavBackStack` support Android, iOS, JVM desktop, JavaScript, and WasmJS; some platform integrations and serialization setup remain platform-specific.
+1. **Multiplatform boundaries.** Compose Multiplatform provides a Navigation Compose 2 artifact usable from commonMain; NavController is not inherently restricted to Android. Navigation 3 offers app-owned back-stack state and different adaptation/migration choices. Verify each chosen artifact and integration on the product's actual targets.
 2. **Multi-pane / adaptive layouts.** Nav 2 assumed single-pane phone flows. Tablets, foldables, and Wear OS need shapes (one detail pane next to a list pane) that Nav 2 awkwardly forced.
 3. **Custom transitions / shared elements.** Nav 2's `enterTransition`/`exitTransition` lambdas were limited.
 4. **State control.** Nav 2 hid back-stack mutation; some flows (e.g., "swipe to dismiss" with reorder) needed lower-level access.
@@ -419,7 +419,7 @@ More code than Nav 2's `deepLinks = listOf(...)`, but you control:
 | Type safety | `@Serializable` routes | `@Serializable` + `NavKey` marker |
 | Multi-pane | Add-on library, awkward | First-class via Scene strategies |
 | Custom transitions | Per-call lambda | Per-entry metadata |
-| KMP support | Android-only | Navigation 3 runtime supports Android, iOS, JVM desktop, JavaScript, and WasmJS targets; platform integrations still vary |
+| KMP support | Compose Multiplatform provides Navigation Compose 2 for commonMain | Navigation 3 has multiplatform runtime support; check per-platform integrations for either choice |
 | Deep links | Declarative `deepLinks = [...]` | Imperative parse + back-stack mutation |
 | ViewModel scoping | Automatic via NavBackStackEntry | Explicit via decorators |
 | Boilerplate | Lower | Higher |
@@ -458,7 +458,7 @@ Estimate from the actual graph: count destinations, nested scopes, deep links, c
 
 ### Adopt Nav 3 if
 
-- KMP project (Nav 2 can't compile to iOS).
+- A multiplatform project that benefits from app-owned back-stack state and the chosen Navigation 3 integrations; Navigation Compose 2 also has a multiplatform artifact, so KMP alone does not mandate migration.
 - Multi-pane / foldable / Wear OS is core UX.
 - You're hitting Nav 2's limitations (custom back behavior, shared elements with state).
 - Greenfield Compose app that benefits from app-owned navigation state.
@@ -694,3 +694,7 @@ When reviewing Compose Navigation code:
 - [Navigation 3 `NavBackStack` API](https://developer.android.com/reference/kotlin/androidx/navigation3/runtime/NavBackStack) — observable back-stack type and supported targets.
 - [Navigation 3 releases](https://developer.android.com/jetpack/androidx/releases/navigation3) — current stable and prerelease channels.
 - [Navigation 3 samples](https://github.com/android/nav3-recipes) — official sample patterns.
+
+### Official verification references
+
+- [Primary documentation or owning implementation](https://kotlinlang.org/docs/multiplatform/compose-navigation.html)

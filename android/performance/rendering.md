@@ -38,7 +38,7 @@ A "frame" budget must fit **input + animate + measure + layout + draw + render**
 
 For Views: recursive `onMeasure()` then `onLayout()` traversal of the entire view hierarchy whenever you mark it dirty (`requestLayout()`). Cost is roughly linear with hierarchy depth.
 
-For Compose: a single layout pass per recomposition. Compose's layout is generally cheaper because:
+Compose composition, measurement/placement and drawing can invalidate independently according to where state is read. A recomposition does not universally require layout or draw, and layout/draw changes need not recompose.
 - The compose tree is flatter than the View tree (fewer wrapper Views).
 - Modifier-based layout lets Compose skip work for unchanged sub-trees.
 - No `LinearLayout` weight passes (Compose's `weight` is computed differently).
@@ -52,7 +52,7 @@ When this phase is slow:
 
 The UI thread doesn't paint pixels — it records a **display list** of drawing commands (path/text/image/clip).
 
-Display lists are recorded once per frame for each view or Composable, then handed to the RenderThread. Subsequent recompositions of unchanged sub-trees reuse cached display lists.
+Android records drawing commands at framework/render-layer boundaries as invalidation requires. A composable group does not imply an independent display-list cache; composition skipping and layer reuse are different mechanisms.
 
 When this phase is slow:
 - Custom `View.onDraw` allocating `Paint` / `Path` / `Rect` per call.
@@ -98,13 +98,13 @@ These costs are GPU-side. Heavy ops won't necessarily block your UI thread — b
 | Stage | View system | Compose |
 |---|---|---|
 | Hierarchy | XML inflated to View tree | `@Composable` tree built dynamically |
-| Re-measure trigger | `requestLayout()` | Recomposition + `Layout` invalidation |
-| Re-draw trigger | `invalidate()` | Composition re-runs |
+| Re-measure trigger | Layout requests under View contracts | State/constraint changes observed by measurement or placement |
+| Re-draw trigger | invalidate under View contracts | State or drawing invalidation in the relevant phase |
 | Skip work | Memoization via `invalidate(Rect)` | Stable params + skippable functions |
-| Display list cache | Per View | Per Composable group |
-| Final paint backend | Skia via HWUI | Skia (direct) |
+| Display list cache | Framework RenderNode/layer boundaries | Android host/render layers; not one cache per composable group |
+| Final paint backend | Android HWUI/Skia pipeline | Android Compose host integrates with the Android rendering pipeline |
 
-Compose's runtime + slot table do more bookkeeping but enable finer-grained skipping. Net: a well-written Compose screen typically runs measure+layout+draw in less than half the time of an equivalent View hierarchy.
+Compare equivalent journeys on the target build and device. Neither toolkit establishes a universal measure/layout/draw speed ratio.
 
 Compose's leverage: **stable parameters skip composition → skip layout → skip draw**. View's leverage: **selective `invalidate(Rect)` to dirty only a small region**.
 
@@ -132,7 +132,7 @@ sequenceDiagram
 
 Main-thread UI work, RenderThread execution, and system composition must collectively meet the display deadline; missing any stage can present an older frame even when the others are fast.
 
-A frame's CPU work targets *finishing before vsync N+1* so it ships on vsync N+2. If the UI thread takes 20ms, the RenderThread is delayed, and vsync N+1 ships the *previous* frame again — visible stutter.
+Use expected and actual frame/presentation evidence to identify deadline misses. A UI duration alone does not establish an exact N+1/N+2 presentation formula.
 
 Higher refresh rates (90/120Hz) cut the budget. A `RecyclerView` row Composable that's fast at 60Hz can drop frames at 120Hz.
 
@@ -153,7 +153,7 @@ What to look for:
 
 Developer Options → "Profile GPU Rendering" → "On screen as bars."
 
-Each frame becomes a vertical bar split by phase (blue = misc/input, green = animation, dark blue = measure/layout, red = draw, orange = sync, light green = swap buffers). Red horizontal line = 16ms target. Bars over the line = dropped frames.
+The documented GPU-rendering reference line for 16.67ms is green. Read the displayed phase legend and actual refresh/deadline; a reference bar alone does not diagnose every presented frame.
 
 Read the color distribution to identify which phase dominates.
 
@@ -174,14 +174,20 @@ For Compose, the compiler metrics file (`<module>-composables.txt`) tells you wh
 Most powerful tool. Capture a trace; the timeline shows UI thread, RenderThread, and GPU work overlapping.
 
 ```bash
-adb shell perfetto -o /data/misc/perfetto-traces/trace.pftrace -t 10s -c - <<EOF
+adb shell perfetto --txt -o /data/local/tmp/trace.pftrace -c - <<EOF
 buffers { size_kb: 32768 }
-data_sources { config { name: "linux.ftrace" ftrace_config { ftrace_events: "sched_switch" } } }
-data_sources { config { name: "android.gpu.memory" } }
+duration_ms: 10000
+data_sources { config { name: "linux.ftrace" ftrace_config {
+  ftrace_events: "sched/sched_switch"
+  atrace_categories: "am"
+  atrace_categories: "view"
+  atrace_categories: "gfx"
+  atrace_apps: "your.application.id"
+} } }
 EOF
 ```
 
-Or use `adb shell systrace` (deprecated but still works) for simpler captures.
+Use Perfetto or the supported host/system-tracing workflow. The deprecated systrace host script is not an adb shell systrace command.
 
 ---
 
@@ -234,17 +240,17 @@ Fix: see [`../compose/stability.md`](../compose/stability.md).
 
 A full-screen image at `ARGB_8888` is ~8 MB. Loading three of them = 24 MB + decoding overhead = GC pressure.
 
-Fix: use `Bitmap.Config.HARDWARE` (Android 8+), Coil/Glide downsampling, image sizing matched to display.
+Choose display-appropriate decode sizing and an image-loading policy. Hardware bitmaps have API/operation restrictions and are not a universal repair for slow uploads or software-canvas needs; profile the selected path.
 
 ### 6. Overdraw
 
 When transparent layers stack, the GPU draws the same pixel multiple times. Default = 1x; bad screen = 4–6x overdraw.
 
-Developer Options → "Debug GPU Overdraw" → shows colored overlay. Blue = OK, green = 2x, red = 3x+.
+Developer Options GPU overdraw colors distinguish blue (1x), green (2x), pink (3x), and red (4x or more); inspect the legend and device support.
 
 Fixes:
 - Remove transparent backgrounds on full-screen containers.
-- Use `clipToOutline = true` for rounded corner backgrounds (skips below-corner drawing).
+- Use supported outline clipping when the visual contract requires it; it does not guarantee elimination of all covered drawing or overdraw. Measure the result.
 - Remove `android:windowBackground` if your root view fully paints.
 
 ### 7. Hardware shadows
@@ -271,9 +277,9 @@ Lists are the most common screen pattern, and the most common jank source.
 
 ### RecyclerView
 
-- `onCreateViewHolder` runs once per item type — cheap.
+- onCreateViewHolder runs when a new holder is needed; multiple holders may share a type. Reuse reduces creation but does not limit it to one per type.
 - `onBindViewHolder` runs every time a row scrolls into view — must be fast.
-- Use `setHasFixedSize(true)` when items don't change in size — skips measure pass.
+- setHasFixedSize(true) is valid when adapter-content changes do not change the RecyclerView's overall size; item sizes may vary, and it does not eliminate every measure pass.
 - `DiffUtil` minimizes rebinding when the list changes.
 - `RecycledViewPool` shares ViewHolders across sibling RecyclerViews.
 
@@ -288,9 +294,9 @@ LazyColumn {
 ```
 
 - **`key`** — stable identity. Without it, scroll re-binds every visible row whenever the list changes.
-- **`contentType`** — type-discriminator for item recycling. Without it, Compose treats every row as a different type and can't reuse Composables.
+- **contentType:** The default null type permits compatible reuse; explicit types separate structurally different items. Keys establish identity, not an unconditional no-recomposition guarantee.
 
-Both `key` and `contentType` are the single biggest perf wins for `LazyColumn`. Always provide them when the list has structure.
+Keys preserve identity/state and contentType separates compatible reuse structures. Supply them where that contract matters, then measure; neither is a universal largest performance win.
 
 ### Common list-perf checks
 
@@ -310,8 +316,8 @@ Each visible window (status bar, navigation bar, app, soft keyboard) is a separa
 
 Performance implications:
 - Each `Surface` = one allocation. Too many surfaces (e.g., heavy `SurfaceView` use) = SurfaceFlinger CPU spike.
-- `TextureView` paints to a regular layer (cheaper than `SurfaceView` but trickier to animate).
-- `SurfaceView`s with `setZOrderOnTop(true)` can sometimes bypass SurfaceFlinger compositing, but break transparency.
+- TextureView integrates a surface texture into the View rendering hierarchy. SurfaceView can use a separate compositor surface; relative cost depends on content, transforms, composition and device, not a universal cheaper ranking.
+- setZOrderOnTop changes surface ordering; it does not guarantee bypassing SurfaceFlinger. Hardware-composer overlay choices, transforms and transparency depend on device and content.
 
 Most apps don't need to think about layers explicitly. If you're rendering video or AR content, you do.
 
@@ -321,10 +327,10 @@ Most apps don't need to think about layers explicitly. If you're rendering video
 
 Android historically used OpenGL ES; modern devices increasingly use Vulkan as the Skia backend (`ro.hwui.use_vulkan = true`).
 
-Vulkan: lower CPU overhead, better multi-threading. Skia's Vulkan backend is now default on most Android 12+ devices.
+Backend selection depends on device, system build and configuration. Record the actual HWUI backend for the measured device instead of inferring it from Android 12+.
 
 You don't choose this — the framework does. But know:
-- Vulkan reduces per-frame CPU cost by ~5–15%.
+- Measure backend-specific CPU/GPU/frame behavior for the workload; no portable 5–15% gain is established here.
 - Some custom rendering code (custom OpenGL via `GLSurfaceView`) won't get the Vulkan benefit.
 - Bug reports involving "GPU corruption" sometimes stem from Vulkan/OpenGL switching.
 
@@ -374,7 +380,7 @@ fun GradientBox(modifier: Modifier = Modifier) {
 }
 ```
 
-`Brush` allocated once per size change. `drawRect` called per frame, but the brush is cached.
+drawWithCache retains cached drawing objects until size or observed state changes invalidate the cache. Its drawing callback still runs as needed.
 
 ### Pattern 3: Image loading with size constraints
 
@@ -382,14 +388,14 @@ fun GradientBox(modifier: Modifier = Modifier) {
 AsyncImage(
     model = ImageRequest.Builder(LocalContext.current)
         .data(imageUrl)
-        .size(Size.ORIGINAL)        // or specific size to downsample
+.size(with(LocalDensity.current) { 200.dp.roundToPx() }) // explicit pixel decode target
         .crossfade(true)
         .build(),
     contentDescription = null,
 )
 ```
 
-Coil downsamples to the displayed size. A 4K image displayed at 200×200 dp loads ~200×200 pixels into memory, not 4K.
+This request specifies a density-converted pixel decode target. Actual decoding, scaling and aspect ratio depend on source and request policy; dp is not a pixel count. AsyncImage can also derive constraints when no original-size override is supplied.
 
 ### Pattern 4: LazyColumn with keys + contentType
 
@@ -401,7 +407,7 @@ sealed interface FeedItem {
 
 LazyColumn {
     items(feed,
-        key = { it.id() },
+        key = { when (it) { is FeedItem.Post -> "post:${it.id}"; is FeedItem.Ad -> "ad:${it.id}" } },
         contentType = { it::class.simpleName },
     ) { item ->
         when (item) {
@@ -454,7 +460,7 @@ fun Underline(color: Color, modifier: Modifier = Modifier) {
 | Compose `drawBehind` slow | New brush/path per recomposition | `drawWithCache` |
 | SurfaceFlinger reports many transparent regions | Layered windows | Reduce surface count |
 | Vulkan backend crashes on older devices | Driver bugs | Add a fallback path; profile per-device |
-| ANR triggered during scrolling | Bind work blocks UI thread | Defer expensive work to `viewModelScope`; cache in repo |
+| ANR during scrolling | Owned work blocks Main | A scope alone does not change dispatcher; use main-safe repository/use-case boundaries, IO for blocking I/O and Default for CPU work |
 
 ---
 
@@ -468,7 +474,7 @@ fun Underline(color: Color, modifier: Modifier = Modifier) {
 - **`RecyclerView.notifyDataSetChanged()` instead of DiffUtil.** Full re-bind of all visible items.
 - **Compose `derivedStateOf` not wrapped in `remember`.** Recomputed every recomposition.
 - **`AnimatedContent` for instant transitions.** Allocates new sub-trees; use `Crossfade` for simpler cases or a state-driven `if/else`.
-- **Heavy work in `LaunchedEffect(Unit) {}`.** Runs in coroutine but the *start* of the effect is on the main dispatcher by default; long-running work needs `Dispatchers.IO`.
+- **Heavy work in LaunchedEffect:** A coroutine scope alone does not move work off Main. Use a main-safe boundary: IO for owned blocking I/O and Default for CPU work, with lifecycle-correct ownership.
 - **Multiple `RecyclerView`s on one screen without `setRecycledViewPool` shared.** Each maintains its own holder pool; double the memory.
 
 ---
@@ -497,25 +503,25 @@ fun Underline(color: Color, modifier: Modifier = Modifier) {
 2. **What does `Choreographer` do? When does `doFrame` fire?**
    `Choreographer` coordinates the timing of animations, input, and drawing. `doFrame` fires upon receiving the vsync signal from the display, kicking off the UI thread's work for the next frame.
 3. **Display list — what is it, and when is it cached vs re-recorded?**
-   A display list is a recorded sequence of drawing commands. It is cached and reused if the view or Composable hasn't changed. It is re-recorded when a view is invalidated or a Composable recomposes.
+   A display list records drawing commands at framework/render-layer boundaries. Re-recording follows drawing invalidation; a composable recomposition alone does not universally imply a new display list for that composable.
 4. **Compose vs View — for a typical screen, which is faster, and *why* (not just "Compose is faster")?**
-   Compose is typically faster because it generates a flatter hierarchy (avoiding deep nested measure passes), avoids heavy `LinearLayout` weight calculations, and intelligently skips layout/draw phases for unchanged sub-trees using stable parameter memoization.
+   Both toolkits can avoid unnecessary work. Compose phase-specific state reads can avoid composition or layout, but stable argument comparisons alone do not prove one screen is faster. Compare equivalent device/build journeys.
 5. **`setHasFixedSize(true)` on RecyclerView — what does it skip and when is it safe to enable?**
-   It skips the entire RecyclerView measure pass when items are added or removed. It is safe to enable when changes to the list's contents do not alter the overall size of the RecyclerView itself.
+   It permits RecyclerView optimizations when adapter changes do not affect its overall size. It does not promise to skip the entire measure pass for every insertion/removal; item dimensions may still vary.
 6. **`key = { it.id }` on `LazyColumn` — what specifically does it prevent?**
-   It prevents unnecessary recompositions and state loss when items shift positions. Without it, Compose binds based on position, meaning an insertion at the top causes every visible row below it to recompose.
+   Stable unique keys preserve item identity and remembered state when positions change. They do not unconditionally prevent recomposition; observed state, parameters and compiler mode still matter.
 7. **Overdraw at 4x — what's the GPU cost, and how do you investigate?**
    The GPU wastes time painting the same pixel 4 times, leading to dropped frames on complex screens. Investigate by enabling "Debug GPU Overdraw" in Developer Options and checking for red areas.
 8. **Bitmap full-screen ARGB_8888 = ~8 MB. How do you load it without blocking the UI thread?**
    Use an image loading library like Coil or Glide, which decodes the bitmap on a background dispatcher (e.g., `Dispatchers.IO`) and downsamples it to the target view size before passing it to the UI thread.
 9. **`Modifier.drawWithCache` vs `Modifier.drawBehind` — when each? What does the former save?**
-   Use `drawBehind` for simple, stateless drawing. Use `drawWithCache` when your drawing requires allocations (like creating a `Path` or `Brush`). It saves memory by caching allocations across recompositions until the size changes.
+   drawBehind suits direct drawing. drawWithCache caches objects until size or observed state changes invalidate the cache; avoid adding it where no reusable allocation/work exists.
 10. **Vsync timing: UI work took 20ms. What frame does the user see, and when?**
-    The UI missed the 16.6ms vsync deadline. The user will see the *previous* frame repeated (a stutter) at vsync N+1, and the delayed new frame will finally display at vsync N+2.
+Use expected and actual frame/presentation evidence to identify deadline misses. A UI duration alone does not establish an exact N+1/N+2 presentation formula.
 11. **SurfaceFlinger — what work does it do, and how does it interact with your app's main RenderThread output?**
     SurfaceFlinger is a system service that takes the finalized buffers from all visible windows (status bar, nav bar, your app) and composites them together into the final image sent to the display hardware.
 12. **Profile a janky list scroll with Perfetto. What's the first thing you look at?**
-    Look at the main thread timeline for `Choreographer#doFrame`. Identify if the `traversal` (measure/layout) or `draw` phase is blowing past the ~16ms boundary, indicating exactly which phase is causing the delay.
+     Compare expected and actual frame timelines, then inspect Main, RenderThread, GPU and scheduling dependencies for the missed deadline. A fixed 16ms cutoff alone does not identify the responsible stage.
 
 ## Further Reading
 
@@ -530,7 +536,25 @@ fun Underline(color: Color, modifier: Modifier = Modifier) {
 - [`../../kotlin/runtime-and-jvm/memory-model.md`](../../kotlin/runtime-and-jvm/memory-model.md) — heap allocations in hot paths.
 - [Android Developers — Slow rendering](https://developer.android.com/topic/performance/vitals/render) — official.
 - [Android Developers — Better performance through threading](https://developer.android.com/topic/performance/threads) — official.
-- [Romain Guy — Android graphics & UI](https://www.curious-creature.com/) — engineer's blog.
+- [AOSP — Graphics](https://source.android.com/docs/core/graphics) — Android graphics architecture.
 - [Skia documentation](https://skia.org/) — 2D engine reference.
 - [Perfetto](https://perfetto.dev/) — system tracing.
 - [Profile GPU rendering](https://developer.android.com/topic/performance/rendering/profile-gpu) — official guide.
+
+### Official verification references
+
+- [Primary documentation or owning implementation](https://coil-kt.github.io/coil/compose/)
+- [Primary documentation or owning implementation](https://developer.android.com/develop/ui/compose/graphics/draw/modifiers)
+- [Primary documentation or owning implementation](https://developer.android.com/develop/ui/compose/performance/bestpractices)
+- [Primary documentation or owning implementation](https://developer.android.com/develop/ui/compose/phases)
+- [Primary documentation or owning implementation](https://developer.android.com/develop/ui/views/graphics/hardware-accel)
+- [Primary documentation or owning implementation](https://developer.android.com/kotlin/coroutines/coroutines-best-practices)
+- [Primary documentation or owning implementation](https://developer.android.com/reference/android/graphics/Bitmap.Config#HARDWARE)
+- [Primary documentation or owning implementation](https://developer.android.com/reference/android/view/View#setClipToOutline(boolean))
+- [Primary documentation or owning implementation](https://developer.android.com/reference/androidx/recyclerview/widget/RecyclerView#setHasFixedSize(boolean))
+- [Primary documentation or owning implementation](https://developer.android.com/reference/androidx/recyclerview/widget/RecyclerView.Adapter)
+- [Primary documentation or owning implementation](https://developer.android.com/topic/performance/rendering/inspect-gpu-rendering)
+- [Primary documentation or owning implementation](https://kotlinlang.org/docs/interfaces.html)
+- [Primary documentation or owning implementation](https://perfetto.dev/docs/data-sources/frametimeline)
+- [Primary documentation or owning implementation](https://perfetto.dev/docs/reference/perfetto-cli)
+- [Primary documentation or owning implementation](https://source.android.com/docs/core/graphics/surfaceflinger-windowmanager)

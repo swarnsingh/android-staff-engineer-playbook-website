@@ -297,7 +297,7 @@ SQLite, MySQL InnoDB, PostgreSQL, and Room (which uses SQLite) all use B-trees (
 
 ### LSM trees for write-heavy workloads
 
-LSM (Log-Structured Merge) trees buffer writes in memory, periodically flush sorted runs to disk, and merge runs in the background. Writes are O(1) amortized, reads are O(log n × log levels). Used in RocksDB (the engine inside many mobile and embedded databases), Cassandra, and write-heavy mobile sync logs.
+LSM (Log-Structured Merge) trees buffer writes in memory, periodically flush sorted runs to disk, and merge runs in the background. Writes are cheap appends to memory and a log; a read may check each level, roughly O(L × log n) for L levels, which Bloom filters reduce in practice. Used in RocksDB (the engine inside many mobile and embedded databases), Cassandra, and write-heavy mobile sync logs.
 
 ---
 
@@ -344,7 +344,7 @@ Git stores everything as Merkle-tree-like structures:
 - A **tree** object holds (filename, blob hash) tuples — a directory.
 - A **commit** holds (root tree hash, parent commit hashes, metadata).
 
-The commit hash is a fingerprint of: everything in the source tree, all the metadata, and all parent commits transitively. Tampering with any file in any historical commit invalidates every subsequent commit's hash. This is why `git commit --amend` rewrites every subsequent commit hash.
+The commit hash is a fingerprint of: everything in the source tree, all the metadata, and all parent commits transitively. Tampering with any file in any historical commit invalidates every subsequent commit's hash. This is why rewriting an old commit, for example with an interactive rebase, changes the hash of every commit after it.
 
 ### SQLite B-tree indexes
 
@@ -375,7 +375,7 @@ fun search(prefix: String, limit: Int): List<String> =
     trie.wordsWithPrefix(prefix.lowercase()).take(limit)
 ```
 
-Lookup is bounded by prefix length, not dataset size. Performance is constant as the dataset grows.
+Finding the prefix node is bounded by prefix length, but this `wordsWithPrefix` collects every match before `take(limit)`, so its cost grows with the number of matching words. Store top-ranked completions per node, or stop after `limit` results, to keep each keystroke bounded.
 
 ### Merkle anti-entropy in Cassandra
 
@@ -399,7 +399,7 @@ Cassandra nodes periodically exchange Merkle tree summaries of their data ranges
 </ConstraintLayout>
 ```
 
-The Android rendering pipeline traverses this tree three times per frame: `onMeasure` (DFS computing sizes), `onLayout` (DFS positioning children), `onDraw` (DFS painting). A tree 20 layers deep magnifies the per-node cost 20x. The `Layout Inspector` and `Hierarchy Viewer` tools visualize the tree and surface depth issues.
+The View system walks this tree depth-first in three passes: measure (sizes), layout (positions) and draw. Measure and layout run when a view requests a new layout, not on every frame, and with hardware acceleration only invalidated views re-record their drawing. A deep hierarchy makes each pass more expensive, especially when nested layouts measure their children more than once. Android Studio's Layout Inspector shows the tree and deep nesting.
 
 ### Compose's slot table is a flattened tree
 
@@ -415,7 +415,7 @@ fun Greeting(name: String) {
 }
 ```
 
-The slot table contains entries for the Column, both Texts, and their state. When `name` changes, the recomposer can update only the slots that read `name`, leaving the rest of the tree alone. This is "surgical recomposition" — a tree edit at logarithmic cost.
+The slot table contains entries for the Column, both Texts, and their state. When `name` changes, the recomposer can update only the slots that read `name`, leaving the rest of the tree alone. This is "surgical recomposition": an update limited to the groups that read the changed state.
 
 ### Kotlin Compiler AST
 
@@ -473,7 +473,7 @@ A mobile app with a 100MB local SQLite database. Sync to server: compute Merkle 
 
 **Deep view hierarchy on Android.** 20-level deep `LinearLayout` chains cause measure/layout/draw cost to multiply. Mitigation: flatten with `ConstraintLayout`, refactor with `merge` tag, or migrate to Compose.
 
-**Recursion stack overflow.** A 100,000-node tree traversed recursively blows the JVM stack (~10K frames typical). Mitigation: use iterative traversal with an explicit stack, or `tailrec` if applicable.
+**Recursion stack overflow.** A tree that is tens of thousands of levels deep can overflow the thread's stack when traversed recursively. The limit depends on stack and frame size, and it is depth, not node count, that matters: a balanced tree of 100,000 nodes is only about 17 levels deep. Mitigation: use iterative traversal with an explicit stack, or `tailrec` if applicable.
 
 **Merkle tree with collision-vulnerable hash.** A Merkle tree using MD5 is no longer cryptographically secure — attackers can construct colliding leaves. Mitigation: use SHA-256 minimum.
 
@@ -509,7 +509,7 @@ A mobile app with a 100MB local SQLite database. Sync to server: compute Merkle 
 
 ## Security Considerations
 
-- **Merkle trees with weak hashes can be forged.** SHA-1 collisions allowed Bitcoin and Git's models to be questioned; migration to SHA-256 is in progress.
+- **Merkle trees with weak hashes can be forged.** SHA-1 collisions led Git to harden its SHA-1 and begin migrating to SHA-256. Bitcoin has used SHA-256 from the start.
 - **Trie-based autocomplete leaks data via timing.** A long search prefix on a user-specific trie reveals the size and shape of the user's data. Use constant-time lookups for sensitive contexts.
 - **B-tree index leaks via timing.** Database query times depend on tree depth and leaf size; can be a side channel for inferring stored values.
 - **Deep tree depth-of-field DoS.** A malicious user submitting deeply-nested JSON or XML can cause stack overflow during parsing. Mitigation: depth limits in parsers.
@@ -518,7 +518,7 @@ A mobile app with a 100MB local SQLite database. Sync to server: compute Merkle 
 
 ## Observability
 
-- **Tree depth metrics.** For B-trees and SQLite indexes, monitor average tree depth — drift up means rebalancing isn't keeping pace.
+- **Tree depth metrics.** B-trees stay height-balanced, so depth grows only with the logarithm of the row count; for SQLite indexes, watch index size and query plans (`EXPLAIN QUERY PLAN`) instead.
 - **Cache hit rate.** Hash and tree structures both benefit from caches; instrument hit/miss for hot trees.
 - **Compose recomposition counts.** Surfaces inefficient tree traversal in UI.
 - **Merkle root divergence rate.** In sync systems, frequent root mismatches indicate replication lag or data corruption.
@@ -593,7 +593,7 @@ A mobile app with a 100MB local SQLite database. Sync to server: compute Merkle 
 8. **A Cassandra cluster uses Merkle trees for anti-entropy. Walk through the operation: two replicas exchange roots, then walk the tree. What information is exchanged at each step?**
    Replicas exchange root hashes. If they differ, they exchange children hashes. They recursively descend only into branches where hashes mismatch, narrowing down to the exact data ranges that differ without sending unchanged data over the network.
 9. **Why is recursive tree traversal vulnerable to stack overflow on real-world inputs, and how do you mitigate?**
-   Recursive traversal uses a JVM call stack frame for every level of depth. Deep trees (e.g. 10K+ nodes) exceed the stack limit. Mitigate by using iterative traversal with an explicit heap-allocated stack (e.g., `ArrayDeque`).
+   Recursive traversal uses a JVM call stack frame for every level of depth. Deep trees (thousands of levels, not just many nodes) can exceed the stack limit. Mitigate by using iterative traversal with an explicit heap-allocated stack (e.g., `ArrayDeque`).
 10. **Compare BFS and DFS for finding a file in a directory hierarchy. When is each appropriate?**
     BFS finds the file closest to the root (shallowest match first) but uses O(width) memory. DFS explores deep paths first and uses O(height) memory. Use BFS if the file is likely near the root, DFS to minimize memory or exhaustively search one directory before others.
 

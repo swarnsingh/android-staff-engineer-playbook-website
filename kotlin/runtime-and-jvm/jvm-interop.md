@@ -48,7 +48,7 @@ When Kotlin calls a Java method that returns `String`, the compiler doesn't know
 val name = UserDao().findById(42)  // What's the type of `name`?
 ```
 
-The Kotlin type is `String!` — a **platform type**. You can use it as `String` *or* as `String?`, and Kotlin won't complain at compile time. If you treat it as `String` and the Java method returns null at runtime, you get a `NullPointerException` (or more precisely, an `IllegalStateException` from the intrinsics null check) at the point you assigned it to a non-null variable.
+The Kotlin type is `String!` — a **platform type**. You can use it as `String` *or* as `String?`, and Kotlin won't complain at compile time. If you assign it to an explicitly non-null `String` and Java returns null, modern Kotlin inserts an expression-value null check that throws `NullPointerException` at that boundary. Older compiler/runtime combinations can differ; do not infer the exception type from historical intrinsics implementations.
 
 The convention is to **declare an explicit Kotlin type** at the boundary:
 
@@ -75,7 +75,7 @@ A Kotlin file is compiled into one or more JVM classes. Here's how each major fe
 | `fun greet(name: String = "world")` | one method `greet(String)`; default value only available from Kotlin | `foo.greet("world")` — Java must always pass |
 | `inline fun` | regular method; `inline` is a Kotlin-side optimization | callable but not inlined when called from Java |
 | `internal fun bar()` | public method with mangled name `bar$module_name()` | callable but the mangled name is awkward |
-| sealed class | abstract class with package-private constructor | extendable only from same package — Java can extend, but Kotlin won't recognize new subtypes in `when` |
+| sealed class | abstract class with restricted construction; JVM 17 targets can also emit permitted-subclass metadata | Java cannot freely add direct subclasses; use an open interface for an intentionally extensible API |
 
 ### 3. The `@Jvm*` annotation family
 
@@ -97,15 +97,13 @@ Gradle's `kotlin.compilerOptions.jvmDefault` setting selects how Kotlin interfac
 
 The JVM has four visibilities: `public`, `protected`, `private`, package-private (default). It has no concept of "module."
 
-When you write `internal fun greet()`, Kotlin compiles it as `public` bytecode but **mangles the name** to include the module name:
+Internal declarations are normally public in JVM bytecode. Internal **member functions** commonly receive module-name mangling; a top-level internal function does not necessarily receive it:
 
 ```kotlin
 internal fun greet(name: String) = "Hello, $name"
 ```
 
-In bytecode: `public static String greet$mymodule_debug(String name)`.
-
-From Kotlin in the same module, you write `greet("Ana")`. From any other Kotlin module or from Java, the function is invisible *by convention* (the IDE hides it), but callable *by name*. A determined Java caller can invoke `UtilKt.greet$mymodule_debug("Ana")`. `internal` is **compiler-enforced encapsulation**, not a runtime security boundary.
+For this top-level example, the JVM method can be `public static String greet(String name)` on the generated file class. An internal member can instead appear as `greet$moduleName`. Kotlin enforces module visibility using metadata; Java can access public bytecode members. `internal` is encapsulation for Kotlin compilation, not a runtime security boundary.
 
 ### 5. Default arguments are Kotlin-only
 
@@ -129,7 +127,7 @@ public static void connect(String host, int port) { connect(host, port, false); 
 public static void connect(String host) { connect(host, 80, false); }
 ```
 
-`@JvmOverloads` only generates overloads for trailing parameters — Java still can't skip middle arguments.
+`@JvmOverloads` generates overloads by dropping defaulted parameters from right to left, retaining required parameters. For example, `(a: Int = 1, required: String, b: Int = 2)` also gets `(Int, String)` and `(String)` overloads. Java selects an overload; it does not gain Kotlin named arguments.
 
 ---
 
@@ -313,9 +311,11 @@ Kotlin's `out T` and `in T` declare variance at the class. Java uses wildcards (
 ```kotlin
 class Box<out T>(val value: T)
 
-// In a Kotlin function returning a Box, the Java signature shows wildcards:
-fun makeBoxes(): List<Box<Number>>
-// Java sees: List<? extends Box<? extends Number>>
+// Return positions normally suppress declaration-site wildcards:
+fun makeBoxes(): List<Box<Number>> = emptyList()
+// Java sees: List<Box<Number>>
+// Parameter positions can introduce wildcards; inspect the signature
+// before applying @JvmWildcard or @JvmSuppressWildcards.
 ```
 
 The `? extends` wildcards may surprise Java callers. To suppress them, use `@JvmSuppressWildcards`. To force them, use `@JvmWildcard`. The default is usually fine; tune only when interop breaks.
@@ -395,18 +395,18 @@ object TelemetryClient {
 What this gives Java callers:
 
 ```java
-Telemetry.event("user_signed_in");
-Telemetry.event("checkout", Map.of("amount", 99.99));
-boolean ok = Telemetry.flush();
-String v = Telemetry.SDK_VERSION;
+TelemetryClient.event("user_signed_in");
+TelemetryClient.event("checkout", Map.of("amount", 99.99));
+boolean ok = TelemetryClient.flush();
+String v = TelemetryClient.SDK_VERSION;
 ```
 
 Without the annotations, Java callers would write:
 
 ```java
-TelemetryKt.TelemetryClient.INSTANCE.event("user_signed_in", Collections.emptyMap());
-boolean ok = TelemetryKt.TelemetryClient.INSTANCE.flush();
-String v = TelemetryKt.TelemetryClient.INSTANCE.SDK_VERSION;  // would actually be getSDK_VERSION()
+TelemetryClient.INSTANCE.event("user_signed_in", Collections.emptyMap());
+boolean ok = TelemetryClient.INSTANCE.flush();
+String v = TelemetryClient.INSTANCE.getSDK_VERSION();
 ```
 
 The annotations cost six lines of source and save every Java caller the boilerplate forever.
@@ -439,18 +439,18 @@ This is the prevailing pattern: a Kotlin extension on a Java class produces a `s
 
 ```kotlin
 val context: Context = activity.applicationContext  // type is Context (not Context!) since SDK is annotated
-val tag = view.tag                                   // type is Any! — view.getTag() returns Object with no annotation
+val tag = view.tag                                   // nullable/platform type depends on SDK annotations
 val children = (view as ViewGroup).children          // KTX extension, returns Sequence<View>
 ```
 
-`view.getTag()` returns `Object` from Java with no `@Nullable` or `@NonNull` annotation, so Kotlin types it as `Any!`. Treating the result as non-null without checking will crash if the tag wasn't set.
+`view.getTag()` can return null when no tag is set. Modern SDK annotations can expose it as nullable; unannotated stubs expose a platform type. Check the value rather than assuming a tag exists.
 
 ```kotlin
 // SAFE:
 val tag = view.tag as? String                  // null-safe cast
 
-// CRASHES at runtime if tag is null:
-val tagStr: String = view.tag.toString()       // .toString() on Any! is fine, but if you assign to non-null String and tag is null...
+// CRASHES at runtime if tag is null: on a platform type, toString() calls Object.toString() directly
+val tagStr: String = view.tag.toString()
 ```
 
 Modern Android SDK is well-annotated with `@Nullable`/`@NonNull`, so most platform types collapse to real `T?` or `T`. Older or sparsely-annotated libraries (especially internal libraries) leak platform types into your code.
@@ -478,10 +478,13 @@ Java callers:
 ```java
 ImageLoader.with(context).load("https://...");
 ImageLoader.with(context).load("https://...", R.drawable.custom_placeholder);
-ImageLoader.with(context).load("https://...", R.drawable.custom_placeholder, result -> { ... });
+ImageLoader.with(context).load("https://...", R.drawable.custom_placeholder, result -> {
+    // Handle result, then return Kotlin Unit for Function1.
+    return kotlin.Unit.INSTANCE;
+});
 ```
 
-Lambda parameter (`((Result<Bitmap>) -> Unit)?`) compiles to a `Function1<Result<Bitmap>, Unit>` interface — Java callers can pass `null` or a lambda (Java 8+ SAM conversion handles function types automatically).
+The callback becomes a Kotlin `Function1` at the JVM boundary; a Java lambda must return `Unit.INSTANCE`. `Result` also has value-class interop details, so a Java-facing callback interface with a domain success/error type is often clearer than exposing `Result` directly.
 
 ---
 
@@ -500,7 +503,7 @@ Lambda parameter (`((Result<Bitmap>) -> Unit)?`) compiles to a `Function1<Result
 - **Some Kotlin features have no Java equivalent.** Default arguments, named arguments, `inline`, and `internal` either don't exist or behave differently when called from Java.
 - **Hidden synthetic methods clutter Java APIs.** `Companion` fields, `$default` helpers, mangled `internal` names show up in Java autocomplete and stack traces.
 - **Annotations are easy to forget.** A missing `@JvmStatic` or `@JvmOverloads` quietly produces a worse Java API; nothing breaks, but the Java side gets harder to use.
-- **Java callers can't take advantage of `value class`.** Inline value classes box back to their underlying type when crossing into Java, losing the type-safety benefit at the interop boundary.
+- **Value-class Java APIs need design.** Default lowering commonly exposes an unboxed underlying value through a mangled method, which ordinary Java source cannot conveniently call. Generic or interface uses can box the value class. Current Kotlin offers experimental `@JvmExposeBoxed` / `-Xjvm-expose-boxed` to generate Java-callable boxed APIs; choose and test the contract explicitly.
 
 **When not to lean on interop heavily**
 
@@ -513,7 +516,7 @@ Lambda parameter (`((Result<Bitmap>) -> Unit)?`) compiles to a `Function1<Result
 
 **Platform-type NPE at the boundary.** A Java method returns null; Kotlin treats it as non-null; Kotlin code crashes. Mitigation: annotate Java with `@Nullable`/`@NotNull` (JSpecify is the modern standard for new code), or declare explicit Kotlin types at the boundary.
 
-**Default-argument call from Java.** A library author adds a new default parameter; Java callers' code doesn't break, but the parameter is now mandatory for Java. Mitigation: add `@JvmOverloads` to public Kotlin APIs that take default arguments.
+**Default-argument call from Java.** Adding a defaulted parameter changes the JVM method descriptor and can break existing Java source and compiled callers. `@JvmOverloads` can preserve matching older overloads in suitable cases; inspect the generated ABI and run compatibility checks rather than assuming every defaulted-parameter change is compatible.
 
 **`internal` accidentally exposed via reflection.** A Java caller uses reflection to invoke a mangled `internal` method. Not a Kotlin bug, but surprising. Mitigation: don't rely on `internal` for security; use module boundaries and access tokens for sensitive APIs.
 
@@ -525,7 +528,7 @@ Lambda parameter (`((Result<Bitmap>) -> Unit)?`) compiles to a `Function1<Result
 
 **Boolean property naming.** A `val hasFoo: Boolean` compiles to `getHasFoo()`. A `val isFoo: Boolean` compiles to `isFoo()`. Inconsistent boolean naming surprises Java callers. Mitigation: pick a prefix convention (`is`, `has`, `can`) and stick to it.
 
-**Sealed class extension from Java.** Java can extend a Kotlin sealed class within the same package, but the Kotlin compiler then doesn't know about the new subtype. `when` becomes non-exhaustive at runtime. Mitigation: don't expose sealed classes for cross-language inheritance; use closed `interface` for cross-language and `sealed` only for Kotlin internals.
+**Sealed hierarchy at the Java boundary.** Java cannot freely extend a compiled Kotlin sealed class: constructors restrict construction, and JVM 17 targets can encode permitted subclasses. Older JVM targets cannot enforce a Kotlin sealed interface with the same JVM mechanism. Use an ordinary interface when third-party implementations are intended, and test the actual target/ABI when relying on closed-world exhaustiveness.
 
 ---
 
@@ -554,7 +557,7 @@ Lambda parameter (`((Result<Bitmap>) -> Unit)?`) compiles to a `Function1<Result
 - **`internal` is not a security boundary.** Reflection from Java can call mangled-name functions. Don't gate security-sensitive operations on `internal` visibility.
 - **`@JvmField` exposes mutable fields.** A `@JvmField var token: String` lets any caller (Kotlin or Java) write directly, bypassing any setter validation you might add later. Avoid for mutable state.
 - **Platform types can hide tainted data.** A `String!` from a Java method might be unsanitized user input; treat boundary data as untrusted regardless of Java's annotations.
-- **Be wary of `companion object` factories returning sensitive resources.** They survive across the entire process; if they hold a network connection or unencrypted token, it persists.
+- **Give factory-created resources explicit owners.** The companion object is long-lived, but merely returning a connection or token does not retain it. Retention depends on references stored by the companion or callers; define closing, clearing, and credential-storage policies at those owners.
 
 ---
 
@@ -578,7 +581,7 @@ Lambda parameter (`((Result<Bitmap>) -> Unit)?`) compiles to a `Function1<Result
 
 **Migrate away from companion `INSTANCE` for public APIs.** New SDK design should default to top-level functions with `@file:JvmName(...)`. Companion objects are useful for class-scoped factories; for module-scoped utilities, top-level is simpler.
 
-**Watch for sealed-class interop gotchas.** If a sealed class is part of your public API and Java extends it (legally, within the same package), runtime `when` exhaustiveness assumptions break. Either keep sealed types fully internal or use `interface` for cross-language extensibility.
+**Watch sealed hierarchy target compatibility.** Keep intended direct subclasses in the supported closed hierarchy. A public sealed API is valid, but it promises a closed set, not arbitrary same-package Java extension. Use an ordinary interface if external Java implementations are part of the API contract.
 
 **Prefer composition over inheritance at the interop boundary.** Java is more comfortable composing — calling a Kotlin method that returns a configured object — than inheriting from a Kotlin class with default-argument constructors and named parameters. Design factories, not abstract bases, for Java consumers.
 
@@ -600,7 +603,7 @@ Lambda parameter (`((Result<Bitmap>) -> Unit)?`) compiles to a `Function1<Result
 
 **"You can call `inline fun` and get the inlined version from Java."** No. Java calls it as an ordinary method. Inlining is Kotlin-side.
 
-**"Kotlin's `data class` is the same as Java records."** Similar but not identical. `data class` predates records (Java 14+) and has methods (`copy`, `componentN`) records don't. Records' canonical constructor is final; `data class` allows mutable `var` properties.
+**"Kotlin's `data class` is the same as Java records."** Similar, but data classes provide `copy` and `componentN` and can declare mutable `var` properties. Java records became final in Java 16 (previewed in 14/15); record classes are final and their component fields are final. Constructors are not described as final methods.
 
 ---
 
@@ -628,7 +631,7 @@ Lambda parameter (`((Result<Bitmap>) -> Unit)?`) compiles to a `Function1<Result
 4. **A Kotlin function `fun connect(host: String, port: Int = 80)`. Show the JVM bytecode method signature with and without `@JvmOverloads`.**
    Without `@JvmOverloads`, there is only `void connect(String host, int port)` plus a synthetic `$default` helper. With `@JvmOverloads`, the compiler also generates `void connect(String host)` which internally calls the full method using the default port.
 5. **Why does `internal fun foo()` show up in Java reflection if `internal` is supposed to be module-private?**
-   `internal` is enforced by the Kotlin compiler, not the JVM. The JVM has no concept of a "module," so Kotlin compiles `internal` methods as `public` (to allow access from other packages within the same module) but mangles their names (e.g., `foo$module_name`) to discourage accidental use. Reflection ignores compiler visibility rules and sees the raw `public` method.
+   `internal` is enforced by the Kotlin compiler, not the JVM. Kotlin module visibility differs from JVM visibility and Java modules. Internal members are normally public in bytecode, with member-name mangling in common cases; top-level internal functions need not be mangled. Reflection can discover those public members without respecting Kotlin source visibility.
 6. **Decompile a `data class User(val name: String, var age: Int)` and list every method the compiler generated.**
    Getters for `name` and `age`, a setter for `age`, `component1()`, `component2()`, `copy()`, `toString()`, `hashCode()`, and `equals()`.
 7. **What does `@file:JvmName("Strings")` do, and why would you use it instead of just naming the file `Strings.kt`?**
@@ -661,3 +664,12 @@ External:
 - Roman Elizarov, *"Designing Kotlin APIs for use from Java"* (KotlinConf 2019) — annotation guidance and patterns.
 - Jake Wharton, *"Public API challenges in Kotlin"* (KotlinConf 2018) — managing binary compatibility across Kotlin/Java boundaries.
 - *Effective Kotlin* by Marcin Moskała — Item 38: "Consider providing a Java-friendly API."
+
+### Official verification references
+
+- [Primary documentation or owning implementation](https://developer.android.com/reference/android/view/View#getTag())
+- [Primary documentation or owning implementation](https://developer.android.com/topic/performance/memory-overview)
+- [Primary documentation or owning implementation](https://docs.oracle.com/en/java/javase/21/language/records.html)
+- [Primary documentation or owning implementation](https://kotlinlang.org/api/core/kotlin-stdlib/kotlin/to-string.html)
+- [Primary documentation or owning implementation](https://kotlinlang.org/docs/inline-classes.html)
+- [Primary documentation or owning implementation](https://kotlinlang.org/docs/sealed-classes.html)

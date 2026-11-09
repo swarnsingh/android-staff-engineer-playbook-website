@@ -20,7 +20,7 @@ In the Jetpack era (2017), Google introduced `LiveData` as the standard way to p
 
 However, `LiveData` had massive flaws:
 1. It is tied to the Android framework (`android.lifecycle`), making it impossible to use in pure Kotlin Domain/Data layers or Kotlin Multiplatform (KMP).
-2. It operates exclusively on the Main Thread.
+2. Observer notification and setValue run on main; postValue supports updates from background threads. This is a different contract from freely composing a Flow pipeline on selected dispatchers.
 3. It has extremely limited transformation operators compared to RxJava.
 
 In 2019, Kotlin introduced `Flow`. It was pure Kotlin (platform-agnostic), thread-safe, and had operators matching RxJava. Google has not needed to remove `LiveData`, but modern Android architecture guidance strongly favors `Flow`, `StateFlow`, and lifecycle-aware collection for new Kotlin-first codebases.
@@ -40,7 +40,7 @@ Think of a **Water Treatment Plant**.
 - **The Operators (`.map`, `.filter`):** The pipes and filters. One pipe filters out rocks. Another pipe adds chlorine.
 - **The Terminal Operator (`.collect`):** The faucet in the user's house. 
 
-**Crucially:** If the user turns *off* the faucet (cancels the coroutine), the water doesn't just spill onto the floor. The backpressure instantly travels all the way up the pipes and shuts off the spring at the source. No wasted work.
+Cancelling collection requests cancellation of the upstream work in that coroutine; it does not guarantee that blocking or separately owned work stops immediately. Backpressure is a separate contract: a slow sequential collector can suspend its producer, with buffers and overflow policies changing that relationship.
 
 ## Internal Mechanics
 
@@ -105,7 +105,7 @@ class UserViewModel @Inject constructor(
 
     // We take the Cold flow, map it to our UI state, and convert it to a Hot StateFlow.
     val uiState: StateFlow<UserUiState> = repository.observeUsers()
-        .map { users -> UserUiState.Success(users) }
+        .map<List<User>, UserUiState> { users -> UserUiState.Success(users) }
         .catch { e -> emit(UserUiState.Error(e.message)) }
         // The Pivot: stateIn converts Cold to Hot.
         .stateIn(
@@ -125,7 +125,7 @@ class UserViewModel @Inject constructor(
     - *Cons:* Main thread only. No advanced operators. Android-specific.
 - **`StateFlow`:** 
     - *Pros:* Always has a value. Conflates identical values (if you emit "A" then "A", the UI only updates once). Perfect for UI State.
-    - *Cons:* Requires `collectAsStateWithLifecycle` in Compose to avoid memory leaks.
+    - *Cons:* UI collection needs an explicit lifetime. In Android Compose, collectAsStateWithLifecycle limits collection to the selected lifecycle state; another collector is not intrinsically a StateFlow memory leak.
 - **`SharedFlow`:** 
     - *Pros:* Can emit the exact same value twice in a row. Can have zero initial value. Useful for broadcast streams where replay, buffering, and loss behavior are explicit.
     - *Cons:* Highly complex configuration (replay caches, buffer overflow strategies). A default `MutableSharedFlow` drops values emitted with no subscribers, which makes it risky for critical one-off UI effects like navigation.
@@ -195,3 +195,9 @@ When reviewing reactive architectures, a Staff engineer focuses on the "Cold to 
 - [`structured-concurrency.md`](structured-concurrency.md) — The foundation that makes Flow cancellation safe.
 - [`viewmodel.md`](viewmodel.md) — The layer where Cold flows are converted to Hot `StateFlows`.
 - [Android Developers: StateFlow and SharedFlow](https://developer.android.com/kotlin/flow/stateflow-and-sharedflow)
+
+### Official verification references
+
+- [Primary documentation or owning implementation](https://developer.android.com/topic/libraries/architecture/livedata#update_livedata_objects)
+- [Primary documentation or owning implementation](https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines.flow/map.html)
+- [Primary documentation or owning implementation](https://kotlinlang.org/docs/flow.html)

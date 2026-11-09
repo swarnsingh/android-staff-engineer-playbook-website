@@ -26,7 +26,7 @@ Android sits in the middle. Your Kotlin code is compiled into `.dex` (Dalvik Exe
 
 ## First Principles
 
-1.  **DEX (Dalvik Executable):** The highly optimized bytecode format specific to Android. The `d8` / `R8` compiler turns your Kotlin into DEX.
+1. **DEX (Dalvik Executable):** Android bytecode consumed by ART. The Kotlin/JVM compiler produces JVM `.class` files; D8 converts Java bytecode to DEX, and R8 combines shrinking/optimization with DEX generation when enabled.
 2.  **JIT (Just-In-Time):** Translating selected bytecode while the app runs, shifting some compilation CPU into runtime without defining total installation cost.
 3.  **AOT (Ahead-Of-Time):** Translating selected bytecode before execution, shifting compilation work earlier and consuming compiled-code storage without guaranteeing a fixed runtime result.
 4.  **Profile (`.prof`):** Runtime profiles contain selected hot methods and classes observed under ART's profiling policy; they are not a complete execution history. Developer-authored Baseline Profile rules are human-readable before build tooling packages them into runtime-consumable profile assets.
@@ -60,7 +60,8 @@ For eligible Play-distributed apps, Google Play can aggregate representative pro
 ```mermaid
 graph TD
     subgraph "Development"
-        Kotlin[Kotlin Code] -->|R8 Compiler| DEX[.dex Bytecode]
+        Kotlin[Kotlin source] -->|Kotlin JVM compiler| Classes[JVM .class bytecode]
+        Classes -->|D8 or R8| DEX[.dex Bytecode]
     end
     
     subgraph "Android Device (Execution)"
@@ -170,3 +171,7 @@ When thinking about the Runtime, a Staff engineer focuses on how code translates
 - [Android Open Source Project: Android Runtime (ART) and Dalvik](https://source.android.com/docs/core/runtime)
 - [AOSP: ART JIT compiler](https://source.android.com/docs/core/runtime/jit-compiler) — Hybrid JIT/AOT and profile-guided compilation.
 - [AOSP: Configure ART](https://source.android.com/docs/core/runtime/configure) — Compiler filters and runtime configuration.
+
+### Official verification references
+
+- [Primary documentation or owning implementation](https://developer.android.com/tools/d8)

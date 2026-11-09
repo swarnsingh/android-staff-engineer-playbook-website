@@ -258,7 +258,7 @@ You're the model. They're watching how you handle disagreement, how you write RF
 - [`running-a-design-review.md`](running-a-design-review.md) — where influence converts to alignment.
 - [`../career/technical-leadership.md`](../career/technical-leadership.md) — the broader leadership context.
 - [Lara Hogan — Influence and managing up resources](https://larahogan.me/resources/influence-manage-up/) — practical influence exercises and reading.
-- [Lara Hogan — "Managing Up"](https://larahogan.me/blog/) — the upward dimension.
+- [Lara Hogan — "Is managing up a bad thing?"](https://larahogan.me/blog/is-managing-up-bad/) — the upward dimension.
 - [Tanya Reilly — "The Staff Engineer's Path"](https://www.oreilly.com/library/view/the-staff-engineers/9781098118723/) — extensive treatment of influence.
 - [Will Larson — "Staff Engineer"](https://staffeng.com/book) — interviews on building influence.
 - [Google review comments: respectful public technical feedback](https://google.github.io/eng-practices/review/reviewer/comments.html)

@@ -438,10 +438,10 @@ The shared function and runtime protocol are platform-agnostic when they use com
 - [`../../kotlin/language-core/sealed-classes.md`](../../kotlin/language-core/sealed-classes.md) — UI state modeling.
 - [`../../kotlin/language-core/delegation.md`](../../kotlin/language-core/delegation.md) — `by remember { mutableStateOf(...) }` mechanics.
 - [Compose Runtime releases](https://developer.android.com/jetpack/androidx/releases/compose-runtime) — current runtime APIs, changes, and source links.
-- [Leland Richardson — Under the hood of Jetpack Compose (KotlinConf 2019)](https://www.youtube.com/watch?v=Q9MtlmmN4Q0) — Compose architect's talk.
+- [Leland Richardson — Understanding Compose (Android Dev Summit 2019)](https://www.youtube.com/watch?v=Q9MtlmmN4Q0) — Compose architect's talk.
 - [AndroidX design note — How Composition Works](https://android.googlesource.com/platform/frameworks/support/+/androidx-main/compose/runtime/design/how-compose-works.md) — slot table and positional memoization, with implementation-version caveats.
 - [Android Developers — Compose architecture](https://developer.android.com/develop/ui/compose/architecture) — official.
 - [Compose compiler reports](https://developer.android.com/develop/ui/compose/performance/stability/diagnose) — how to generate and interpret current reports.
 - [Kotlin — Compose compiler options DSL](https://kotlinlang.org/docs/compose-compiler-options.html) — current plugin configuration and feature flags.
-- [Chris Banes — Composable metrics](https://chris.banes.dev/composable-metrics/) — practitioner's perf-audit guide.
+- [Chris Banes — Composable metrics](https://chrisbanes.me/posts/composable-metrics/) — practitioner's perf-audit guide.
 - [JetBrains — Compose Multiplatform](https://www.jetbrains.com/lp/compose-multiplatform/) — same runtime, different appliers.

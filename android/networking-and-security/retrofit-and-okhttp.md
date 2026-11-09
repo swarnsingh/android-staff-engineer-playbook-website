@@ -28,7 +28,7 @@ Square later built Retrofit as a declarative API layer over OkHttp. Compared wit
 2.  **`Retrofit` (The Steering Wheel):** Responsible for translating a Kotlin interface (`@GET("/users")`) into a raw `okhttp3.Request` object, and translating the raw `okhttp3.Response` back into Kotlin Data Classes using a Converter (like Moshi or Gson).
 3.  **Interceptors:** A powerful middleware pattern in `OkHttp` that allows you to inspect, modify, or completely rewrite requests and responses before they hit the network.
 4.  **Converters:** Pluggable factories in `Retrofit` that handle serialization (JSON to Kotlin).
-5.  **CallAdapters:** Pluggable factories in `Retrofit` that adapt the execution model (e.g., adapting a raw `Call<T>` into a `suspend` function or a `Flow<T>`).
+5. **CallAdapters:** Factories adapting Call<T> to supported return types such as RxJava types or third-party adapters. Retrofit handles suspend service methods through built-in suspend support, not a Coroutine CallAdapter.
 
 ## Mental Model
 
@@ -43,25 +43,32 @@ Think of networking as **Shipping a Package**.
 The most powerful feature of `OkHttp` is the Interceptor chain. It is an implementation of the Chain of Responsibility pattern.
 
 ```kotlin
-// A standard OkHttp Interceptor
-class AuthInterceptor : Interceptor {
+import java.io.IOException
+import okhttp3.*
+
+// Dedicated authenticated client: one store per login session, never reused
+// for another account. Public/third-party requests use a separate client.
+class AuthInterceptor(
+    private val store: SessionTokenStore,
+    private val apiOrigin: HttpUrl,
+) : Interceptor {
     override fun intercept(chain: Interceptor.Chain): Response {
-        // 1. Get the original request
-        val originalRequest = chain.request()
-
-        // 2. Modify it (Add Auth Header)
-        val newRequest = originalRequest.newBuilder()
-            .addHeader("Authorization", "Bearer $token")
-            .build()
-
-        // 3. Pass it down the chain to the actual network
-        val response = chain.proceed(newRequest)
-
-        // 4. (Optional) Inspect the response before returning it to Retrofit
-        return response
+        val request = chain.request()
+        if (!request.url.sameOriginAs(apiOrigin)) {
+            throw IOException("Authenticated client used outside its API origin")
+        }
+        val tokens = store.current() ?: throw IOException("Session ended")
+        return chain.proceed(request.newBuilder()
+            .header("Authorization", "Bearer ${tokens.accessToken}")
+            .build())
     }
 }
+
+fun HttpUrl.sameOriginAs(other: HttpUrl): Boolean =
+    scheme == "https" && scheme == other.scheme && host == other.host && port == other.port
 ```
+
+The origin policy intentionally requires HTTPS, including local auth tests. For socket tests, configure MockWebServer with `useHttps`, a certificate for its test hostname, and a client that trusts only the test CA; set `apiOrigin` from that HTTPS server URL. In-memory interceptor tests can use an HTTPS URL without opening a socket. Plain-HTTP tests use a separate unauthenticated client; do not weaken this production origin check for them.
 
 There are two types of Interceptors:
 1.  **Application Interceptors:** The first thing to run. Best for adding headers (like Auth) or logging the exact request the app made.
@@ -72,14 +79,16 @@ There are two types of Interceptors:
 ```mermaid
 graph TD
     subgraph "Retrofit Layer"
-        API[Kotlin @GET Interface] -->|Serialization| Moshi[Moshi Converter]
-        Moshi -->|Generates| Req[OkHttp Request]
+        API[Kotlin @GET Interface] --> Factory[Retrofit RequestFactory]
+        Factory -->|Build URL headers and body| Req[OkHttp Request]
+        Factory -->|Convert body when required| Moshi[Moshi Converter]
+        Moshi -->|Encoded request body| Factory
     end
     
     subgraph "OkHttp Interceptor Chain"
         Req --> AppInt[Application Interceptor: Logging/Auth]
         AppInt --> Cache[HTTP Cache: Disk entries and validators]
-        Cache --> NetInt[Network Interceptor: GZIP/Stetho]
+        Cache --> NetInt[Network Interceptor: Stetho or inspection]
     end
     
     subgraph "The Internet"
@@ -95,61 +104,96 @@ graph TD
 
 A classic Junior mistake is handling Token Refresh inside the ViewModel or Repository using `try/catch(401)`. 
 
-For challenge-based token renewal, an OkHttp `Authenticator` can centralize one bounded refresh and follow-up attempt. The repository still receives failure when refresh is unavailable, rejected, cancelled, or exceeds its deadline.
+For challenge-based renewal, an OkHttp `Authenticator` can centralise a bounded refresh attempt and follow-up for each call. Queued calls share a successful refresh or a terminal rejection; transient failures can be retried by later calls under the caller's bounded retry policy. Account ownership must survive the whole exchange: a request made as A must never be retried using B's credentials.
+
+The following design creates a fresh store and authenticated client for **each login session**, including a re-login to the same account. Logout/account switch invalidates the old store before publishing the new session. No code repopulates an invalidated store or swaps another account into it. The operation retains its original session's client; UI/result persistence also checks that session before accepting results.
 
 ```kotlin
+data class SessionTokens(val accessToken: String, val refreshToken: String) {
+    init { require(accessToken.isNotBlank() && refreshToken.isNotBlank()) }
+    override fun toString(): String = "SessionTokens(accessToken=[redacted], refreshToken=[redacted])"
+}
+
+class SessionTokenStore(initial: SessionTokens) {
+    private var tokens: SessionTokens? = initial
+
+    @Synchronized fun current(): SessionTokens? = tokens
+    @Synchronized fun invalidate() { tokens = null }
+
+    @Synchronized fun invalidateIfCurrent(expected: SessionTokens): Boolean {
+        if (tokens != expected) return false
+        tokens = null
+        return true
+    }
+
+    // Login/logout and refresh share this atomic storage boundary.
+    // Once invalidated, this store cannot be resurrected by a late refresh.
+    @Synchronized fun replaceIfCurrent(
+        expected: SessionTokens,
+        replacement: SessionTokens,
+    ): SessionTokens? {
+        if (tokens != expected) return null
+        tokens = replacement
+        return replacement
+    }
+}
+
+// App-defined adapter on a dedicated, bounded refresh client. It uses ONLY
+// the captured session's refresh token, returns rotated credentials, and
+// returns null ONLY for a confirmed terminal credential rejection. Transient
+// transport/HTTP failures throw IOException instead. It never reads a global account.
+fun interface AuthApi {
+    @Throws(IOException::class)
+    fun refreshSynchronouslyOrNull(refreshToken: String): SessionTokens?
+}
+
 class TokenAuthenticator(
-    private val tokenStorage: TokenStorage,
-    // Built on a dedicated client with no TokenAuthenticator, so refresh 401s
-    // cannot recursively invoke this authenticator.
+    private val store: SessionTokenStore,
+    private val apiOrigin: HttpUrl,
     private val refreshApi: AuthApi,
 ) : Authenticator {
-
     override fun authenticate(route: Route?, response: Response): Request? {
-        // Count authentication challenges, not redirects in the prior chain.
+        val request = response.request
+        if (!request.url.sameOriginAs(apiOrigin)) return null
+        val failedAuthorization = request.header("Authorization") ?: return null
         val challengeCount = generateSequence(response) { it.priorResponse }
             .count { it.code == 401 }
-        if (challengeCount >= 2) {
-            return null
-        }
+        if (challengeCount >= 2) return null
+        if (request.body?.isOneShot() == true || request.body?.isDuplex() == true) return null
 
-        val failedAuthorization = response.request.header("Authorization")
-
-        // 2. authenticate() runs synchronously on this call's execution thread.
-        // Serialize refresh and re-read storage so queued 401s reuse the token
-        // produced by the first refresh instead of refreshing again.
-        synchronized(this) {
-            val currentToken = tokenStorage.getToken()
-            val currentAuthorization = currentToken?.let { "Bearer $it" }
-            if (currentAuthorization != null && currentAuthorization != failedAuthorization) {
-                return response.request.newBuilder()
-                    .header("Authorization", currentAuthorization)
-                    .build()
+        return synchronized(this) {
+            val current = store.current() ?: return@synchronized null
+            val retryTokens = if ("Bearer ${current.accessToken}" != failedAuthorization) {
+                current // Another call refreshed this same login session.
+            } else {
+                // IOException propagates without changing the store.
+                val replacement = refreshApi.refreshSynchronouslyOrNull(current.refreshToken)
+                if (replacement == null) {
+                    store.invalidateIfCurrent(current)
+                    return@synchronized null
+                }
+                store.replaceIfCurrent(current, replacement) ?: return@synchronized null
             }
-
-            // The dedicated refresh API returns null for an unsuccessful or
-            // unauthenticated refresh; bound its call timeout separately.
-            val newToken = refreshApi.refreshTokenSynchronouslyOrNull()
-                ?: return null
-            tokenStorage.saveToken(newToken)
-            
-            // 3. Retry the failed request with the new token
-            return response.request.newBuilder()
-                .header("Authorization", "Bearer $newToken")
+            if (store.current() != retryTokens) return@synchronized null
+            request.newBuilder()
+                .header("Authorization", "Bearer ${retryTokens.accessToken}")
                 .build()
         }
     }
 }
-
-// In DI, the refreshApi uses a client without this authenticator.
-val refreshClient = baseClient.newBuilder()
-    .authenticator(Authenticator.NONE)
-    .build()
-val refreshApi = buildRefreshApi(refreshClient)
-val okHttpClient = baseClient.newBuilder()
-    .authenticator(TokenAuthenticator(storage, refreshApi))
-    .build()
 ```
+
+A confirmed terminal refresh rejection conditionally invalidates only the token pair that was refreshed. Later queued 401s see the ended session and return null without another refresh. Returning null from the authenticator delivers the challenged 401 response to the caller. Re-login is triggered by invalidation of that operation's session, not by every 401: if the conditional invalidation fails because a newer token pair was installed, that newer pair stays valid. A new call after invalidation fails locally with `IOException("Session ended")`.
+
+A transient refresh I/O failure leaves the store intact and propagates `IOException` to `execute()` or `enqueue()` failure handling (and through Retrofit's suspend call). It does not trigger re-login by itself. The adapter must distinguish terminal credential rejection from transport failure, rate limiting, or a temporary server outage; it must not map every unsuccessful HTTP response to null. A later call may retry within a bounded backoff policy.
+
+This store illustrates process-local synchronisation, not secure persistent token storage. A production store must preserve the same session identity, invalidation, and conditional-update guarantees across its actual storage boundary. The refresh adapter must not fall back to another account. The explicit `toString()` redacts both values while data-class equality still compares them; it does not protect property access, destructuring, or generic serialisation. Do not log tokens.
+
+For DI, inject a factory/session manager whose lifetime may be the application's; that owner creates and retains a fresh client, Retrofit service, and store for each login, invalidates the old store on logout, and discards the old graph. Hilt's `@Singleton` follows `SingletonComponent` (the application), not login/logout. Do not bind one authenticated session client as the application singleton or infer a login lifetime from `@ActivityScoped`. A process-lived neutral/public client can be shared separately. See [Hilt component lifetimes](https://developer.android.com/training/dependency-injection/hilt-android#component-lifetimes).
+
+Construct refresh and authenticated clients independently. The refresh client must have neither the auth interceptor nor this authenticator; disabling only the authenticator on a cloned client does not remove inherited interceptors. Bound refresh I/O (for example, `callTimeout`) and restrict its origin. Disabling redirects on these dedicated clients simplifies the origin policy; public/content clients can have a separate policy.
+
+Only replay when the API contract makes a 401 follow-up safe, the body is replayable, and write operations have their required idempotency protection. Cancellation of old calls and rejection of old-session results on account switch are additional controls: invalidating local tokens cannot retract a request already sent to the server or revoke a server session by itself.
 
 ## Tradeoffs
 
@@ -187,12 +231,12 @@ When reviewing the Network layer, a Staff engineer focuses on resilience and glo
 
 1.  **Timeouts:** Review connect, read, write, and whole-call deadlines against the operation and supported network cohorts. Defaults and appropriate values vary by OkHttp version, request type, UX, and backend budget; verify behavior with fault tests.
 2.  **Mocking via interceptors:** An interceptor-backed fake can exercise URL paths, verbs, converters, and response handling. Interface fakes are faster and more focused for domain tests; choose the boundary that matches the behavior under test.
-3.  **Global Error Handling:** ViewModels should not be writing `if (e is UnknownHostException)` to detect offline states. I prefer an Interceptor that catches raw socket exceptions and throws a custom `NoInternetException`, which is then globally mapped into a User-Facing Error State by the BaseViewModel or Repository.
+3. **Error classification:** Map transport failures at an owned repository boundary and retain their cause. DNS failure, connection refusal and timeout do not prove the device is offline. If an interceptor wraps failures, preserve IOException compatibility for OkHttp's asynchronous failure contract. Use connectivity observations as context rather than a substitute for request results.
 
 ## Common Misconceptions
 
 - **"A raw Retrofit `Call<T>` is entirely synchronous."** A raw call supports asynchronous `enqueue()` and blocking `execute()`. The blocking form must not run on the main thread; a Retrofit `suspend` service method uses OkHttp's asynchronous execution path.
-- **"I need to add `Dispatchers.IO` when calling Retrofit suspend functions."** False. Retrofit's Coroutine CallAdapter internally routes the HTTP request to OkHttp's asynchronous dispatcher. Wrapping a Retrofit `suspend` function in `withContext(Dispatchers.IO)` is redundant and adds unnecessary context-switching overhead.
+- **"I need Dispatchers.IO around every Retrofit suspend call."** Retrofit's built-in suspend support enqueues the HTTP call through OkHttp. That network wait does not need an extra IO wrapper; separately owned blocking work and CPU-heavy parsing/mapping still need an appropriate execution policy.
 
 ## Probing Questions
 
@@ -232,8 +276,23 @@ When reviewing the Network layer, a Staff engineer focuses on resilience and glo
 
 ## Further Reading
 
-- [`dependency-injection.md`](../data-and-di/dependency-injection.md) — How we provide singletons of Retrofit via Hilt.
+- [`dependency-injection.md`](../data-and-di/dependency-injection.md) — Hilt provider and lifetime mechanics; authenticated clients here are owned by a per-login factory rather than the process-wide Retrofit example.
 - [`coroutines-under-the-hood.md`](../concurrency/coroutines-under-the-hood.md) — How Retrofit automatically bridges `Call<T>` into Coroutine State Machines.
 - [OkHttp Interceptor API](https://github.com/square/okhttp/blob/master/okhttp/src/commonJvmAndroid/kotlin/okhttp3/Interceptor.kt)
 - [OkHttp `ResponseBody`](https://lysine.dev/okhttp/5.x/okhttp/okhttp3/-response-body/index.html) — Closing response bodies and resource ownership.
 - [OkHttp `ConnectionPool`](https://lysine.dev/okhttp/5.x/okhttp/okhttp3/-connection-pool/index.html) — Idle-connection configuration.
+
+### Official verification references
+
+- [Primary documentation or owning implementation](https://github.com/square/okhttp/blob/master/okhttp/src/commonJvmAndroid/kotlin/okhttp3/internal/connection/RealCall.kt)
+- [Primary documentation or owning implementation](https://github.com/square/okhttp/blob/master/okhttp/src/commonJvmAndroid/kotlin/okhttp3/internal/http/BridgeInterceptor.kt)
+- [Primary documentation or owning implementation](https://github.com/square/retrofit/blob/trunk/retrofit/src/main/java/retrofit2/HttpServiceMethod.java)
+- [Primary documentation or owning implementation](https://github.com/square/retrofit/blob/trunk/retrofit/src/main/java/retrofit2/RequestFactory.java)
+- [Primary documentation or owning implementation](https://raw.githubusercontent.com/square/retrofit/trunk/retrofit/src/main/java/retrofit2/RequestFactory.java)
+- [OkHttp Authenticator contract](https://github.com/square/okhttp/blob/master/okhttp/src/commonJvmAndroid/kotlin/okhttp3/Authenticator.kt)
+- [OkHttp RequestBody replayability](https://github.com/square/okhttp/blob/master/okhttp/src/commonJvmAndroid/kotlin/okhttp3/RequestBody.kt)
+- [Kotlin shared mutable state](https://kotlinlang.org/docs/shared-mutable-state-and-concurrency.html)
+- [Kotlin data-class generated members](https://kotlinlang.org/docs/data-classes.html)
+- [Hilt lifetimes and scopes](https://developer.android.com/training/dependency-injection/hilt-android#component-lifetimes)
+- [MockWebServer 4.12 HTTPS configuration](https://github.com/square/okhttp/blob/parent-4.12.0/mockwebserver/src/main/kotlin/okhttp3/mockwebserver/MockWebServer.kt)
+- [OkHttp TLS test certificates](https://github.com/square/okhttp/blob/parent-4.12.0/okhttp-tls/src/main/kotlin/okhttp3/tls/HandshakeCertificates.kt)

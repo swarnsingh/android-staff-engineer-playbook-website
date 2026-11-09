@@ -231,7 +231,7 @@ When reviewing Paging architecture, a Staff engineer focuses on the physical bou
 8. **How does the `prefetchDistance` configuration parameter improve the user's perception of speed when scrolling?**
    It tells the `Pager` to eagerly trigger the next page load when the user is within `prefetchDistance` items from the bottom of the currently loaded list. This allows the network request to complete *before* the user actually reaches the end, making the scroll feel perfectly infinite and seamless.
 9. **If the network fails while the user is scrolling down and requesting Page 4, how does `Paging 3` expose that specific error to the UI layer?**
-   The `PagingSource` or `RemoteMediator` catches the exception and returns a `LoadResult.Error(e)`. The `Pager` updates the `CombinedLoadStates` object inside the flow, setting `append = LoadState.Error`. The UI observes this state (e.g., in Compose via `lazyPagingItems.loadState.append`) and renders a retry button at the bottom of the list.
+   A PagingSource returns LoadResult.Error; a RemoteMediator returns MediatorResult.Error. Inspect the appropriate source or mediator LoadState for refresh, append or prepend. An error is not universally an append failure, so show retry/error UI according to the operation and whether cached data is available.
 10. **Describe the architectural tradeoff between using a simple Network-backed `PagingSource` versus implementing a full `RemoteMediator` with a Room database.**
     Network-backed `PagingSource` is vastly easier to implement (less boilerplate, no DB setup) but offers zero offline support, loses state on process death, and requires complex manual item mutation logic. `RemoteMediator` + Room requires significant upfront complexity and DB schema management, but provides perfect offline-first UX, robust item mutations, and process-death resilience.
 
@@ -240,3 +240,7 @@ When reviewing Paging architecture, a Staff engineer focuses on the physical bou
 - [`room.md`](room.md) — The database that powers the `RemoteMediator`.
 - [`flow.md`](../architecture/flow.md) — The reactive stream that delivers `PagingData`.
 - [Android Developers: Paging 3](https://developer.android.com/topic/libraries/architecture/paging/v3-overview)
+
+### Official verification references
+
+- [Primary documentation or owning implementation](https://developer.android.com/topic/libraries/architecture/paging/load-state)

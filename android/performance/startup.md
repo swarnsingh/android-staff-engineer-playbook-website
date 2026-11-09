@@ -15,11 +15,11 @@
 Cold start is what users notice. It's also where staff-level engineering matters most — warm/hot are mostly framework-driven.
 
 A "cold" start happens after:
-- App process killed (OOM, swiped from recents, Doze).
+- Cold means the app process is absent. Removing a task or entering Doze does not universally terminate that process.
 - First launch after install / update.
 - Reboot.
 
-Google Play Console reports cold-start time at the 90th percentile. Anything above ~1500ms shows up as a "slow start" Vitals alert.
+Play Vitals uses separate cold, warm and hot TTID definitions. As checked on 27 October 2026, slow starts are cold >=5 seconds, warm >=2 seconds and hot >=1–1.5 seconds: Play Console Help lists hot >=1 second, while the developer.android.com Vitals startup page lists hot >=1.5 seconds. Use the definition shown in Play Console for the app. The table's smaller targets are illustrative product budgets, not Vitals alert thresholds.
 
 ---
 
@@ -37,7 +37,7 @@ graph LR
   FirstFrame --> NetworkFetch[First network calls / DB queries]
 ```
 
-| Stage | Typical cost (cold) | Owned by |
+| Stage | Illustrative cost only — not measurements or platform guarantees | Owned by |
 |---|---|---|
 | Zygote fork + class load | 100–300ms | Framework + ART |
 | `Application.onCreate` | 0–800ms | Your code |
@@ -150,11 +150,11 @@ class AnalyticsInitializer : Initializer<Analytics> {
 ```
 
 Benefits over raw `Application.onCreate`:
-- **Lazy by default.** Initializers run on first access, not at startup.
+- **Automatic discovery is eager.** Manifest metadata opts initializers into provider startup. Disable discovery for the chosen initializer and call initializeComponent later for manual lazy initialization; an eager dependency can still reach it.
 - **Dependency-ordered.** Analytics waits for Logger automatically.
 - **Removable.** If a feature's initializer isn't needed, mark it `tools:node="remove"` per build variant.
 
-App Startup is the single biggest startup win for most apps — typically 100–400ms shaved off cold start by moving SDK inits behind the library.
+App Startup consolidates providers and expresses initialization dependencies. Moving work off startup requires an explicit discovery/lifetime policy; measure whether that change improves the product's actual launch path.
 
 ### Force eager init for specific initializers
 
@@ -166,7 +166,7 @@ If something must initialize at app start (e.g., Crashlytics):
     android:value="androidx.startup" />
 ```
 
-Without `tools:node="remove"`, the initializer runs in `Application.onCreate` via the manifest-declared `ContentProvider`.
+Without removing its discovery metadata, the initializer runs through InitializationProvider before Application.onCreate; consolidating providers alone does not defer it.
 
 For deferred ones, expose them via `AppInitializer.getInstance(context).initializeComponent(MyInitializer::class.java)` when needed.
 
@@ -183,15 +183,15 @@ override fun onCreate(savedInstanceState: Bundle?) {
     super.onCreate(savedInstanceState)
     setContent { App() }
     
-    // Anything else: defer
+    // Dispatch owned blocking I/O explicitly; this does not guarantee after-first-frame timing.
     lifecycleScope.launch {
-        analytics.track("screen_main_opened")   // not blocking
-        warmup.runIdle()                         // background after frame
+        withContext(Dispatchers.IO) { analytics.track("screen_main_opened"); warmup.runIdle() }
+        // Main.immediate launch itself may enter inline; the explicit IO boundary owns this blocking work.
     }
 }
 ```
 
-The rule: only the `setContent` (or `setContentView`) is on the critical path. Anything else can wait one frame.
+Keep required launch work explicit. lifecycleScope.launch alone is neither a background dispatcher nor an after-draw boundary; measure the first frame separately.
 
 ### 2. Avoid synchronous I/O
 
@@ -230,9 +230,9 @@ ART runs code in three modes:
 | JIT-compiled | After many invocations | Fast |
 | AOT-compiled | Pre-compiled to native code | Fastest |
 
-By default, code starts interpreted, gets JIT-compiled hot paths over time. First launches see no AOT compilation — so cold start runs through the interpreter, the slowest path.
+Execution can combine interpreted, JIT and AOT code according to installed profiles, compilation state, ART version and the method. First launch is not universally interpreter-only.
 
-**Baseline Profiles** ship pre-recorded "this method is hot during startup" hints. ART AOT-compiles those methods at install time. Result: 20–40% faster startup on first launch.
+Baseline Profiles package rules for important journeys so ART can optimize covered code through supported installation/compilation paths. Verify packaging and installation, then measure the selected journey; no fixed speedup is promised here.
 
 ### Generate a Baseline Profile
 
@@ -255,7 +255,7 @@ class StartupBaselineProfile {
 ./gradlew :app:generateBaselineProfile
 ```
 
-The generated `baseline-prof.txt` ships in `app/src/main/baselineProfile/` and gets bundled into the APK as `baseline.prof`. ART consumes it on install.
+The Baseline Profile Gradle plugin generates and packages rules for the selected variant. Confirm its generated outputs and packaged baseline.prof with the pinned plugin setup; a single hardcoded source path is not universal.
 
 ### Verify the win
 
@@ -280,7 +280,7 @@ class StartupMacrobenchmark {
 
 Macrobenchmark with `CompilationMode.Partial(Require)` runs the test with the baseline profile applied. Compare against `CompilationMode.None` (no AOT) to see the delta.
 
-Typical results: 200–400ms saved on cold start. Free perf — just ship a baseline profile.
+Compare reproducible compilation modes and journeys on the target devices. This repository supplies no measured 200–400ms gain.
 
 ---
 
@@ -335,7 +335,7 @@ class MainActivity : ComponentActivity() {
 }
 ```
 
-`reportFullyDrawn()` tells the framework when the screen is *meaningfully* rendered. Macrobenchmark + Play Vitals + your dashboard all pick this up.
+reportFullyDrawn marks the app's meaningful-content milestone for TTFD measurement in supported tools such as Macrobenchmark. Play Vitals startup reporting measures TTID; a custom dashboard needs its own instrumentation.
 
 ---
 
@@ -365,6 +365,8 @@ Use for the *perceptual* startup experience. It doesn't make cold start faster; 
 
 ## Diagnosing Slow Startup
 
+For an app shipping native code, also check [16 KB page-size compatibility](../../release-engineering/16kb-page-sizes.md). Android 15 introduced support for devices configured with 16 KB pages. Audit your own and SDK-provided native libraries, ELF and APK alignment, and test in a 16 KB environment. This compatibility check complements startup traces; it is not a promise of a specific startup-speed improvement. See the [official page-size guide](https://developer.android.com/guide/practices/page-sizes).
+
 ### 1. `adb shell am start -W -n <package>/<activity>`
 
 ```bash
@@ -381,9 +383,16 @@ WaitTime: 419
 For deeper analysis. Capture a trace covering the launch:
 
 ```bash
-adb shell perfetto -o /data/local/tmp/trace.pftrace -c - <<EOF
+adb shell perfetto --txt -o /data/local/tmp/trace.pftrace -c - <<EOF
 buffers { size_kb: 32768 }
-data_sources { config { name: "linux.ftrace" } }
+duration_ms: 10000
+data_sources { config { name: "linux.ftrace" ftrace_config {
+  ftrace_events: "sched/sched_switch"
+  atrace_categories: "am"
+  atrace_categories: "view"
+  atrace_categories: "gfx"
+  atrace_apps: "your.application.id"
+} } }
 EOF
 ```
 
@@ -395,7 +404,7 @@ Reproducible measurements in CI.
 
 ### 4. Play Vitals dashboard
 
-Production data. P90 cold-start time across all users. Alerts on "% slow start" > 5%.
+Use the documented Vitals TTID definitions and inspect the actual device/version cohort. A team may set stricter product budgets and alert policies, but 5% is not a universal platform alert contract.
 
 ### Release gates and alerting
 
@@ -435,8 +444,8 @@ Hilt's `@Provides` are lazy by default — the instance isn't built until reques
 
 ```kotlin
 class ThemeRepository(private val prefs: DataStore<Preferences>) {
-    suspend fun observe(): Flow<Theme> = prefs.data
-        .map { it[KEY] ?: Theme.SYSTEM }
+    fun observe(): Flow<Theme> = prefs.data
+        .map { it[KEY]?.let(Theme::valueOf) ?: Theme.SYSTEM } // KEY is a stringPreferencesKey
         .distinctUntilChanged()
 }
 
@@ -468,15 +477,15 @@ override fun onCreate(savedInstanceState: Bundle?) {
     super.onCreate(savedInstanceState)
     setContent { App() }
     
-    // Run after first frame:
-    Choreographer.getInstance().postFrameCallback {
+    // Owned blocking work dispatched off Main; not an after-draw guarantee.
+    lifecycleScope.launch(Dispatchers.IO) {
         analytics.track("screen_main_opened")
         prefetchManager.warmUp()
     }
 }
 ```
 
-`postFrameCallback` defers to after the first frame draws. Background work doesn't block the user-visible launch.
+postFrameCallback schedules a callback for the next frame on its Looper thread; it does not mean after drawing or on a background worker. The example below uses a lifecycle-owned IO boundary instead and makes no first-frame ordering promise.
 
 ### Pattern 5: Library/SDK initialization via App Startup
 
@@ -495,7 +504,7 @@ override fun onCreate(savedInstanceState: Bundle?) {
 | Compose first composition takes 300ms | Heavy `LaunchedEffect(Unit) { ... }` work | Defer via `Dispatchers.IO` + Spinner |
 | TTFD never reported | Forgot `reportFullyDrawn()` | Call it once content is meaningful |
 | Baseline profile not applied | APK didn't bundle `baseline.prof` | Verify `androidx.profileinstaller:profileinstaller` dep + `assembleRelease` includes it |
-| Profile installer reports "not installed" | Direct ADB install (skips Play Store install hook) | Use `adb install --apex` for testing |
+| Profile installer reports not installed | Packaging, installer path or compilation state differs | Verify packaged rules and ProfileInstaller/CompilationMode.Partial through the supported version-specific workflow; --apex is not an application APK installation repair |
 | Vitals shows slow start despite local fast launches | Production has different device mix | Test on entry-level Pixel/older devices |
 | Macrobenchmark gives wildly varying numbers | Device thermal throttling | Use a separate testing device; run with screen on |
 | `installSplashScreen()` doesn't take effect | Style misconfigured | Use the `Theme.SplashScreen` parent theme; set `windowSplashScreenBackground` |
@@ -510,13 +519,13 @@ override fun onCreate(savedInstanceState: Bundle?) {
 
 - **`Application.onCreate` as a dumping ground.** Every SDK ships an "add this line in onCreate" guide. Apps accumulate. By year 3 you have 600ms of SDK init. Audit annually.
 - **Loading config from disk synchronously.** SharedPreferences `.getString(key, default)` blocks. So does an unprotected DataStore read.
-- **`Dexopt` blamed for slow startup.** Dexopt is a one-time install cost, not startup. If launch is slow on every cold start, it's not Dexopt.
+- **Compilation-state assumptions:** Inspect installed profiles and ART compilation state. Compilation can occur through installation and later optimization; do not treat every first launch as interpreter-only or infer the cause from cold-process state alone.
 - **Optimizing release builds with debug-build behavior in mind.** Debug builds skip R8/proguard; release startups are usually faster. Measure release builds for real numbers.
 - **`Room.databaseBuilder().build()` in `Application.onCreate`.** Database isn't opened until first query — but Hilt's `@Singleton` provides might eagerly build it depending on consumer.
 - **Reflection / SPI / annotation-processed initialization.** Each one is hidden cost. Replace with explicit init paths.
 - **Workers and BroadcastReceivers triggering work at boot.** Cold-start path includes anything else the system is doing.
 - **`AndroidX-startup` library forgotten.** Mature Android apps almost all use it. New projects sometimes skip it; the cost compounds.
-- **Macrobenchmark without `CompilationMode.None`.** You measure JIT-warmed code, not the user's first-launch experience.
+- **Compilation modes without a stated question:** None is a useful controlled baseline; Partial with required profiles tests another state. Neither alone reproduces every user's first launch, so document installation, compilation and data state with the comparison.
 - **No splash screen with branded loading.** Visual smoothing matters even when underlying cold-start cost is unfixable.
 
 ---
@@ -547,9 +556,9 @@ override fun onCreate(savedInstanceState: Bundle?) {
 3. **Audit `Application.onCreate` — what's the right way to measure each line's cost?**
    Wrap each SDK initialization call in a timer block (`SystemClock.elapsedRealtime()`) and log the duration. Run it on a real physical device, not an emulator, during a true cold start.
 4. **App Startup library — what problem does it solve? Walk through wiring an initializer with dependencies.**
-   It prevents `Application.onCreate` from becoming a synchronous dumping ground. You define an `Initializer` class, declare its dependencies in `dependencies()`, and wire it in the Manifest via a single `ContentProvider`.
+   App Startup consolidates provider discovery and dependencies. Manifest-discovered initializers still run eagerly before Application.onCreate; manual lazy initialization requires disabling the chosen discovery metadata.
 5. **Baseline Profile — what does it do at install time, and how much does it save? How do you generate one?**
-   It provides AOT-compilation hints to ART, converting critical startup bytecode into machine code at install time, saving 20-40% of cold start time. Generate it by running a `Macrobenchmark` test with `BaselineProfileRule`.
+   Baseline Profiles provide rules for critical journeys. Use the Baseline Profile Gradle plugin and BaselineProfileRule, verify packaged/installed rules and compare compilation modes on the target workload; gains are not fixed.
 6. **Macrobenchmark `CompilationMode.Partial(BaselineProfileMode.Require)` — what does this measure?**
    It forces the test to run using the compiled Baseline Profile, allowing you to accurately measure the performance gains of your AOT compilation compared to a baseline JIT launch.
 7. **`timeToInitialDisplayMs` (TTID) vs `timeToFullDisplayMs` (TTFD) — what's the difference, and how do you report TTFD?**
@@ -557,13 +566,13 @@ override fun onCreate(savedInstanceState: Bundle?) {
 8. **Splash Screen API — what does it actually solve for cold start?**
    It doesn't speed up the actual CPU work, but it dramatically improves perceptual performance by showing a branded splash screen instead of a blank white window while the app completes its initial loading.
 9. **Cold start was 800ms; you added one analytics SDK and now it's 1100ms. Walk through finding the culprit.**
-   The new SDK was likely initialized synchronously on the main thread in `Application.onCreate`. The fix is to move it to a background thread, or orchestrate it via the App Startup library to run lazily.
+   Inspect the SDK signature and trace its initialization path. App Startup only defers work when discovery and manual initialization are configured accordingly; required Main work and safe background work need separate ownership.
 10. **Production P90 cold start is 2.1s but your local device measures 600ms. Why?**
     Local testing is usually done on high-end flagship devices, while Production P90 includes users on budget devices with slow CPUs and highly constrained flash storage.
 11. **ART AOT / JIT / interpreter — what fires when?**
     Interpreter translates bytecode instantly but slowly on first run. JIT compiles frequently used methods while running. AOT pre-compiles code to machine code at install time based on Baseline Profiles.
 12. **A junior wants to add `firebase.fetch_remote_config()` to `Application.onCreate`. Walk through your code-review pushback.**
-    This introduces a synchronous network/disk I/O block directly on the critical path before the first frame is drawn. I'd mandate deferring it to a background coroutine or fetching it lazily via App Startup.
+     Inspect the concrete SDK API: an asynchronous Remote Config fetch does not inherently block on network I/O. Determine whether the code awaits it before readiness, blocks a thread, or performs synchronous initialization; keep optional fetches out of the launch dependency.
 
 ## Further Reading
 
@@ -581,4 +590,16 @@ override fun onCreate(savedInstanceState: Bundle?) {
 - [Android Developers — Baseline Profiles](https://developer.android.com/topic/performance/baselineprofiles/overview) — official.
 - [Android Developers — App Startup library](https://developer.android.com/topic/libraries/app-startup) — official.
 - [Macrobenchmark](https://developer.android.com/topic/performance/benchmarking/macrobenchmark-overview) — official.
-- [Romain Guy — Startup performance](https://www.curious-creature.com/) — engineer's blog.
+- [Android Developers — App startup time](https://developer.android.com/topic/performance/vitals/launch-time) — official startup guidance.
+
+### Official verification references
+
+- [Primary documentation or owning implementation](https://developer.android.com/kotlin/coroutines/coroutines-best-practices)
+- [Primary documentation or owning implementation](https://developer.android.com/reference/android/view/Choreographer#postFrameCallback(android.view.Choreographer.FrameCallback))
+- [Primary documentation or owning implementation](https://developer.android.com/reference/androidx/lifecycle/LifecycleKt)
+- [Primary documentation or owning implementation](https://developer.android.com/topic/libraries/architecture/datastore)
+- [Primary documentation or owning implementation](https://developer.android.com/topic/performance/issues/launch-time)
+- [Primary documentation or owning implementation](https://firebase.google.com/docs/remote-config/get-started?platform=android)
+- [Primary documentation or owning implementation](https://kotlinlang.org/docs/flow.html)
+- [Primary documentation or owning implementation](https://perfetto.dev/docs/reference/perfetto-cli)
+- [Primary documentation or owning implementation](https://support.google.com/googleplay/android-developer/answer/9844486?hl=en)

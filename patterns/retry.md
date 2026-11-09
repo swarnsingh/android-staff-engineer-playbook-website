@@ -212,7 +212,7 @@ A Retry pattern *adds* load to a struggling server. A Circuit Breaker *removes* 
 - [OkHttp actual follow-up implementation](https://raw.githubusercontent.com/square/okhttp/master/okhttp/src/commonJvmAndroid/kotlin/okhttp3/internal/http/RetryAndFollowUpInterceptor.kt)
 - [AWS original Full/Equal Jitter comparison](https://aws.amazon.com/blogs/architecture/exponential-backoff-and-jitter/)
 - [WorkManager attempts, constraints and backoff](https://developer.android.com/develop/background-work/background-tasks/persistent/getting-started/define-work)
-- [WorkManager unique work and KEEP](https://developer.android.com/develop/background-work/background-tasks/persistent/how-to/manage-work#conflict-resolution-policy)
+- [WorkManager unique work and KEEP](https://developer.android.com/develop/background-work/background-tasks/persistent/how-to/manage-work#conflict-resolution)
 - [GraphQL over HTTP status semantics](https://graphql.github.io/graphql-over-http/draft/#sec-Status-Codes)
 - [Coroutine cancellation semantics](https://kotlinlang.org/docs/cancellation-and-timeouts.html)
 - [Retrofit suspending body calls throw HttpException for HTTP errors](https://raw.githubusercontent.com/square/retrofit/trunk/retrofit/src/main/java/retrofit2/KotlinExtensions.kt)

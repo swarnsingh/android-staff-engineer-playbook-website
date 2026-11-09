@@ -251,7 +251,7 @@ Never: silent resistance, smug "I told you so" after the fact, recruiting allies
 - [`incident-response-on-call.md`](incident-response-on-call.md) — escalation in the heat of an incident.
 - [`../career/writing-rfcs.md`](../career/writing-rfcs.md) — the artifact that records the decision.
 - [Atlassian — DACI Decision Framework](https://www.atlassian.com/team-playbook/plays/daci) — practical template.
-- [Lara Hogan — "Disagree and Commit"](https://larahogan.me/blog/) — how to do it well.
+- [Amazon Leadership Principles — "Have Backbone; Disagree and Commit"](https://www.amazon.jobs/content/en/our-workplace/leadership-principles) — the original principle.
 - [Amazon's 2015 shareholder letter](https://ir.aboutamazon.com/files/doc_financials/annual/2015-Letter-to-Shareholders.PDF) — the primary source for the Type 1 / Type 2 framing.
 - [Amazon 2015 letter: reversible decisions](https://s2.q4cdn.com/299287126/files/doc_financials/annual/2015-Letter-to-Shareholders.PDF)
 - [Amazon 2016 letter: disagreement and escalation](https://www.aboutamazon.com/news/company-news/2016-letter-to-shareholders)

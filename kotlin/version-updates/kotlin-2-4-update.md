@@ -48,12 +48,11 @@ Explicit backing fields let a property define storage directly.
 
 ```kotlin
 class Session {
-    var token: String?
-        field = null
-        private set
+    val token: StateFlow<String?>
+        field = MutableStateFlow<String?>(null)
 
     fun authenticate(newToken: String) {
-        token = newToken
+        token.value = newToken   // inside the class, token is the MutableStateFlow
     }
 }
 ```

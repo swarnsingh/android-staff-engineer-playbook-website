@@ -139,7 +139,7 @@ The `kotlin-dsl` plugin gives you direct access to Gradle's Kotlin DSL inside th
 `AndroidLibraryConventionPlugin.kt`:
 
 ```kotlin
-import com.android.build.gradle.LibraryExtension
+import com.android.build.api.dsl.LibraryExtension
 import org.gradle.api.Plugin
 import org.gradle.api.Project
 import org.gradle.kotlin.dsl.configure
@@ -466,29 +466,24 @@ Combined with custom Lint rules (e.g., "no `Modifier.padding()` without `Dp` ann
 
 ```kotlin
 class GitHooksConventionPlugin : Plugin<Project> {
-    override fun apply(target: Project) = with(target) {
-        if (target.rootProject == target) {
-            // Only apply once at root
-            target.tasks.register("installGitHooks") {
-                doLast {
-                    val hook = target.file(".git/hooks/pre-commit")
-                    hook.writeText("""
-                        #!/bin/sh
-                        ./gradlew ktlintCheck detektCheck
-                    """.trimIndent())
-                    hook.setExecutable(true)
-                }
-            }
-            // Run during project setup
-            target.gradle.projectsLoaded {
-                rootProject.tasks.named("installGitHooks").get().actions.first().execute(rootProject.tasks.named("installGitHooks").get())
+    override fun apply(target: Project) {
+        if (target != target.rootProject) return
+        target.tasks.register("installGitHooks") {
+            group = "setup"
+            description = "Explicitly install the repository-managed pre-commit hook"
+            doLast {
+                // Resolve .git/hooks for worktrees/custom hooksPath in the real installer.
+                val destination = target.layout.projectDirectory.file(".git/hooks/pre-commit").asFile
+                require(destination.parentFile.isDirectory) { "Use the repository installer for worktrees" }
+                target.file("config/hooks/pre-commit").copyTo(destination, overwrite = true)
+                check(destination.setExecutable(true))
             }
         }
     }
 }
 ```
 
-A subtle but useful pattern: every new clone of the repo gets the hooks installed automatically. Doesn't replace `pre-commit` package managers but works for simple cases.
+Run installGitHooks explicitly during documented local setup, after reviewing the managed hook. Project plugins run after projectsLoaded; do not execute task actions manually or claim a late listener runs automatically. CI remains the enforcement boundary.
 
 ---
 
@@ -598,7 +593,8 @@ class HiltConventionPlugin : Plugin<Project> {
             "ksp"(libs.findLibrary("hilt.compiler").get())
             
             // Hilt testing only for instrumentation tests
-            "kspAndroidTest"(libs.findLibrary("hilt.android.testing").get())
+            "androidTestImplementation"(libs.findLibrary("hilt.android.testing").get())
+            "kspAndroidTest"(libs.findLibrary("hilt.compiler").get()) // catalog alias for Hilt processor
             "androidTestImplementation"(libs.findLibrary("hilt.android.testing").get())
         }
     }
@@ -608,15 +604,14 @@ class HiltConventionPlugin : Plugin<Project> {
 ### Pattern 4: Gradle Build Cache Configuration
 
 ```kotlin
-class BuildCacheConventionPlugin : Plugin<Project> {
-    override fun apply(target: Project) = with(target) {
-        gradle.settingsEvaluated {
-            buildCache {
-                local { isEnabled = true }
-                remote<HttpBuildCache> {
-                    url = uri("https://cache.yourorg.internal")
-                    isPush = System.getenv("CI") == "true"
-                }
+// A settings plugin, applied from settings.gradle.kts.
+class BuildCacheConventionPlugin : Plugin<Settings> {
+    override fun apply(settings: Settings) = with(settings) {
+        buildCache {
+            local { isEnabled = true }
+            remote<HttpBuildCache> {
+                url = java.net.URI.create("https://cache.yourorg.internal")
+                isPush = System.getenv("CI") == "true"
             }
         }
     }
@@ -719,7 +714,7 @@ class BuildCacheConventionPlugin : Plugin<Project> {
 11. **How would you test that a convention plugin correctly configures `compileSdk = 34`?**
    Use `ProjectBuilder` in a unit test: create a mock project, apply the convention plugin, retrieve the `LibraryExtension`, and assert `assertEquals(34, extension.compileSdk)`.
 12. **Pre-commit hooks installed via convention plugin — when's this useful, when's it overkill?**
-   It's useful for enforcing baseline standards (like ktlint or detekt) implicitly without requiring new developers to manually run setup scripts. It's overkill if the repository already uses a robust tooling system (like Husky or custom Gradle init scripts) or if the hook logic is too slow and frustrates developers committing frequently.
+    A documented opt-in setup task can install a reviewed local hook. It does not run automatically in every clone, and local hooks do not replace CI. Keep lifecycle registration in the correct phase and let Gradle execute task actions.
 
 ---
 
@@ -737,3 +732,11 @@ class BuildCacheConventionPlugin : Plugin<Project> {
 - [Gradle — Convention plugins guide](https://docs.gradle.org/current/userguide/sharing_build_logic_between_subprojects.html) — official.
 - [Now in Android — `build-logic/`](https://github.com/android/nowinandroid/tree/main/build-logic) — Google's canonical reference.
 - [Kotlin DSL — Sample projects](https://github.com/gradle/kotlin-dsl-samples) — community samples.
+
+### Official verification references
+
+- [Primary documentation or owning implementation](https://developer.android.com/build/releases/agp-9-0-0-release-notes)
+- [Primary documentation or owning implementation](https://developer.android.com/training/dependency-injection/hilt-testing)
+- [Primary documentation or owning implementation](https://docs.gradle.org/current/userguide/build_cache.html)
+- [Primary documentation or owning implementation](https://docs.gradle.org/current/userguide/build_lifecycle.html)
+- [Primary documentation or owning implementation](https://docs.gradle.org/current/userguide/task_configuration_avoidance.html)
