@@ -1,8 +1,12 @@
 # E-Commerce App — Reference Architecture
 
-> The settled blueprint for a transactional shopping client (Amazon, Flipkart, Shopify storefronts, Mercari). The defining trade-off: **every screen optimizes for conversion**. Cart durability, checkout reliability, payment idempotency, and search-to-buy latency matter more than feed engagement metrics. A 1% improvement in checkout completion outweighs almost any other UX win.
+> An illustrative blueprint for a transactional shopping client. The defining trade-off: **every screen optimizes for conversion**. Cart durability, checkout reliability, payment idempotency, and search-to-buy latency matter more than feed engagement metrics. Evaluate checkout changes alongside safety, accessibility, customer outcomes and operating cost.
 
 ---
+
+## Scope and Assumptions
+
+The server owns catalog prices, inventory, carts and payment/order state. The Android app may queue reversible cart edits, but checkout requires server reconciliation. Timing, retention and capacity numbers below are example budgets. PSP capabilities and compliance scope depend on the selected integration.
 
 ## Requirements
 
@@ -14,7 +18,7 @@
 - Checkout: address selection, shipping options, payment method, place order.
 - Order history, tracking, returns.
 - Wishlist, saved-for-later.
-- Multiple payment methods: cards, digital wallets (Apple Pay/Google Pay), BNPL, COD where regional.
+- Multiple payment methods: cards, provider-supported digital wallets (for example, Google Pay on Android), BNPL, COD where regional.
 - Promotions: coupons, vouchers, flash sales (high-traffic spike events).
 - Account management, addresses, payment methods.
 
@@ -44,7 +48,9 @@ flowchart TB
     CartRepo --> CartRoom[(Room cart cache)]
     CartRepo --> CartApi["Cart BFF<br/>server-backed"]
     CheckoutRepo --> PaymentApi[Payments BFF]
-    PaymentApi --> PSP["PSP SDK<br/>Stripe/Adyen/Razorpay"]
+    CheckoutRepo --> PSP["PSP SDK<br/>provider-supported UI"]
+    PaymentApi --> Provider[PSP backend]
+    PSP --> Provider
     SearchRepo --> SearchApi[Search BFF]
     CatalogApi --> Recommend["Recommendations<br/>ML, black box"]
 ```
@@ -59,7 +65,7 @@ The defining property: **the cart is server-side state with a local cache, not l
 
 - Home, categories, search-results — all powered by Paging 3 + RemoteMediator.
 - Stable cursor pagination; Room caches the latest page set for offline browsing of recent results.
-- Image loading via Coil 3 with `MemoryCache.Builder().maxSizePercent(0.25).build()`. Disk cache 300-500 MB; product images are touch-heavy and frequently revisited.
+- Image loading via Coil 3 with `MemoryCache.Builder().maxSizePercent(context, 0.25).build()`. Disk cache 300-500 MB; product images are touch-heavy and frequently revisited.
 - Product detail screens lazy-load full-resolution images and variant-specific assets.
 
 ### Cart
@@ -76,10 +82,10 @@ The defining property: **the cart is server-side state with a local cache, not l
 
 The highest-stakes flow in the app. Borrows heavily from [`mobile-system-design/payment-flow.md`](../mobile-system-design/payment-flow.md):
 
-- **Idempotency.** Every checkout step (create-order, attach-payment, confirm) carries a client-generated UUID. Retries with the same key return the same outcome.
-- **PCI scope reduction.** Card details captured by the PSP SDK (Stripe `PaymentSheet`, Adyen Drop-In, Razorpay Checkout). The app never sees raw PAN. PCI scope stays SAQ-A.
-- **3DS / SCA challenge handling.** PSP SDK launches a Custom Tab or in-process WebView. App resumes via Activity Result. Reconciliation on app resume (process death survives via Room).
-- **Single-tap recovery.** If the user is interrupted (call, app kill, OS update prompt), the checkout state survives. On return, the user lands where they left, with the cart unchanged.
+- **Idempotency.** Persist a key per logical mutation (create-order, attach-payment, confirm) before sending it. Reuse it for unchanged retries within the server's documented deduplication window; changed parameters require a deliberately new operation.
+- **PCI scope reduction.** Card details captured by the PSP SDK (Stripe `PaymentSheet`, Adyen Drop-In, Razorpay Checkout). Use the provider's approved card-entry flow and keep raw card data out of application-owned fields/logs. SDK use can reduce PCI scope; it does not automatically establish SAQ-A eligibility or compliance.
+- **3DS / SCA challenge handling.** Use the PSP SDK's supported authentication and result contract; its UI can vary by payment method. Persist the order/attempt identifier before launch and reconcile with the backend after return or process recreation.
+- **Single-tap recovery.** If the user is interrupted (call, app kill, OS update prompt), the checkout state survives. On return, reload the pending order and authoritative payment status; inventory, prices or the cart may have changed and may require explicit reconfirmation.
 
 See [`security/auth-on-mobile.md`](../security/auth-on-mobile.md) for the session flow that wraps checkout.
 
@@ -120,10 +126,12 @@ sequenceDiagram
 
     UI->>VM: addItem(productId, qty=1, variantId)
     VM->>Repo: addItem(...)
-    Repo->>Local: INSERT cart_item (status=PENDING)
+    Repo->>Local: BEGIN transaction
+    Repo->>Local: INSERT account-scoped cart_item (status=PENDING)
+    Repo->>Out: INSERT mutation + stable idempotency key
+    Repo->>Local: COMMIT transaction
     Local-->>VM: emit updated cart (Flow)
-    VM->>UI: ✓ instant cart bounce
-    Repo->>Out: enqueue {productId, qty, idempotency_key}
+    VM->>UI: pending cart update
     Out->>Api: POST /v1/cart/items (Idempotency-Key)
     Api-->>Out: 200 OK canonical cart state
     Out->>Local: UPSERT items from canonical state
@@ -145,22 +153,33 @@ sequenceDiagram
 
     UI->>VM: placeOrder()
     VM->>Repo: createIntent(cartId)
+    Repo->>Room: persist checkout operation + stable key
     Repo->>Api: POST /v1/orders (Idempotency-Key)
     Api-->>Repo: { orderId, paymentIntentClientSecret, requires3DS: false }
     Repo->>Room: persist intent (status=PENDING)
     Repo->>PSP: confirmPayment(clientSecret)
     alt 3DS challenge
-        PSP->>UI: launch challenge (Custom Tab)
+        PSP->>UI: present provider-supported challenge
         UI-->>PSP: completion result
     end
     PSP-->>Repo: success | failure
-    Repo->>Api: POST /v1/orders/{id}/confirm
-    Api-->>Repo: { status: PAID, orderId }
-    Repo->>Room: UPDATE intent (status=PAID)
-    Repo-->>UI: Receipt
+    Repo->>Api: reconcile order/payment status
+    Note over Api,PSP: Backend verifies provider status/webhooks
+    Api-->>Repo: canonical status + orderId
+    alt Verified PAID
+        Repo->>Room: UPDATE intent (status=PAID)
+        Repo-->>UI: Receipt
+    else PENDING or processing
+        Repo->>Room: retain pending operation/order
+        Repo-->>UI: Payment status screen (not paid)
+        Note over Repo,Api: Resume reconciliation on status updates/reconnect/resume
+    else Failed or declined
+        Repo->>Room: record failure and keep cart intact
+        Repo-->>UI: Payment-failed recovery
+    end
 ```
 
-Reconciliation on resume: if the app dies between `confirmPayment` and the next call, the Room-persisted intent lets the app recover. On next launch, the Checkout screen detects a PENDING intent and queries `/v1/orders/{id}` for canonical state.
+The backend binds the checkout operation to the order and verifies provider events/status independently of the client callback. Reconciliation on resume: if the app dies between `confirmPayment` and the next call, the Room-persisted operation and order ID let the app query authoritative state. On next launch, the Checkout screen detects a PENDING intent and queries `/v1/orders/{id}` for canonical state.
 
 ---
 
@@ -178,11 +197,11 @@ The cart's offline write-queue is the most user-visible compromise. Tradeoff: en
 
 ## Security
 
-- **Payment SDK isolation.** All card capture happens in the PSP SDK's surface; never in your app's TextField. PCI scope: SAQ-A.
-- **Token storage.** Keep OAuth tokens in memory where possible; persist only a versioned ciphertext envelope protected by Android Keystore. Payment-method tokens (for example, `pm_xxx`) remain session-scoped and refresh on each cart view.
+- **Payment SDK isolation.** All card capture happens in the PSP SDK's surface; never in your app's TextField. The acquirer/compliance assessment determines the applicable PCI obligations; outsourcing capture does not prove eligibility.
+- **Token storage.** Keep OAuth tokens in memory where possible; persist only a versioned ciphertext envelope protected by Android Keystore. Provider payment-method identifiers (for example, `pm_xxx`) are not necessarily short-lived credentials; keep their ownership and reuse server-controlled, and protect client secrets according to the provider contract.
 - **Idempotency-Key on every mutation.** Cart-add, address-change, payment-confirm, refund-request.
 - **Replay protection.** Server-issued nonces for high-value or sensitive actions.
-- **HTTPS only with cert pinning** at the BFF and PSP endpoints. See [`security/certificate-pinning.md`](../security/certificate-pinning.md).
+- **HTTPS with normal certificate/hostname validation.** Optional pins on owned endpoints need a rotation/recovery policy; do not impose app-controlled pins on PSP SDK traffic without provider support. See [`security/certificate-pinning.md`](../security/certificate-pinning.md).
 - **App Check / Play Integrity** to deter scripted checkout (sneaker bots in flash sales). Server-side verdict evaluation. See [`security/attestation.md`](../security/attestation.md).
 - **No FLAG_SECURE by default**; some apps add it on the payment screen for privacy.
 - **PII redaction** in logs and analytics. Address, phone, card-last-4 — all stripped. See [`mobile-system-design/security-and-privacy.md`](../mobile-system-design/security-and-privacy.md).
@@ -207,11 +226,11 @@ See [`observability/slis.md`](../observability/slis.md), [`observability/dashboa
 
 **Cart mutation succeeded server-side but ack lost in transit.** Idempotency key on retry returns the same canonical state; client UI reconciles. No double-add.
 
-**Payment succeeded but the confirm-order API failed.** PSP charged the card; the app didn't get the order confirmation. *Mitigation:* Room-persisted intent + reconciliation on resume queries the canonical order state; the order exists server-side; the receipt screen renders.
+**Payment succeeded but the confirm-order API failed.** PSP charged the card; the app didn't get the order confirmation. *Mitigation:* Room-persisted intent + reconciliation on resume queries the canonical order state; the backend verifies provider status and reconciles the pending order. Show a receipt only after that confirmation; otherwise show processing/recovery status.
 
 **Flash sale stampede crashes the BFF.** The catalog and the cart services share infrastructure; a sale brings down checkout for non-sale users. *Mitigation:* dedicated capacity for checkout vs sale-promo browsing; queueing UX absorbs spike client-side.
 
-**Multiple cards declined; user retries with a third.** Each attempt is a separate Idempotency-Key; the rejected attempts are isolated. Server returns `payment_failed` with structured reason codes for UI mapping.
+**Multiple cards declined; user retries with a third.** Distinguish a retry of the same attempt from an explicitly new payment attempt. Reconcile an unknown outcome before starting another charge; follow the provider's PaymentIntent/attempt contract. Server returns `payment_failed` with structured reason codes for UI mapping.
 
 **Stock changes between cart-add and checkout-confirm.** Item out of stock at checkout time. *Mitigation:* checkout API returns `out_of_stock` with the affected line items; cart UI updates; user re-confirms.
 
@@ -219,7 +238,7 @@ See [`observability/slis.md`](../observability/slis.md), [`observability/dashboa
 
 **Address validation fails post-payment.** *Mitigation:* validate address before payment; if validation must run server-side post-payment, do so on the *server* with a refund-and-retry path, never on the client.
 
-**App killed during 3DS challenge.** OS killed the host activity. *Mitigation:* PSP SDK launches an external Custom Tab (state persists in PSP); on app resume, query intent status; if `succeeded`, render receipt.
+**App killed during 3DS challenge.** OS killed the host activity. *Mitigation:* the provider may still be processing authentication. On resume, query the backend's order/payment state and complete any required action using the supported SDK flow; do not assume a browser or client callback preserves the whole checkout.
 
 ---
 
@@ -233,7 +252,7 @@ See [`observability/slis.md`](../observability/slis.md), [`observability/dashboa
 
 ### Scaling catalog
 
-- Multi-million SKU catalogs. Paging 3 + cursor pagination is mandatory; offset breaks.
+- Multi-million SKU catalogs. Cursor/keyset pagination is often a good fit for changing catalogs; evaluate ordering, snapshot consistency and random-access needs. Paging 3 also supports positional/offset sources.
 - Server-side ranking and filtering keeps client lean.
 - Long-tail SKUs lazy-load image variants.
 
@@ -280,6 +299,19 @@ See [`observability/slis.md`](../observability/slis.md), [`observability/dashboa
 | Background | WorkManager | Outbox drain, analytics flush |
 | Push | FCM (data + notification messages) | Order updates, promotions |
 | Analytics | In-house SDK | Funnel attribution |
+
+---
+
+## Further Reading
+
+- [Stripe Android payment integration](https://github.com/stripe/stripe-android)
+- [Verify payment status and webhook outcomes](https://docs.stripe.com/payments/payment-intents/verifying-status)
+- [Stripe idempotency contract and retention](https://docs.stripe.com/api/idempotent_requests)
+- [PCI integration scope is assessed, not inferred](https://docs.stripe.com/security/guide)
+- [PCI SSC SAQ eligibility criteria](https://www.pcisecuritystandards.org/faqs/1443/)
+- [Coil image loader configuration](https://coil-kt.github.io/coil/image_loaders/)
+- [SQLite transaction boundaries](https://www.sqlite.org/lang_transaction.html)
+- [PagingSource models](https://developer.android.com/topic/libraries/architecture/paging/v3-paged-data)
 
 ---
 

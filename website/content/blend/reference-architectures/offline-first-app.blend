@@ -1,0 +1,8 @@
+<!-- Teaching layer over the approved blueprint source 4520147. -->
+<!-- @opening -->
+<p class="story-lead">A technician edits a record offline and the device restarts before any upload. The saved edit must still be visible and sync must still know what to send. Check the boundary where both become durable.</p>
+
+<!-- @before Failure Modes :: staff -->
+### Test recovery before and after the commit
+
+Interrupt once before the local edit and outbox commit, then once after it. Check the visible record and the queued mutation in both cases. On the pull path, advance the watermark with the applied page so a restart cannot skip unapplied changes. [Android offline-first data layer](https://developer.android.com/topic/architecture/data-layer/offline-first).

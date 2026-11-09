@@ -1,0 +1,8 @@
+<!-- Teaching layer over the approved blueprint source 4520147. -->
+<!-- @opening -->
+<p class="story-lead">The feed loads a cached page while a video starts and the user scrolls past it. Feed freshness and player ownership change at different times. Follow the data and the surface independently.</p>
+
+<!-- @before Failure Modes :: staff -->
+### Trace release of the old item’s surface
+
+Review the item leaving the viewport as well as the item entering it. The player pool needs a clear rule for detaching the old surface and preparing the next item. Test a cache miss and rapid scrolling before tuning how many players stay ready. [Media3 track selection](https://developer.android.com/media/media3/exoplayer/track-selection).

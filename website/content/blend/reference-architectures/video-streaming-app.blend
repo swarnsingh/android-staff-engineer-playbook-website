@@ -1,0 +1,8 @@
+<!-- Teaching layer over the approved blueprint source 4520147. -->
+<!-- @opening -->
+<p class="story-lead">Playback starts from an earlier session, then the connection drops. The player has buffered data and a selected quality. Track what can continue immediately and what must wait for the network.</p>
+
+<!-- @before Failure Modes :: staff -->
+### Separate buffered playback from recovery after reconnect
+
+Buffered media can cover part of a network gap. Check what happens when the buffer drains and when new segments become available. Treat the chapter’s buffer and first-frame numbers as example targets. The actual outcome depends on the asset, device and connection. [Media3 track selection](https://developer.android.com/media/media3/exoplayer/track-selection).

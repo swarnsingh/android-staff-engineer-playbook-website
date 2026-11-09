@@ -1,0 +1,3122 @@
+[
+  {
+    "path": "reference-architectures/consumer-app",
+    "diagram": "85503215ce714ae0",
+    "number": 1,
+    "title": "The feed reads a local page while refresh reaches the backend",
+    "caption": "Paging coordinates the feed cache and backend. The backend owns ranking and media delivery, while the device integrates configuration, notifications and diagnostics.",
+    "sources": [
+      "https://developer.android.com/topic/libraries/architecture/paging/v3-network-db"
+    ],
+    "kind": "map",
+    "nodes": [
+      {
+        "id": "ui",
+        "title": "Compose UI",
+        "role": "client",
+        "detail": "Feed and interactions"
+      },
+      {
+        "id": "vm",
+        "title": "ViewModels",
+        "role": "runtime",
+        "detail": "Expose feature state"
+      },
+      {
+        "id": "repo",
+        "title": "Feature repositories",
+        "role": "runtime",
+        "detail": "Feed and app integrations"
+      },
+      {
+        "id": "pager",
+        "title": "Paging mediator",
+        "role": "runtime",
+        "detail": "Coordinates refresh"
+      },
+      {
+        "id": "room",
+        "title": "Room",
+        "role": "storage",
+        "detail": "Pages and like state"
+      },
+      {
+        "id": "services",
+        "title": "App integrations",
+        "role": "neutral",
+        "detail": [
+          "Flags, FCM",
+          "Analytics and telemetry"
+        ]
+      },
+      {
+        "id": "bff",
+        "title": "Feed backend",
+        "role": "runtime",
+        "detail": "Assembles feed pages"
+      },
+      {
+        "id": "assets",
+        "title": "Ranking and CDN",
+        "role": "neutral",
+        "detail": "Ordering and media"
+      }
+    ],
+    "groups": [
+      {
+        "id": "screen",
+        "label": "Presentation",
+        "nodes": [
+          "ui",
+          "vm"
+        ]
+      },
+      {
+        "id": "app",
+        "label": "Device data and integrations",
+        "nodes": [
+          "repo",
+          "pager",
+          "room",
+          "services"
+        ]
+      },
+      {
+        "id": "remote",
+        "label": "Remote feed services",
+        "nodes": [
+          "bff",
+          "assets"
+        ]
+      }
+    ],
+    "edges": [
+      {
+        "from": "ui",
+        "to": "vm",
+        "label": "render and act"
+      },
+      {
+        "from": "vm",
+        "to": "repo",
+        "label": "observe features"
+      },
+      {
+        "from": "repo",
+        "to": "pager",
+        "label": "page feed"
+      },
+      {
+        "from": "pager",
+        "to": "room",
+        "label": "store fetched page"
+      },
+      {
+        "from": "pager",
+        "to": "bff",
+        "label": "request page"
+      },
+      {
+        "from": "bff",
+        "to": "assets",
+        "label": "rank and locate media"
+      },
+      {
+        "from": "repo",
+        "to": "services",
+        "label": "integrate signals"
+      }
+    ]
+  },
+  {
+    "path": "reference-architectures/e-commerce-app",
+    "diagram": "2567d7bfe66733d2",
+    "number": 1,
+    "title": "The device separates catalog, cart and checkout ownership",
+    "caption": "The server-backed cart has a local view. The payment SDK handles the provider-supported flow, while the backend verifies the order and payment status.",
+    "sources": [
+      "https://docs.stripe.com/payments/payment-intents/verifying-status",
+      "https://developer.android.com/topic/libraries/architecture/paging/v3-network-db"
+    ],
+    "kind": "map",
+    "nodes": [
+      {
+        "id": "ui",
+        "title": "Compose UI",
+        "role": "client",
+        "detail": "Catalog, cart and checkout"
+      },
+      {
+        "id": "vm",
+        "title": "ViewModels",
+        "role": "runtime",
+        "detail": "Expose screen state"
+      },
+      {
+        "id": "browse",
+        "title": "Catalog and search",
+        "role": "runtime",
+        "detail": "Paging and search requests"
+      },
+      {
+        "id": "cart",
+        "title": "Cart repository",
+        "role": "runtime",
+        "detail": "Cart mutations"
+      },
+      {
+        "id": "cache",
+        "title": "Room cart cache",
+        "role": "storage",
+        "detail": "Local cart view"
+      },
+      {
+        "id": "checkout",
+        "title": "Checkout repository",
+        "role": "runtime",
+        "detail": "Saved checkout operation"
+      },
+      {
+        "id": "sdk",
+        "title": "Payment SDK",
+        "role": "runtime",
+        "detail": "Provider UI"
+      },
+      {
+        "id": "discovery",
+        "title": "Catalog and search BFFs",
+        "role": "runtime",
+        "detail": "Catalog and recommendations"
+      },
+      {
+        "id": "cart_api",
+        "title": "Cart BFF",
+        "role": "runtime",
+        "detail": "Canonical cart"
+      },
+      {
+        "id": "payments",
+        "title": "Payments BFF",
+        "role": "runtime",
+        "detail": "Order status and verification"
+      },
+      {
+        "id": "provider",
+        "title": "Payment provider",
+        "role": "neutral",
+        "detail": "Authoritative payment status"
+      }
+    ],
+    "groups": [
+      {
+        "id": "screen",
+        "label": "Shopping screens",
+        "nodes": [
+          "ui",
+          "vm"
+        ]
+      },
+      {
+        "id": "app",
+        "label": "Device data layer",
+        "nodes": [
+          "browse",
+          "cart",
+          "cache",
+          "checkout",
+          "sdk"
+        ]
+      },
+      {
+        "id": "backend",
+        "label": "Remote services",
+        "nodes": [
+          "discovery",
+          "cart_api",
+          "payments",
+          "provider"
+        ]
+      }
+    ],
+    "edges": [
+      {
+        "from": "ui",
+        "to": "vm",
+        "label": "render and act"
+      },
+      {
+        "from": "vm",
+        "to": "browse",
+        "label": "browse"
+      },
+      {
+        "from": "vm",
+        "to": "cart",
+        "label": "change cart"
+      },
+      {
+        "from": "vm",
+        "to": "checkout",
+        "label": "place order"
+      },
+      {
+        "from": "browse",
+        "to": "discovery",
+        "label": "fetch results"
+      },
+      {
+        "from": "cart",
+        "to": "cache",
+        "label": "store cart view"
+      },
+      {
+        "from": "cart",
+        "to": "cart_api",
+        "label": "reconcile cart"
+      },
+      {
+        "from": "checkout",
+        "to": "sdk",
+        "label": "collect and confirm"
+      },
+      {
+        "from": "checkout",
+        "to": "payments",
+        "label": "reconcile status"
+      },
+      {
+        "from": "sdk",
+        "to": "provider",
+        "label": "provider flow"
+      },
+      {
+        "from": "payments",
+        "to": "provider",
+        "label": "verify payment"
+      }
+    ]
+  },
+  {
+    "path": "reference-architectures/merchant-app",
+    "diagram": "2d747c20f0b1588d",
+    "number": 1,
+    "title": "The store device owns local work while services verify business outcomes",
+    "caption": "The device shows orders from local storage, manages peripherals and reconciles card payments with the backend. Card entry stays with the PIN-pad integration.",
+    "sources": [
+      "https://docs.stripe.com/terminal/features/operate-offline/overview?reader-type=bluetooth"
+    ],
+    "kind": "map",
+    "nodes": [
+      {
+        "id": "ui",
+        "title": "Compose UI",
+        "role": "client",
+        "detail": "Kitchen and cashier"
+      },
+      {
+        "id": "vm",
+        "title": "ViewModels",
+        "role": "runtime",
+        "detail": "Screen state"
+      },
+      {
+        "id": "orders",
+        "title": "Orders and inventory",
+        "role": "runtime",
+        "detail": "Socket, REST and sync"
+      },
+      {
+        "id": "room",
+        "title": "Room",
+        "role": "storage",
+        "detail": "Orders, items and audit"
+      },
+      {
+        "id": "payment",
+        "title": "Payment repository",
+        "role": "runtime",
+        "detail": "Reconcile card status"
+      },
+      {
+        "id": "peripherals",
+        "title": "Peripheral manager",
+        "role": "runtime",
+        "detail": "Coordinates devices"
+      },
+      {
+        "id": "pin",
+        "title": "PIN pad",
+        "role": "neutral",
+        "detail": "Provider SDK and EMV"
+      },
+      {
+        "id": "devices",
+        "title": "Other peripherals",
+        "role": "neutral",
+        "detail": "Printer, scanner and drawer"
+      },
+      {
+        "id": "orders_api",
+        "title": "Orders backend",
+        "role": "runtime",
+        "detail": "Order and inventory updates"
+      },
+      {
+        "id": "pay_api",
+        "title": "Payment backend",
+        "role": "runtime",
+        "detail": "Payment reconciliation"
+      }
+    ],
+    "groups": [
+      {
+        "id": "presentation",
+        "label": "Store screens",
+        "nodes": [
+          "ui",
+          "vm"
+        ]
+      },
+      {
+        "id": "device",
+        "label": "Store device services",
+        "nodes": [
+          "orders",
+          "room",
+          "payment",
+          "peripherals"
+        ]
+      },
+      {
+        "id": "hardware",
+        "label": "In-store hardware",
+        "nodes": [
+          "pin",
+          "devices"
+        ]
+      },
+      {
+        "id": "backend",
+        "label": "Remote services",
+        "nodes": [
+          "orders_api",
+          "pay_api"
+        ]
+      }
+    ],
+    "edges": [
+      {
+        "from": "ui",
+        "to": "vm",
+        "label": "render and act"
+      },
+      {
+        "from": "vm",
+        "to": "orders",
+        "label": "observe orders"
+      },
+      {
+        "from": "orders",
+        "to": "room",
+        "label": "store updates"
+      },
+      {
+        "from": "orders",
+        "to": "orders_api",
+        "label": "sync orders"
+      },
+      {
+        "from": "vm",
+        "to": "payment",
+        "label": "take payment"
+      },
+      {
+        "from": "payment",
+        "to": "pin",
+        "label": "start collection"
+      },
+      {
+        "from": "payment",
+        "to": "pay_api",
+        "label": "verify status"
+      },
+      {
+        "from": "vm",
+        "to": "peripherals",
+        "label": "manage devices"
+      },
+      {
+        "from": "peripherals",
+        "to": "devices",
+        "label": "send commands"
+      }
+    ]
+  },
+  {
+    "path": "reference-architectures/offline-first-app",
+    "diagram": "2e72a53846ba3c86",
+    "number": 1,
+    "title": "Local data and outbound mutations have one write boundary",
+    "caption": "The repository gives the UI local state. The sync engine pushes saved mutations and pulls remote changes. The resolver supplies the merged value when a conflict needs it.",
+    "sources": [
+      "https://developer.android.com/topic/architecture/data-layer/offline-first"
+    ],
+    "kind": "map",
+    "nodes": [
+      {
+        "id": "ui",
+        "title": "Compose UI",
+        "role": "client",
+        "detail": "Renders local state"
+      },
+      {
+        "id": "repo",
+        "title": "Repository",
+        "role": "runtime",
+        "detail": "Owns reads and writes"
+      },
+      {
+        "id": "db",
+        "title": "Local database",
+        "role": "storage",
+        "detail": "Room or SQLite"
+      },
+      {
+        "id": "out",
+        "title": "Outbox",
+        "role": "queue",
+        "detail": "Pending mutations"
+      },
+      {
+        "id": "engine",
+        "title": "Sync engine",
+        "role": "runtime",
+        "detail": "Push, pull and apply"
+      },
+      {
+        "id": "resolver",
+        "title": "Conflict resolver",
+        "role": "runtime",
+        "detail": "Domain merge policy"
+      },
+      {
+        "id": "api",
+        "title": "Remote API",
+        "role": "neutral",
+        "detail": "Receives and supplies changes"
+      }
+    ],
+    "groups": [
+      {
+        "id": "app",
+        "label": "Local app",
+        "nodes": [
+          "ui",
+          "repo",
+          "db",
+          "out"
+        ]
+      },
+      {
+        "id": "sync",
+        "label": "Synchronization",
+        "nodes": [
+          "engine",
+          "resolver"
+        ]
+      },
+      {
+        "id": "backend",
+        "label": "Remote service",
+        "nodes": [
+          "api"
+        ]
+      }
+    ],
+    "edges": [
+      {
+        "from": "ui",
+        "to": "repo",
+        "label": "read or edit"
+      },
+      {
+        "from": "repo",
+        "to": "db",
+        "label": "read and save"
+      },
+      {
+        "from": "repo",
+        "to": "out",
+        "label": "save mutation"
+      },
+      {
+        "from": "out",
+        "to": "engine",
+        "label": "supply pending work"
+      },
+      {
+        "from": "engine",
+        "to": "api",
+        "label": "push and pull"
+      },
+      {
+        "from": "engine",
+        "to": "resolver",
+        "label": "resolve conflict"
+      },
+      {
+        "from": "engine",
+        "to": "db",
+        "label": "apply remote page"
+      },
+      {
+        "from": "resolver",
+        "to": "db",
+        "label": "supply merged value"
+      }
+    ]
+  },
+  {
+    "path": "reference-architectures/banking-app",
+    "diagram": "744fb029667ee997",
+    "number": 1,
+    "title": "The bank verifies signed actions beyond the device boundary",
+    "caption": "Device code owns UI, session and key use. The gateway and bank own validation and the ledger. A local prompt success does not settle a transfer.",
+    "sources": [
+      "https://developer.android.com/identity/sign-in/biometric-auth",
+      "https://www.rfc-editor.org/rfc/rfc9700.html#section-4.14.2"
+    ],
+    "kind": "map",
+    "nodes": [
+      {
+        "id": "ui",
+        "title": "Compose UI",
+        "role": "client",
+        "detail": "Sensitive screens"
+      },
+      {
+        "id": "vm",
+        "title": "ViewModels",
+        "role": "runtime",
+        "detail": "Expose transfer state"
+      },
+      {
+        "id": "repo",
+        "title": "Repositories",
+        "role": "runtime",
+        "detail": "Coordinate bank operations"
+      },
+      {
+        "id": "session",
+        "title": "Session manager",
+        "role": "runtime",
+        "detail": "Refresh token rotation"
+      },
+      {
+        "id": "vault",
+        "title": "Private vault",
+        "role": "storage",
+        "detail": "Ciphertext protected by Keystore"
+      },
+      {
+        "id": "gate",
+        "title": "Step-up gate",
+        "role": "runtime",
+        "detail": "Prompt and signing key"
+      },
+      {
+        "id": "client",
+        "title": "HTTP and trust signals",
+        "role": "runtime",
+        "detail": [
+          "OkHttp and pinning",
+          "Attestation and audit signals"
+        ]
+      },
+      {
+        "id": "bff",
+        "title": "Gateway",
+        "role": "runtime",
+        "detail": "Request boundary"
+      },
+      {
+        "id": "core",
+        "title": "Core banking",
+        "role": "runtime",
+        "detail": "Ledger, fraud and policy"
+      }
+    ],
+    "groups": [
+      {
+        "id": "ui_boundary",
+        "label": "Presentation",
+        "nodes": [
+          "ui",
+          "vm"
+        ]
+      },
+      {
+        "id": "device",
+        "label": "Device trust and session",
+        "nodes": [
+          "repo",
+          "session",
+          "vault",
+          "gate",
+          "client"
+        ]
+      },
+      {
+        "id": "bank",
+        "label": "Bank services",
+        "nodes": [
+          "bff",
+          "core"
+        ]
+      }
+    ],
+    "edges": [
+      {
+        "from": "ui",
+        "to": "vm",
+        "label": "confirm action"
+      },
+      {
+        "from": "vm",
+        "to": "repo",
+        "label": "start transfer"
+      },
+      {
+        "from": "repo",
+        "to": "session",
+        "label": "manage session"
+      },
+      {
+        "from": "session",
+        "to": "vault",
+        "label": "protect refresh token"
+      },
+      {
+        "from": "repo",
+        "to": "gate",
+        "label": "authorize signing"
+      },
+      {
+        "from": "repo",
+        "to": "client",
+        "label": "submit signed request"
+      },
+      {
+        "from": "client",
+        "to": "bff",
+        "label": "call gateway"
+      },
+      {
+        "from": "bff",
+        "to": "core",
+        "label": "validate and record"
+      }
+    ]
+  },
+  {
+    "path": "reference-architectures/ride-hailing-app",
+    "diagram": "6207b8ec2be01088",
+    "number": 1,
+    "title": "Trip state stays durable while location updates age out",
+    "caption": "Rider and driver clients keep local views. The dispatcher feeds matching and trip services. The location index is separate from the durable trip record.",
+    "sources": [
+      "https://developer.android.com/develop/background-work/services/fgs/service-types#location"
+    ],
+    "kind": "map",
+    "nodes": [
+      {
+        "id": "d_ui",
+        "title": "Driver UI and state",
+        "role": "client",
+        "detail": "Trip controls and cache"
+      },
+      {
+        "id": "d_stream",
+        "title": "Location streamer",
+        "role": "runtime",
+        "detail": "Foreground updates and socket"
+      },
+      {
+        "id": "r_ui",
+        "title": "Rider UI and state",
+        "role": "client",
+        "detail": "Request, map and trip cache"
+      },
+      {
+        "id": "r_socket",
+        "title": "Trip socket",
+        "role": "runtime",
+        "detail": "Trip updates"
+      },
+      {
+        "id": "disp",
+        "title": "Dispatcher BFF",
+        "role": "runtime",
+        "detail": "Coordinates clients"
+      },
+      {
+        "id": "idx",
+        "title": "Location index",
+        "role": "storage",
+        "detail": "Ephemeral positions"
+      },
+      {
+        "id": "match",
+        "title": "Matching engine",
+        "role": "runtime",
+        "detail": "Selects candidates"
+      },
+      {
+        "id": "trip",
+        "title": "Trip service",
+        "role": "runtime",
+        "detail": "Validates transitions"
+      },
+      {
+        "id": "db",
+        "title": "Trip database",
+        "role": "storage",
+        "detail": "Durable trip state"
+      }
+    ],
+    "groups": [
+      {
+        "id": "driver",
+        "label": "Driver app",
+        "nodes": [
+          "d_ui",
+          "d_stream"
+        ]
+      },
+      {
+        "id": "rider",
+        "label": "Rider app",
+        "nodes": [
+          "r_ui",
+          "r_socket"
+        ]
+      },
+      {
+        "id": "remote",
+        "label": "Dispatch and trip services",
+        "nodes": [
+          "disp",
+          "idx",
+          "match",
+          "trip",
+          "db"
+        ]
+      }
+    ],
+    "edges": [
+      {
+        "from": "d_ui",
+        "to": "d_stream",
+        "label": "stream position"
+      },
+      {
+        "from": "d_stream",
+        "to": "disp",
+        "label": "send driver updates"
+      },
+      {
+        "from": "r_ui",
+        "to": "r_socket",
+        "label": "observe trip"
+      },
+      {
+        "from": "r_socket",
+        "to": "disp",
+        "label": "send and receive updates"
+      },
+      {
+        "from": "disp",
+        "to": "idx",
+        "label": "update position"
+      },
+      {
+        "from": "disp",
+        "to": "match",
+        "label": "request candidates"
+      },
+      {
+        "from": "disp",
+        "to": "trip",
+        "label": "validate transition"
+      },
+      {
+        "from": "trip",
+        "to": "db",
+        "label": "record trip"
+      }
+    ]
+  },
+  {
+    "path": "reference-architectures/social-media-app",
+    "diagram": "caa95d145f00d822",
+    "number": 1,
+    "title": "Feed, engagement and visible media have separate data paths",
+    "caption": "Paging and Room provide the feed view. Engagement writes wait in a local outbox. Media and direct messages have their own clients and lifecycle boundaries.",
+    "sources": [
+      "https://developer.android.com/topic/libraries/architecture/paging/v3-network-db",
+      "https://developer.android.com/topic/architecture/data-layer/offline-first",
+      "https://developer.android.com/media/media3/exoplayer/track-selection"
+    ],
+    "kind": "map",
+    "nodes": [
+      {
+        "id": "ui",
+        "title": "Compose feed",
+        "role": "client",
+        "detail": "List and visible media"
+      },
+      {
+        "id": "vm",
+        "title": "ViewModels",
+        "role": "runtime",
+        "detail": "Expose feature state"
+      },
+      {
+        "id": "feed",
+        "title": "Feed and profile repos",
+        "role": "runtime",
+        "detail": "Paging and profile state"
+      },
+      {
+        "id": "room",
+        "title": "Room",
+        "role": "storage",
+        "detail": "Pages, posts and likes"
+      },
+      {
+        "id": "engage",
+        "title": "Engagement repository",
+        "role": "runtime",
+        "detail": "Save desired state"
+      },
+      {
+        "id": "out",
+        "title": "Outbox",
+        "role": "queue",
+        "detail": "Stable operation key"
+      },
+      {
+        "id": "clients",
+        "title": "Media and message clients",
+        "role": "runtime",
+        "detail": "Coil, Media3, socket and FCM"
+      },
+      {
+        "id": "bff",
+        "title": "Feed BFF",
+        "role": "runtime",
+        "detail": "Feed and ranking"
+      },
+      {
+        "id": "assets",
+        "title": "CDN",
+        "role": "neutral",
+        "detail": "Images and HLS media"
+      },
+      {
+        "id": "api",
+        "title": "Engagement API",
+        "role": "runtime",
+        "detail": "Apply engagement"
+      }
+    ],
+    "groups": [
+      {
+        "id": "screen",
+        "label": "Presentation",
+        "nodes": [
+          "ui",
+          "vm"
+        ]
+      },
+      {
+        "id": "device",
+        "label": "Device features",
+        "nodes": [
+          "feed",
+          "room",
+          "engage",
+          "out",
+          "clients"
+        ]
+      },
+      {
+        "id": "backend",
+        "label": "Remote services",
+        "nodes": [
+          "bff",
+          "assets",
+          "api"
+        ]
+      }
+    ],
+    "edges": [
+      {
+        "from": "ui",
+        "to": "vm",
+        "label": "render and act"
+      },
+      {
+        "from": "vm",
+        "to": "feed",
+        "label": "observe feed"
+      },
+      {
+        "from": "feed",
+        "to": "room",
+        "label": "read and update"
+      },
+      {
+        "from": "feed",
+        "to": "bff",
+        "label": "request page"
+      },
+      {
+        "from": "bff",
+        "to": "assets",
+        "label": "locate media"
+      },
+      {
+        "from": "vm",
+        "to": "engage",
+        "label": "like item"
+      },
+      {
+        "from": "engage",
+        "to": "out",
+        "label": "save mutation"
+      },
+      {
+        "from": "out",
+        "to": "api",
+        "label": "sync desired state"
+      },
+      {
+        "from": "ui",
+        "to": "clients",
+        "label": "play and receive"
+      }
+    ]
+  },
+  {
+    "path": "reference-architectures/video-streaming-app",
+    "diagram": "18e423e25bdf8a73",
+    "number": 1,
+    "title": "Playback and downloads have separate local resources",
+    "caption": "The player uses the manifest, track selection and DRM as needed. The download path stores segments and manages offline licenses separately. Resume position belongs to a server-backed path.",
+    "sources": [
+      "https://developer.android.com/media/media3/exoplayer/track-selection",
+      "https://developer.android.com/media/media3/exoplayer/downloading-media"
+    ],
+    "kind": "map",
+    "nodes": [
+      {
+        "id": "ui",
+        "title": "Compose UI",
+        "role": "client",
+        "detail": "Catalog and player"
+      },
+      {
+        "id": "vm",
+        "title": "ViewModels",
+        "role": "runtime",
+        "detail": "Screen and player state"
+      },
+      {
+        "id": "browse",
+        "title": "Catalog and profile",
+        "role": "runtime",
+        "detail": "Browsing and profile"
+      },
+      {
+        "id": "player",
+        "title": "Media3 player",
+        "role": "runtime",
+        "detail": "Track selection and DRM"
+      },
+      {
+        "id": "manager",
+        "title": "Download manager",
+        "role": "runtime",
+        "detail": "Segments and license helper"
+      },
+      {
+        "id": "cache",
+        "title": "Private segment cache",
+        "role": "storage",
+        "detail": "Downloaded media"
+      },
+      {
+        "id": "cast",
+        "title": "Cast session",
+        "role": "neutral",
+        "detail": "External playback"
+      },
+      {
+        "id": "catalog",
+        "title": "Catalog BFF",
+        "role": "runtime",
+        "detail": "Page catalog"
+      },
+      {
+        "id": "cdn",
+        "title": "CDN",
+        "role": "neutral",
+        "detail": "HLS or DASH segments"
+      },
+      {
+        "id": "resume",
+        "title": "Resume API",
+        "role": "runtime",
+        "detail": "Cross-device position"
+      }
+    ],
+    "groups": [
+      {
+        "id": "ui_boundary",
+        "label": "Presentation",
+        "nodes": [
+          "ui",
+          "vm"
+        ]
+      },
+      {
+        "id": "app",
+        "label": "Device playback and storage",
+        "nodes": [
+          "browse",
+          "player",
+          "manager",
+          "cache",
+          "cast"
+        ]
+      },
+      {
+        "id": "backend",
+        "label": "Remote media services",
+        "nodes": [
+          "catalog",
+          "cdn",
+          "resume"
+        ]
+      }
+    ],
+    "edges": [
+      {
+        "from": "ui",
+        "to": "vm",
+        "label": "render and act"
+      },
+      {
+        "from": "vm",
+        "to": "browse",
+        "label": "browse"
+      },
+      {
+        "from": "browse",
+        "to": "catalog",
+        "label": "load catalog"
+      },
+      {
+        "from": "vm",
+        "to": "player",
+        "label": "prepare playback"
+      },
+      {
+        "from": "player",
+        "to": "cdn",
+        "label": "fetch segments"
+      },
+      {
+        "from": "player",
+        "to": "resume",
+        "label": "sync position"
+      },
+      {
+        "from": "vm",
+        "to": "manager",
+        "label": "schedule download"
+      },
+      {
+        "from": "manager",
+        "to": "cache",
+        "label": "store segments"
+      },
+      {
+        "from": "ui",
+        "to": "cast",
+        "label": "transfer playback"
+      }
+    ]
+  },
+  {
+    "path": "reference-architectures/consumer-app",
+    "diagram": "6eb386ba5c01fa5e",
+    "number": 2,
+    "title": "Show the retained page while fresh data arrives",
+    "caption": "The first page comes from Room while the network refresh runs. The response is written back to the cache before the updated feed takes precedence. The timing shown is illustrative.",
+    "sources": [
+      "https://developer.android.com/topic/libraries/architecture/paging/v3-network-db"
+    ],
+    "kind": "sequence",
+    "participants": [
+      {
+        "id": "User",
+        "title": "User",
+        "role": "client",
+        "detail": "User-facing state"
+      },
+      {
+        "id": "App",
+        "title": "App startup",
+        "role": "runtime",
+        "detail": "Runs this step"
+      },
+      {
+        "id": "VM",
+        "title": "View model",
+        "role": "runtime",
+        "detail": "Screen state"
+      },
+      {
+        "id": "Cache",
+        "title": "Cache",
+        "role": "storage",
+        "detail": "Retained local data"
+      },
+      {
+        "id": "Net",
+        "title": "Network",
+        "role": "neutral",
+        "detail": "Availability or refresh"
+      }
+    ],
+    "events": [
+      {
+        "from": "User",
+        "to": "App",
+        "label": "Launch"
+      },
+      {
+        "at": "App",
+        "label": "Init app graph and SDKs"
+      },
+      {
+        "from": "App",
+        "to": "VM",
+        "label": "Create feed state"
+      },
+      {
+        "from": "VM",
+        "to": "Cache",
+        "label": "load page 0 from Room"
+      },
+      {
+        "from": "Cache",
+        "to": "VM",
+        "label": "Return cached posts",
+        "style": "dashed"
+      },
+      {
+        "from": "VM",
+        "to": "Net",
+        "label": "Refresh feed in parallel"
+      },
+      {
+        "from": "Net",
+        "to": "VM",
+        "label": "Fresh posts (example timing)",
+        "style": "dashed"
+      },
+      {
+        "from": "VM",
+        "to": "Cache",
+        "label": "upsert (TTL refresh)"
+      },
+      {
+        "from": "VM",
+        "to": "User",
+        "label": "Show reconciled feed"
+      }
+    ],
+    "reading": "Read the numbered actions from top to bottom."
+  },
+  {
+    "path": "reference-architectures/consumer-app",
+    "diagram": "0e34728da1a680ec",
+    "number": 3,
+    "title": "Save the like and the pending operation together",
+    "caption": "The transaction makes the desired like state visible and preserves its outbound work. The outbox sends the saved operation and removes it after acknowledgement.",
+    "sources": [
+      "https://developer.android.com/topic/architecture/data-layer/offline-first"
+    ],
+    "kind": "sequence",
+    "participants": [
+      {
+        "id": "UI",
+        "title": "UI",
+        "role": "client",
+        "detail": "User-facing state"
+      },
+      {
+        "id": "VM",
+        "title": "View model",
+        "role": "runtime",
+        "detail": "Screen state"
+      },
+      {
+        "id": "Repo",
+        "title": "Data layer",
+        "role": "runtime",
+        "detail": "Owns data calls"
+      },
+      {
+        "id": "Local",
+        "title": "Local database",
+        "role": "storage",
+        "detail": "Committed local records"
+      },
+      {
+        "id": "Out",
+        "title": "Outbox",
+        "role": "queue",
+        "detail": "Saved operation and key"
+      },
+      {
+        "id": "Net",
+        "title": "Network",
+        "role": "neutral",
+        "detail": "Availability or refresh"
+      }
+    ],
+    "events": [
+      {
+        "from": "UI",
+        "to": "VM",
+        "label": "like(postId)"
+      },
+      {
+        "from": "VM",
+        "to": "Repo",
+        "label": "toggleLike(postId, liked=true)"
+      },
+      {
+        "from": "Repo",
+        "to": "Local",
+        "label": "BEGIN transaction"
+      },
+      {
+        "from": "Repo",
+        "to": "Local",
+        "label": "UPDATE desired like state"
+      },
+      {
+        "from": "Repo",
+        "to": "Out",
+        "label": "INSERT account-scoped mutation + idempotency key"
+      },
+      {
+        "from": "Repo",
+        "to": "Local",
+        "label": "COMMIT transaction"
+      },
+      {
+        "from": "Repo",
+        "to": "UI",
+        "label": "✓ instantly",
+        "style": "dashed"
+      },
+      {
+        "from": "Out",
+        "to": "Net",
+        "label": "POST /v1/engagement (background)"
+      },
+      {
+        "from": "Net",
+        "to": "Out",
+        "label": "200 OK",
+        "style": "dashed"
+      },
+      {
+        "at": "Out",
+        "label": "dequeue"
+      }
+    ],
+    "reading": "Read the numbered actions from top to bottom."
+  },
+  {
+    "path": "reference-architectures/e-commerce-app",
+    "diagram": "128176872105b703",
+    "number": 2,
+    "title": "Show the pending cart change and reconcile against the server",
+    "caption": "The local transaction saves the pending cart update and its operation key. The backend returns the canonical cart, which the client writes back to the local view.",
+    "sources": [
+      "https://developer.android.com/topic/architecture/data-layer/offline-first"
+    ],
+    "kind": "sequence",
+    "participants": [
+      {
+        "id": "UI",
+        "title": "UI",
+        "role": "client",
+        "detail": "User-facing state"
+      },
+      {
+        "id": "VM",
+        "title": "View model",
+        "role": "runtime",
+        "detail": "Screen state"
+      },
+      {
+        "id": "Repo",
+        "title": "Data layer",
+        "role": "runtime",
+        "detail": "Owns data calls"
+      },
+      {
+        "id": "Local",
+        "title": "Local database",
+        "role": "storage",
+        "detail": "Committed local records"
+      },
+      {
+        "id": "Out",
+        "title": "Outbox",
+        "role": "queue",
+        "detail": "Saved operation and key"
+      },
+      {
+        "id": "Api",
+        "title": "Backend API",
+        "role": "runtime",
+        "detail": "Remote contract"
+      }
+    ],
+    "events": [
+      {
+        "from": "UI",
+        "to": "VM",
+        "label": "addItem(productId, qty=1, variantId)"
+      },
+      {
+        "from": "VM",
+        "to": "Repo",
+        "label": "addItem(...)"
+      },
+      {
+        "from": "Repo",
+        "to": "Local",
+        "label": "BEGIN transaction"
+      },
+      {
+        "from": "Repo",
+        "to": "Local",
+        "label": "Store account-scoped pending item"
+      },
+      {
+        "from": "Repo",
+        "to": "Out",
+        "label": "INSERT mutation + stable idempotency key"
+      },
+      {
+        "from": "Repo",
+        "to": "Local",
+        "label": "COMMIT transaction"
+      },
+      {
+        "from": "Local",
+        "to": "VM",
+        "label": "emit updated cart (Flow)",
+        "style": "dashed"
+      },
+      {
+        "from": "VM",
+        "to": "UI",
+        "label": "pending cart update"
+      },
+      {
+        "from": "Out",
+        "to": "Api",
+        "label": "POST /v1/cart/items (Idempotency-Key)"
+      },
+      {
+        "from": "Api",
+        "to": "Out",
+        "label": "200 OK canonical cart state",
+        "style": "dashed"
+      },
+      {
+        "from": "Out",
+        "to": "Local",
+        "label": "UPSERT items from canonical state"
+      },
+      {
+        "from": "Local",
+        "to": "VM",
+        "label": "emit reconciled cart",
+        "style": "dashed"
+      }
+    ],
+    "reading": "Read the numbered actions from top to bottom."
+  },
+  {
+    "path": "reference-architectures/e-commerce-app",
+    "diagram": "7aad0b7be496d882",
+    "number": 3,
+    "title": "Verified payment status decides whether a receipt can appear",
+    "caption": "Follow one outcome after reconciliation. A verified PAID order gets a receipt, PENDING keeps a status screen and a saved operation, and a confirmed failure preserves the cart for recovery.",
+    "sources": [
+      "https://docs.stripe.com/payments/payment-intents/verifying-status"
+    ],
+    "kind": "map",
+    "reading": "Trace the saved operation to the verified status. Follow one outcome branch.",
+    "layout": "layers",
+    "nodes": [
+      {
+        "id": "operation",
+        "title": "Saved operation",
+        "role": "storage",
+        "detail": "Stable key and order ID"
+      },
+      {
+        "id": "collect",
+        "title": "Provider payment flow",
+        "role": "runtime",
+        "detail": "Challenge when required"
+      },
+      {
+        "id": "verified",
+        "title": "Backend reconciliation",
+        "role": "runtime",
+        "detail": "Verify provider status"
+      },
+      {
+        "id": "approved",
+        "title": "Verified PAID",
+        "role": "client",
+        "detail": "Show receipt"
+      },
+      {
+        "id": "pending",
+        "title": "Pending status",
+        "role": "client",
+        "detail": [
+          "Show payment status",
+          "Keep operation and reconcile"
+        ]
+      },
+      {
+        "id": "failed",
+        "title": "Failed or declined",
+        "role": "client",
+        "detail": [
+          "Show recovery",
+          "Keep cart intact"
+        ]
+      }
+    ],
+    "edges": [
+      {
+        "from": "operation",
+        "to": "collect",
+        "label": "start payment"
+      },
+      {
+        "from": "collect",
+        "to": "verified",
+        "label": "reconcile provider result"
+      },
+      {
+        "from": "verified",
+        "to": "approved",
+        "label": "verified paid"
+      },
+      {
+        "from": "verified",
+        "to": "pending",
+        "label": "await outcome"
+      },
+      {
+        "from": "verified",
+        "to": "failed",
+        "label": "confirmed failure"
+      }
+    ],
+    "groups": [
+      {
+        "id": "payment-flow",
+        "label": "Payment outcome flow",
+        "nodes": [
+          "operation",
+          "collect",
+          "verified",
+          "approved",
+          "pending",
+          "failed"
+        ]
+      }
+    ]
+  },
+  {
+    "path": "reference-architectures/merchant-app",
+    "diagram": "3be46020be5a8fc1",
+    "number": 2,
+    "title": "An order update creates one durable print job",
+    "caption": "The order and print job are stored together. The worker claims the pending job and records the result. An unknown printer outcome needs reconciliation rather than an assumption that nothing printed.",
+    "sources": [
+      "https://developer.android.com/topic/architecture/data-layer/offline-first",
+      "https://developer.android.com/develop/background-work/background-tasks/persistent/how-to/manage-work"
+    ],
+    "kind": "sequence",
+    "participants": [
+      {
+        "id": "Cust",
+        "title": "Customer",
+        "role": "client",
+        "detail": "User-facing state"
+      },
+      {
+        "id": "API",
+        "title": "Backend API",
+        "role": "runtime",
+        "detail": "Remote contract"
+      },
+      {
+        "id": "WS",
+        "title": "Socket",
+        "role": "runtime",
+        "detail": "Runs this step"
+      },
+      {
+        "id": "Repo",
+        "title": "Data layer",
+        "role": "runtime",
+        "detail": "Owns data calls"
+      },
+      {
+        "id": "Room",
+        "title": "Room",
+        "role": "storage",
+        "detail": "Committed local records"
+      },
+      {
+        "id": "UI",
+        "title": "UI",
+        "role": "client",
+        "detail": "User-facing state"
+      },
+      {
+        "id": "Print",
+        "title": "Print worker",
+        "role": "runtime",
+        "detail": "Claims durable print jobs"
+      },
+      {
+        "id": "Printer",
+        "title": "Printer",
+        "role": "neutral",
+        "detail": "Physical ticket"
+      }
+    ],
+    "events": [
+      {
+        "from": "Cust",
+        "to": "API",
+        "label": "place order"
+      },
+      {
+        "from": "API",
+        "to": "WS",
+        "label": "broadcast {order.created, ...}"
+      },
+      {
+        "from": "WS",
+        "to": "Repo",
+        "label": "frame received"
+      },
+      {
+        "from": "Repo",
+        "to": "Room",
+        "label": "Commit order and print job"
+      },
+      {
+        "from": "Room",
+        "to": "UI",
+        "label": "Flow emit (new order in list)",
+        "style": "dashed"
+      },
+      {
+        "at": "UI",
+        "label": "play sound + flash badge"
+      },
+      {
+        "from": "Print",
+        "to": "Room",
+        "label": "claim pending print job"
+      },
+      {
+        "from": "Print",
+        "to": "Printer",
+        "label": "print kitchen ticket (job ID)"
+      },
+      {
+        "from": "Printer",
+        "to": "Print",
+        "label": "known success, failure or unknown outcome",
+        "style": "dashed"
+      },
+      {
+        "from": "Print",
+        "to": "Room",
+        "label": "persist job outcome"
+      },
+      {
+        "from": "Room",
+        "to": "UI",
+        "label": "printer/job status",
+        "style": "dashed"
+      }
+    ],
+    "reading": "Read the numbered actions from top to bottom."
+  },
+  {
+    "path": "reference-architectures/merchant-app",
+    "diagram": "a54bae6d46bf95e6",
+    "number": 3,
+    "title": "A pending card payment has a different receipt from an approval",
+    "caption": "Only verified approval leads to a success receipt. Pending authorization or forwarding is labelled pending, including merchant risk where applicable. A verified decline leads to recovery.",
+    "sources": [
+      "https://docs.stripe.com/terminal/features/operate-offline/overview?reader-type=bluetooth"
+    ],
+    "kind": "map",
+    "reading": "Trace the saved operation to the verified status. Follow one outcome branch.",
+    "layout": "layers",
+    "nodes": [
+      {
+        "id": "operation",
+        "title": "Saved operation",
+        "role": "storage",
+        "detail": "Stable key and payment ID"
+      },
+      {
+        "id": "collect",
+        "title": "PIN-pad flow",
+        "role": "runtime",
+        "detail": "Provider owns card entry"
+      },
+      {
+        "id": "verified",
+        "title": "Backend reconciliation",
+        "role": "runtime",
+        "detail": "Verify provider status"
+      },
+      {
+        "id": "approved",
+        "title": "Verified approval",
+        "role": "client",
+        "detail": "Show approved receipt"
+      },
+      {
+        "id": "pending",
+        "title": "Pending status",
+        "role": "client",
+        "detail": [
+          "Label receipt pending",
+          "State offline risk if accepted"
+        ]
+      },
+      {
+        "id": "failed",
+        "title": "Rejected or declined",
+        "role": "client",
+        "detail": "Show failure and recovery"
+      }
+    ],
+    "edges": [
+      {
+        "from": "operation",
+        "to": "collect",
+        "label": "start payment"
+      },
+      {
+        "from": "collect",
+        "to": "verified",
+        "label": "reconcile provider result"
+      },
+      {
+        "from": "verified",
+        "to": "approved",
+        "label": "verified approval"
+      },
+      {
+        "from": "verified",
+        "to": "pending",
+        "label": "await outcome"
+      },
+      {
+        "from": "verified",
+        "to": "failed",
+        "label": "confirmed failure"
+      }
+    ],
+    "groups": [
+      {
+        "id": "payment-flow",
+        "label": "Payment outcome flow",
+        "nodes": [
+          "operation",
+          "collect",
+          "verified",
+          "approved",
+          "pending",
+          "failed"
+        ]
+      }
+    ]
+  },
+  {
+    "path": "reference-architectures/offline-first-app",
+    "diagram": "82600a01f752d3a6",
+    "number": 2,
+    "title": "Commit the local edit and its outbound mutation together",
+    "caption": "The app reports local success after committing both records. The sync engine can find the saved operation later, including after a process restart.",
+    "sources": [
+      "https://developer.android.com/topic/architecture/data-layer/offline-first"
+    ],
+    "kind": "sequence",
+    "participants": [
+      {
+        "id": "UI",
+        "title": "UI",
+        "role": "client",
+        "detail": "User-facing state"
+      },
+      {
+        "id": "Repo",
+        "title": "Data layer",
+        "role": "runtime",
+        "detail": "Owns data calls"
+      },
+      {
+        "id": "DB",
+        "title": "Local database",
+        "role": "storage",
+        "detail": "Local or cached data"
+      },
+      {
+        "id": "Out",
+        "title": "Outbox",
+        "role": "queue",
+        "detail": "Saved operation and key"
+      },
+      {
+        "id": "Sync",
+        "title": "Sync engine",
+        "role": "runtime",
+        "detail": "Runs this step"
+      }
+    ],
+    "events": [
+      {
+        "from": "UI",
+        "to": "Repo",
+        "label": "write(data)"
+      },
+      {
+        "from": "Repo",
+        "to": "DB",
+        "label": "BEGIN TX"
+      },
+      {
+        "from": "Repo",
+        "to": "DB",
+        "label": "UPDATE table SET ..."
+      },
+      {
+        "from": "Repo",
+        "to": "Out",
+        "label": "INSERT mutation (idempotency_key, payload)"
+      },
+      {
+        "from": "Repo",
+        "to": "DB",
+        "label": "COMMIT TX"
+      },
+      {
+        "from": "Repo",
+        "to": "UI",
+        "label": "success",
+        "style": "dashed"
+      },
+      {
+        "over": [
+          "Sync"
+        ],
+        "text": "Sync engine notices new outbox entry",
+        "role": "neutral"
+      },
+      {
+        "from": "Sync",
+        "to": "Out",
+        "label": "SELECT pending"
+      },
+      {
+        "at": "Sync",
+        "label": "Push to remote (async)"
+      }
+    ],
+    "reading": "Read the numbered actions from top to bottom."
+  },
+  {
+    "path": "reference-architectures/offline-first-app",
+    "diagram": "b4fdeef66d5a6c7a",
+    "number": 3,
+    "title": "Commit the applied changes and their watermark as one unit",
+    "caption": "Use the conflict path only when the local and remote changes need reconciliation. Commit the applied page with the watermark so a restart can resume from a consistent boundary.",
+    "sources": [
+      "https://developer.android.com/topic/architecture/data-layer/offline-first"
+    ],
+    "kind": "sequence",
+    "participants": [
+      {
+        "id": "Sync",
+        "title": "Sync engine",
+        "role": "runtime",
+        "detail": "Runs this step"
+      },
+      {
+        "id": "API",
+        "title": "Backend API",
+        "role": "runtime",
+        "detail": "Remote contract"
+      },
+      {
+        "id": "DB",
+        "title": "Local database",
+        "role": "storage",
+        "detail": "Local or cached data"
+      },
+      {
+        "id": "Resolver",
+        "title": "Conflict resolver",
+        "role": "runtime",
+        "detail": "Runs this step"
+      }
+    ],
+    "events": [
+      {
+        "from": "Sync",
+        "to": "API",
+        "label": "GET /changes?since=<watermark>"
+      },
+      {
+        "from": "API",
+        "to": "Sync",
+        "label": "{ changes, new_watermark }",
+        "style": "dashed"
+      },
+      {
+        "over": [
+          "Sync",
+          "Resolver"
+        ],
+        "text": "Repeat For each change",
+        "role": "neutral"
+      },
+      {
+        "from": "Sync",
+        "to": "DB",
+        "label": "Lookup local version"
+      },
+      {
+        "over": [
+          "Sync",
+          "Resolver"
+        ],
+        "text": "When No conflict",
+        "role": "neutral"
+      },
+      {
+        "from": "Sync",
+        "to": "DB",
+        "label": "Apply change"
+      },
+      {
+        "over": [
+          "Sync",
+          "Resolver"
+        ],
+        "text": "Alternative — Conflict",
+        "role": "neutral"
+      },
+      {
+        "from": "Sync",
+        "to": "Resolver",
+        "label": "resolve(local, remote)"
+      },
+      {
+        "from": "Resolver",
+        "to": "Sync",
+        "label": "merged",
+        "style": "dashed"
+      },
+      {
+        "from": "Sync",
+        "to": "DB",
+        "label": "Apply merged"
+      },
+      {
+        "over": [
+          "Sync",
+          "Resolver"
+        ],
+        "text": "After the selected path",
+        "role": "neutral"
+      },
+      {
+        "over": [
+          "Sync",
+          "Resolver"
+        ],
+        "text": "After the repeated work",
+        "role": "neutral"
+      },
+      {
+        "from": "Sync",
+        "to": "DB",
+        "label": "Commit applied page + its watermark atomically"
+      }
+    ],
+    "reading": "Read top to bottom. Follow one alternative when a branch is labelled."
+  },
+  {
+    "path": "reference-architectures/banking-app",
+    "diagram": "07ac277ad6522b03",
+    "number": 2,
+    "title": "A signed transfer challenge is verified by the bank",
+    "caption": "The prompt enables use of the signing key. The request carries the signature and stable operation key to the bank, which checks the binding. The example returns PROCESSING, so the UI shows initiation.",
+    "sources": [
+      "https://developer.android.com/identity/sign-in/biometric-auth"
+    ],
+    "kind": "sequence",
+    "participants": [
+      {
+        "id": "UI",
+        "title": "UI",
+        "role": "client",
+        "detail": "User-facing state"
+      },
+      {
+        "id": "VM",
+        "title": "View model",
+        "role": "runtime",
+        "detail": "Screen state"
+      },
+      {
+        "id": "Gate",
+        "title": "Step-up gate",
+        "role": "runtime",
+        "detail": "Binds key use to the action"
+      },
+      {
+        "id": "Bio",
+        "title": "Biometric prompt",
+        "role": "runtime",
+        "detail": "Runs this step"
+      },
+      {
+        "id": "Api",
+        "title": "Backend API",
+        "role": "runtime",
+        "detail": "Remote contract"
+      },
+      {
+        "id": "Bank",
+        "title": "Core banking",
+        "role": "runtime",
+        "detail": "Validates transfer"
+      }
+    ],
+    "events": [
+      {
+        "from": "UI",
+        "to": "VM",
+        "label": "confirm(transfer)"
+      },
+      {
+        "from": "VM",
+        "to": "Gate",
+        "label": "requireStepUp(amount, payee)"
+      },
+      {
+        "from": "Gate",
+        "to": "Bank",
+        "label": "requestChallenge(action=TRANSFER)"
+      },
+      {
+        "from": "Bank",
+        "to": "Gate",
+        "label": "challenge",
+        "style": "dashed"
+      },
+      {
+        "from": "Gate",
+        "to": "Bio",
+        "label": "authenticate(CryptoObject(signature))"
+      },
+      {
+        "from": "Bio",
+        "to": "Gate",
+        "label": "Return authorized signature object",
+        "style": "dashed"
+      },
+      {
+        "at": "Gate",
+        "label": "sign bound transaction challenge"
+      },
+      {
+        "from": "Gate",
+        "to": "Api",
+        "label": "Submit signed challenge with saved key"
+      },
+      {
+        "from": "Api",
+        "to": "Bank",
+        "label": "validate(challenge, signature, key attestation)"
+      },
+      {
+        "from": "Bank",
+        "to": "Api",
+        "label": "Return transfer ID and PROCESSING",
+        "style": "dashed"
+      },
+      {
+        "from": "Api",
+        "to": "VM",
+        "label": "TransferReceipt",
+        "style": "dashed"
+      },
+      {
+        "from": "VM",
+        "to": "UI",
+        "label": "✅ Transfer initiated"
+      }
+    ],
+    "reading": "Read the numbered actions from top to bottom."
+  },
+  {
+    "path": "reference-architectures/banking-app",
+    "diagram": "713d80ac9128fa48",
+    "number": 3,
+    "title": "Refresh the session and save the rotated token pair",
+    "caption": "The example unlocks the encrypted refresh token locally and uses it with the server’s rotation contract. The new token pair is saved before loading the fresh account snapshot.",
+    "sources": [
+      "https://developer.android.com/identity/sign-in/biometric-auth",
+      "https://www.rfc-editor.org/rfc/rfc9700.html#section-4.14.2"
+    ],
+    "kind": "sequence",
+    "participants": [
+      {
+        "id": "UI",
+        "title": "UI",
+        "role": "client",
+        "detail": "User-facing state"
+      },
+      {
+        "id": "Session",
+        "title": "Session manager",
+        "role": "runtime",
+        "detail": "Session ownership"
+      },
+      {
+        "id": "Bio",
+        "title": "Biometric prompt",
+        "role": "runtime",
+        "detail": "Runs this step"
+      },
+      {
+        "id": "Vault",
+        "title": "Token vault",
+        "role": "storage",
+        "detail": "Keystore-protected ciphertext"
+      },
+      {
+        "id": "Api",
+        "title": "Backend API",
+        "role": "runtime",
+        "detail": "Remote contract"
+      }
+    ],
+    "events": [
+      {
+        "from": "UI",
+        "to": "Vault",
+        "label": "load()"
+      },
+      {
+        "from": "Vault",
+        "to": "UI",
+        "label": "Return encrypted refresh token",
+        "style": "dashed"
+      },
+      {
+        "from": "UI",
+        "to": "Bio",
+        "label": "authenticate (unlock vault cipher)"
+      },
+      {
+        "from": "Bio",
+        "to": "UI",
+        "label": "OK",
+        "style": "dashed"
+      },
+      {
+        "from": "UI",
+        "to": "Vault",
+        "label": "decrypt(refresh)"
+      },
+      {
+        "from": "UI",
+        "to": "Api",
+        "label": "POST /v1/auth/refresh (refresh)"
+      },
+      {
+        "at": "Api",
+        "label": "revoke old refresh, issue new pair"
+      },
+      {
+        "from": "Api",
+        "to": "UI",
+        "label": "{ access, refresh (rotated) }",
+        "style": "dashed"
+      },
+      {
+        "from": "UI",
+        "to": "Vault",
+        "label": "save(new tokens)"
+      },
+      {
+        "from": "UI",
+        "to": "Api",
+        "label": "GET /v1/account (fresh)"
+      },
+      {
+        "from": "Api",
+        "to": "UI",
+        "label": "account snapshot",
+        "style": "dashed"
+      },
+      {
+        "at": "UI",
+        "label": "render dashboard"
+      }
+    ],
+    "reading": "Read the numbered actions from top to bottom."
+  },
+  {
+    "path": "reference-architectures/ride-hailing-app",
+    "diagram": "3804eb87b676d961",
+    "number": 2,
+    "title": "Dispatch confirms the first accepted candidate",
+    "caption": "The dispatcher tries candidates in this example. Acceptance triggers notifications to the rider and driver. A decline or timeout advances to the next candidate.",
+    "sources": [
+      "https://developer.android.com/develop/background-work/services/fgs/service-types#location"
+    ],
+    "kind": "sequence",
+    "participants": [
+      {
+        "id": "R",
+        "title": "Rider app",
+        "role": "client",
+        "detail": "User-facing state"
+      },
+      {
+        "id": "Disp",
+        "title": "Dispatcher",
+        "role": "runtime",
+        "detail": "Runs this step"
+      },
+      {
+        "id": "Match",
+        "title": "Matcher",
+        "role": "runtime",
+        "detail": "Runs this step"
+      },
+      {
+        "id": "D",
+        "title": "Driver app",
+        "role": "client",
+        "detail": "User-facing state"
+      }
+    ],
+    "events": [
+      {
+        "from": "R",
+        "to": "Disp",
+        "label": "Request trip with quote and saved key"
+      },
+      {
+        "from": "Disp",
+        "to": "Match",
+        "label": "find_driver(pickup, type)"
+      },
+      {
+        "from": "Match",
+        "to": "Disp",
+        "label": "candidates list",
+        "style": "dashed"
+      },
+      {
+        "over": [
+          "R",
+          "D"
+        ],
+        "text": "Repeat For each candidate",
+        "role": "neutral"
+      },
+      {
+        "from": "Disp",
+        "to": "D",
+        "label": "trip.offer (FCM data push + WS)"
+      },
+      {
+        "over": [
+          "R",
+          "D"
+        ],
+        "text": "When Driver accepts",
+        "role": "neutral"
+      },
+      {
+        "from": "D",
+        "to": "Disp",
+        "label": "trip.accept",
+        "style": "dashed"
+      },
+      {
+        "from": "Disp",
+        "to": "R",
+        "label": "trip.matched"
+      },
+      {
+        "from": "Disp",
+        "to": "D",
+        "label": "trip.confirmed"
+      },
+      {
+        "over": [
+          "R",
+          "D"
+        ],
+        "text": "Alternative — Driver declines / timeout",
+        "role": "neutral"
+      },
+      {
+        "over": [
+          "Disp"
+        ],
+        "text": "try next candidate",
+        "role": "neutral"
+      },
+      {
+        "over": [
+          "R",
+          "D"
+        ],
+        "text": "After the selected path",
+        "role": "neutral"
+      },
+      {
+        "over": [
+          "R",
+          "D"
+        ],
+        "text": "After the repeated work",
+        "role": "neutral"
+      }
+    ],
+    "reading": "Read top to bottom. Follow one alternative when a branch is labelled."
+  },
+  {
+    "path": "reference-architectures/ride-hailing-app",
+    "diagram": "7368c3cfb8d878cd",
+    "number": 3,
+    "title": "Location delivery follows the connection state",
+    "caption": "Follow one connection path. A live socket can deliver a batch, a dropped socket can use REST when online, and an offline device retains buffered locations for reconnect.",
+    "sources": [
+      "https://developer.android.com/develop/background-work/services/fgs/service-types#location"
+    ],
+    "kind": "sequence",
+    "participants": [
+      {
+        "id": "FLP",
+        "title": "Location provider",
+        "role": "neutral",
+        "detail": "External dependency"
+      },
+      {
+        "id": "LS",
+        "title": "Location streamer",
+        "role": "runtime",
+        "detail": "Runs this step"
+      },
+      {
+        "id": "Buf",
+        "title": "Location buffer",
+        "role": "storage",
+        "detail": "Pending locations"
+      },
+      {
+        "id": "WS",
+        "title": "Socket",
+        "role": "runtime",
+        "detail": "Runs this step"
+      },
+      {
+        "id": "Disp",
+        "title": "Dispatcher",
+        "role": "runtime",
+        "detail": "Runs this step"
+      },
+      {
+        "id": "R",
+        "title": "Rider app",
+        "role": "client",
+        "detail": "User-facing state"
+      }
+    ],
+    "events": [
+      {
+        "from": "FLP",
+        "to": "LS",
+        "label": "location update"
+      },
+      {
+        "from": "LS",
+        "to": "Buf",
+        "label": "enqueue"
+      },
+      {
+        "over": [
+          "FLP",
+          "R"
+        ],
+        "text": "When Online (WebSocket active)",
+        "role": "neutral"
+      },
+      {
+        "from": "Buf",
+        "to": "WS",
+        "label": "flush batch"
+      },
+      {
+        "from": "WS",
+        "to": "Disp",
+        "label": "location.ping"
+      },
+      {
+        "from": "Disp",
+        "to": "R",
+        "label": "trip.driver_location_update (WS)"
+      },
+      {
+        "over": [
+          "FLP",
+          "R"
+        ],
+        "text": "Alternative — Online (WebSocket dropped)",
+        "role": "neutral"
+      },
+      {
+        "from": "Buf",
+        "to": "Disp",
+        "label": "POST /v1/location/batch (REST Fallback)"
+      },
+      {
+        "over": [
+          "FLP",
+          "R"
+        ],
+        "text": "Alternative — Offline",
+        "role": "neutral"
+      },
+      {
+        "over": [
+          "Buf"
+        ],
+        "text": "accumulate, flush on reconnect",
+        "role": "neutral"
+      }
+    ],
+    "reading": "Read top to bottom. Follow one alternative when a branch is labelled."
+  },
+  {
+    "path": "reference-architectures/ride-hailing-app",
+    "diagram": "ff84eb0170bd9ca5",
+    "number": 4,
+    "title": "The trip service validates the arrived transition",
+    "caption": "The driver submits a stable operation key. The trip service validates the transition, then the dispatcher sends the accepted state to both clients.",
+    "sources": [
+      "https://developer.android.com/topic/architecture/data-layer/offline-first"
+    ],
+    "kind": "sequence",
+    "participants": [
+      {
+        "id": "D",
+        "title": "Driver app",
+        "role": "client",
+        "detail": "User-facing state"
+      },
+      {
+        "id": "R",
+        "title": "Rider app",
+        "role": "client",
+        "detail": "User-facing state"
+      },
+      {
+        "id": "Disp",
+        "title": "Dispatcher",
+        "role": "runtime",
+        "detail": "Runs this step"
+      },
+      {
+        "id": "Trip",
+        "title": "Trip service",
+        "role": "runtime",
+        "detail": "Runs this step"
+      }
+    ],
+    "events": [
+      {
+        "at": "D",
+        "label": "driver swipes \"Arrived\""
+      },
+      {
+        "from": "D",
+        "to": "Disp",
+        "label": "Submit ARRIVED with saved key"
+      },
+      {
+        "from": "Disp",
+        "to": "Trip",
+        "label": "Validate transition to ARRIVED"
+      },
+      {
+        "from": "Trip",
+        "to": "Disp",
+        "label": "200 OK { state: ARRIVED, ... }",
+        "style": "dashed"
+      },
+      {
+        "from": "Disp",
+        "to": "D",
+        "label": "trip.update {state: ARRIVED}"
+      },
+      {
+        "from": "Disp",
+        "to": "R",
+        "label": "trip.update {state: ARRIVED}"
+      },
+      {
+        "at": "D",
+        "label": "render arrived screen"
+      },
+      {
+        "at": "R",
+        "label": "render \"driver arrived\" screen + notification"
+      }
+    ],
+    "reading": "Read the numbered actions from top to bottom."
+  },
+  {
+    "path": "reference-architectures/social-media-app",
+    "diagram": "697b988a9fe282bd",
+    "number": 2,
+    "title": "Show the retained feed before the network refresh finishes",
+    "caption": "The UI can render cached posts, then observe reconciled posts after the refresh writes to Room. The timing values illustrate content targets.",
+    "sources": [
+      "https://developer.android.com/topic/libraries/architecture/paging/v3-network-db"
+    ],
+    "kind": "sequence",
+    "participants": [
+      {
+        "id": "User",
+        "title": "User",
+        "role": "client",
+        "detail": "User-facing state"
+      },
+      {
+        "id": "App",
+        "title": "App startup",
+        "role": "runtime",
+        "detail": "Runs this step"
+      },
+      {
+        "id": "FeedVM",
+        "title": "Feed ViewModel",
+        "role": "runtime",
+        "detail": "Runs this step"
+      },
+      {
+        "id": "Room",
+        "title": "Room",
+        "role": "storage",
+        "detail": "Committed local records"
+      },
+      {
+        "id": "FeedApi",
+        "title": "Feed BFF",
+        "role": "runtime",
+        "detail": "Runs this step"
+      }
+    ],
+    "events": [
+      {
+        "from": "User",
+        "to": "App",
+        "label": "launch"
+      },
+      {
+        "from": "App",
+        "to": "FeedVM",
+        "label": "instantiate"
+      },
+      {
+        "from": "FeedVM",
+        "to": "Room",
+        "label": "page 0 cached?"
+      },
+      {
+        "from": "Room",
+        "to": "FeedVM",
+        "label": "cached posts (yes)",
+        "style": "dashed"
+      },
+      {
+        "from": "FeedVM",
+        "to": "User",
+        "label": "Render retained feed (example target)",
+        "style": "dashed"
+      },
+      {
+        "from": "FeedVM",
+        "to": "FeedApi",
+        "label": "GET /v1/feed?cursor= (parallel)"
+      },
+      {
+        "from": "FeedApi",
+        "to": "FeedVM",
+        "label": "Return fresh posts (example timing)",
+        "style": "dashed"
+      },
+      {
+        "from": "FeedVM",
+        "to": "Room",
+        "label": "upsert"
+      },
+      {
+        "from": "Room",
+        "to": "FeedVM",
+        "label": "emit reconciled",
+        "style": "dashed"
+      },
+      {
+        "from": "FeedVM",
+        "to": "User",
+        "label": "Render reconciled feed",
+        "style": "dashed"
+      }
+    ],
+    "reading": "Read the numbered actions from top to bottom."
+  },
+  {
+    "path": "reference-architectures/social-media-app",
+    "diagram": "2298c9b3dda203e6",
+    "number": 3,
+    "title": "Persist engagement state with its operation key",
+    "caption": "The local write and its queued mutation share a transaction. The UI can show the pending like immediately, and the outbox retains the operation until acknowledgement.",
+    "sources": [
+      "https://developer.android.com/topic/architecture/data-layer/offline-first"
+    ],
+    "kind": "sequence",
+    "participants": [
+      {
+        "id": "UI",
+        "title": "UI",
+        "role": "client",
+        "detail": "User-facing state"
+      },
+      {
+        "id": "Repo",
+        "title": "Data layer",
+        "role": "runtime",
+        "detail": "Owns data calls"
+      },
+      {
+        "id": "Local",
+        "title": "Local database",
+        "role": "storage",
+        "detail": "Committed local records"
+      },
+      {
+        "id": "Out",
+        "title": "Outbox",
+        "role": "queue",
+        "detail": "Saved operation and key"
+      },
+      {
+        "id": "Api",
+        "title": "Backend API",
+        "role": "runtime",
+        "detail": "Remote contract"
+      }
+    ],
+    "events": [
+      {
+        "from": "UI",
+        "to": "Repo",
+        "label": "like(postId)"
+      },
+      {
+        "from": "Repo",
+        "to": "Local",
+        "label": "BEGIN transaction"
+      },
+      {
+        "from": "Repo",
+        "to": "Local",
+        "label": "UPDATE desired like state for account + post"
+      },
+      {
+        "from": "Repo",
+        "to": "Out",
+        "label": "INSERT stable operation key + desired state"
+      },
+      {
+        "from": "Repo",
+        "to": "Local",
+        "label": "COMMIT transaction"
+      },
+      {
+        "from": "Local",
+        "to": "UI",
+        "label": "emit pending like state",
+        "style": "dashed"
+      },
+      {
+        "from": "Out",
+        "to": "Api",
+        "label": "POST /v1/engagement (Idempotency-Key)"
+      },
+      {
+        "from": "Api",
+        "to": "Out",
+        "label": "200 OK",
+        "style": "dashed"
+      },
+      {
+        "at": "Out",
+        "label": "dequeue"
+      }
+    ],
+    "reading": "Read the numbered actions from top to bottom."
+  },
+  {
+    "path": "reference-architectures/social-media-app",
+    "diagram": "f40a8d139456e2ba",
+    "number": 4,
+    "title": "Hand the visible video surface to the next item",
+    "caption": "A cache hit and miss choose different preparation paths. As an item leaves the viewport, the example releases its surface before preparing the next item.",
+    "sources": [
+      "https://developer.android.com/media/media3/exoplayer/track-selection"
+    ],
+    "kind": "sequence",
+    "participants": [
+      {
+        "id": "UI",
+        "title": "UI",
+        "role": "client",
+        "detail": "User-facing state"
+      },
+      {
+        "id": "State",
+        "title": "List state",
+        "role": "runtime",
+        "detail": "Runs this step"
+      },
+      {
+        "id": "Player",
+        "title": "Player",
+        "role": "runtime",
+        "detail": "Runs this step"
+      },
+      {
+        "id": "Cache",
+        "title": "Cache",
+        "role": "storage",
+        "detail": "Retained local data"
+      }
+    ],
+    "events": [
+      {
+        "from": "State",
+        "to": "UI",
+        "label": "snapshotFlow { visibleItems }"
+      },
+      {
+        "from": "UI",
+        "to": "Player",
+        "label": "visible item N has video URL"
+      },
+      {
+        "from": "Player",
+        "to": "Cache",
+        "label": "cached?"
+      },
+      {
+        "over": [
+          "UI",
+          "Cache"
+        ],
+        "text": "When Cache hit",
+        "role": "neutral"
+      },
+      {
+        "at": "Player",
+        "label": "prepare from cache"
+      },
+      {
+        "over": [
+          "UI",
+          "Cache"
+        ],
+        "text": "Alternative — Cache miss",
+        "role": "neutral"
+      },
+      {
+        "at": "Player",
+        "label": "prepare from network"
+      },
+      {
+        "over": [
+          "UI",
+          "Cache"
+        ],
+        "text": "After the selected path",
+        "role": "neutral"
+      },
+      {
+        "at": "Player",
+        "label": "play (muted by default)"
+      },
+      {
+        "from": "State",
+        "to": "UI",
+        "label": "scroll away"
+      },
+      {
+        "from": "UI",
+        "to": "Player",
+        "label": "stop + release surface for item N"
+      },
+      {
+        "from": "UI",
+        "to": "Player",
+        "label": "prepare item N+1"
+      }
+    ],
+    "reading": "Read top to bottom. Follow one alternative when a branch is labelled."
+  },
+  {
+    "path": "reference-architectures/video-streaming-app",
+    "diagram": "9305db0b7c0b2a29",
+    "number": 2,
+    "title": "Playback starts after resume, manifest and segment preparation",
+    "caption": "The player obtains the resume position, manifest and initial segments, with DRM setup where needed. First-frame time and quality choices are illustrative targets.",
+    "sources": [
+      "https://developer.android.com/media/media3/exoplayer/track-selection"
+    ],
+    "kind": "sequence",
+    "participants": [
+      {
+        "id": "User",
+        "title": "User",
+        "role": "client",
+        "detail": "User-facing state"
+      },
+      {
+        "id": "UI",
+        "title": "UI",
+        "role": "client",
+        "detail": "User-facing state"
+      },
+      {
+        "id": "PR",
+        "title": "Player repository",
+        "role": "runtime",
+        "detail": "Runs this step"
+      },
+      {
+        "id": "DRM",
+        "title": "DRM session",
+        "role": "runtime",
+        "detail": "Key session"
+      },
+      {
+        "id": "CDN",
+        "title": "CDN",
+        "role": "neutral",
+        "detail": "Media resources"
+      },
+      {
+        "id": "Resume",
+        "title": "Resume API",
+        "role": "runtime",
+        "detail": "Cross-device position"
+      }
+    ],
+    "events": [
+      {
+        "from": "User",
+        "to": "UI",
+        "label": "tap play"
+      },
+      {
+        "from": "UI",
+        "to": "Resume",
+        "label": "GET /v1/resume/{id}"
+      },
+      {
+        "from": "Resume",
+        "to": "UI",
+        "label": "resume position (or 0)",
+        "style": "dashed"
+      },
+      {
+        "from": "UI",
+        "to": "PR",
+        "label": "preparePlayback(asset, resumeMs)"
+      },
+      {
+        "from": "PR",
+        "to": "CDN",
+        "label": "GET manifest (DASH/HLS)"
+      },
+      {
+        "from": "CDN",
+        "to": "PR",
+        "label": "manifest with quality variants",
+        "style": "dashed"
+      },
+      {
+        "from": "PR",
+        "to": "DRM",
+        "label": "provision (if needed)"
+      },
+      {
+        "from": "DRM",
+        "to": "PR",
+        "label": "session ready",
+        "style": "dashed"
+      },
+      {
+        "from": "PR",
+        "to": "CDN",
+        "label": "Request initial segments (example startup policy)"
+      },
+      {
+        "from": "CDN",
+        "to": "PR",
+        "label": "segments",
+        "style": "dashed"
+      },
+      {
+        "from": "PR",
+        "to": "UI",
+        "label": "render PlayerView"
+      },
+      {
+        "over": [
+          "PR"
+        ],
+        "text": "ABR upshifts as bandwidth allows",
+        "role": "neutral"
+      },
+      {
+        "from": "UI",
+        "to": "User",
+        "label": "First frame (example timing)",
+        "style": "dashed"
+      }
+    ],
+    "reading": "Read the numbered actions from top to bottom."
+  },
+  {
+    "path": "reference-architectures/video-streaming-app",
+    "diagram": "09728e47967d25c6",
+    "number": 3,
+    "title": "Buffered data can cover a short connection loss",
+    "caption": "Playback can use the available buffer during a drop. On reconnect the player refills it and adapts if the available bandwidth changes. Buffer duration and policy depend on the setup.",
+    "sources": [
+      "https://developer.android.com/media/media3/exoplayer/track-selection"
+    ],
+    "kind": "sequence",
+    "participants": [
+      {
+        "id": "Net",
+        "title": "Network",
+        "role": "neutral",
+        "detail": "Availability or refresh"
+      },
+      {
+        "id": "Player",
+        "title": "Player",
+        "role": "runtime",
+        "detail": "Runs this step"
+      },
+      {
+        "id": "Buffer",
+        "title": "Media buffer",
+        "role": "storage",
+        "detail": "Local or cached data"
+      }
+    ],
+    "events": [
+      {
+        "from": "Net",
+        "to": "Player",
+        "label": "connection drops",
+        "style": "dashed"
+      },
+      {
+        "from": "Player",
+        "to": "Buffer",
+        "label": "Play available buffered segments"
+      },
+      {
+        "over": [
+          "Player"
+        ],
+        "text": "Example quality policy during interruption",
+        "role": "neutral"
+      },
+      {
+        "from": "Net",
+        "to": "Player",
+        "label": "connection returns",
+        "style": "dashed"
+      },
+      {
+        "at": "Player",
+        "label": "refill buffer"
+      },
+      {
+        "over": [
+          "Net",
+          "Buffer"
+        ],
+        "text": "When bandwidth decreased",
+        "role": "neutral"
+      },
+      {
+        "at": "Player",
+        "label": "ABR steps down"
+      },
+      {
+        "over": [
+          "Net",
+          "Buffer"
+        ],
+        "text": "Alternative — bandwidth stable",
+        "role": "neutral"
+      },
+      {
+        "at": "Player",
+        "label": "continue"
+      }
+    ],
+    "reading": "Read top to bottom. Follow one alternative when a branch is labelled."
+  },
+  {
+    "path": "reference-architectures/video-streaming-app",
+    "diagram": "42873d960538ccf0",
+    "number": 4,
+    "title": "A server-backed resume point can move between devices",
+    "caption": "The mobile player reports a position during playback and on exit. The TV reads the stored position and prepares from it. The interval is an example policy.",
+    "sources": [
+      "https://developer.android.com/media/media3/exoplayer/track-selection"
+    ],
+    "kind": "sequence",
+    "participants": [
+      {
+        "id": "Mobile",
+        "title": "Mobile",
+        "role": "client",
+        "detail": "User-facing state"
+      },
+      {
+        "id": "TV",
+        "title": "TV",
+        "role": "client",
+        "detail": "User-facing state"
+      },
+      {
+        "id": "ResumeApi",
+        "title": "Resume API",
+        "role": "runtime",
+        "detail": "Cross-device position"
+      },
+      {
+        "id": "Server",
+        "title": "Server",
+        "role": "runtime",
+        "detail": "Runs this step"
+      }
+    ],
+    "events": [
+      {
+        "from": "Mobile",
+        "to": "Server",
+        "label": "Send position periodically and on pause or exit"
+      },
+      {
+        "from": "Server",
+        "to": "ResumeApi",
+        "label": "persist (userId, contentId, positionMs)"
+      },
+      {
+        "over": [
+          "Mobile"
+        ],
+        "text": "user stops on mobile at 23:14",
+        "role": "neutral"
+      },
+      {
+        "from": "TV",
+        "to": "ResumeApi",
+        "label": "GET resume for contentId"
+      },
+      {
+        "from": "ResumeApi",
+        "to": "TV",
+        "label": "23:14",
+        "style": "dashed"
+      },
+      {
+        "at": "TV",
+        "label": "prepare playback at 23:14"
+      }
+    ],
+    "reading": "Read the numbered actions from top to bottom."
+  }
+]

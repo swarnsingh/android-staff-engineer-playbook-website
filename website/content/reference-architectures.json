@@ -1,0 +1,11 @@
+{
+  "reference-architectures.md": "Compare eight mobile blueprints by their data ownership, failure paths and operating constraints.",
+  "reference-architectures/consumer-app.md": "Trace feed startup, local engagement writes and refresh through a shared product architecture.",
+  "reference-architectures/e-commerce-app.md": "Separate cart state, provider interaction and verified checkout status.",
+  "reference-architectures/merchant-app.md": "Follow how a store accepts an order, manages peripherals and reconciles card payments.",
+  "reference-architectures/offline-first-app.md": "Persist local edits with their outbound work and advance the sync cursor only with committed changes.",
+  "reference-architectures/banking-app.md": "Separate local user authentication, signed transfer authorization and the bank’s recorded outcome.",
+  "reference-architectures/ride-hailing-app.md": "Separate replaceable location updates from durable trip transitions.",
+  "reference-architectures/social-media-app.md": "Keep feed rendering, engagement sync and visible media under separate owners.",
+  "reference-architectures/video-streaming-app.md": "Follow startup, buffering, offline availability and resume through separate playback decisions."
+}

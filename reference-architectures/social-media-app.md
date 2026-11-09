@@ -1,8 +1,12 @@
 # Social Media App — Reference Architecture
 
-> The settled blueprint for an infinite-feed social platform (Instagram, Twitter/X, TikTok, Threads, Bluesky). The defining trade-off: **scale dominates correctness**. With 100M+ DAU, eventual consistency is a feature, not a compromise. A like that takes 200ms to propagate to all followers' feeds is fine; a blocked feed render at 60Hz scroll is not.
+> An illustrative blueprint for an infinite-feed social platform. The defining trade-off: **responsive reads and scalable distribution dominate the feed path**. With 100M+ DAU, eventual consistency is a feature, not a compromise. A like that takes 200ms to propagate to all followers' feeds is fine; a blocked feed render at 60Hz scroll is not.
 
 ---
+
+## Scope and Assumptions
+
+This example allows eventual consistency for feed ranking and engagement counters, while authorization, blocks, account isolation and accepted writes retain explicit correctness requirements. Latency, cache, scale, experiment and player counts are illustrative budgets. Offline visibility is limited to retained data and current access policy.
 
 ## Requirements
 
@@ -53,7 +57,7 @@ flowchart TB
     UI --> PushChannel[FCM data messages]
 ```
 
-The defining property: **render-from-cache, refresh-in-background**. The feed always renders something instantly from Room; the network refresh runs in parallel and reconciles. The user does not wait.
+The defining property: **render-from-cache, refresh-in-background**. If retained data is available, the feed can render from Room before a refresh completes. An empty/evicted cache needs loading, empty or error UX; a cache does not guarantee an instant populated feed.
 
 ---
 
@@ -61,7 +65,7 @@ The defining property: **render-from-cache, refresh-in-background**. The feed al
 
 ### FeedRepository + Pager
 
-- Paging 3 + RemoteMediator for the infinite feed. Cursor-based pagination is mandatory (offsets break under inserts at the head).
+- Paging 3 + RemoteMediator for the infinite feed. Cursor/keyset pagination is useful for changing feeds; its ordering/snapshot contract must be explicit. Paging itself also supports other key models.
 - Local Room cache stores the most recent ~100 posts per feed surface (home, profile, hashtag). TTL ~1 hour for home; longer for profile.
 - On cold start: render cached posts immediately; trigger refresh in parallel; swap when fresh data arrives.
 - See [`mobile-system-design/news-feed.md`](../mobile-system-design/news-feed.md) for the reasoning exercise.
@@ -78,9 +82,9 @@ Likes, follows, saves are optimistic-by-default. The user's UI updates instantly
 The most performance-sensitive surface in the entire app. Rules:
 
 - `LazyColumn` with `items(items.itemCount, key = items.itemKey { it.id })` — stable keys are non-negotiable.
-- Each post composable is `@Immutable` data class; `derivedStateOf` for any computed UI state (color flashes on like, etc.).
-- Bitmap loading via Coil 3 with `MemoryCache.Builder().maxSizePercent(0.25).build()`.
-- Short-video playback via Media3 with a 2-3 player pool. Only the most-visible video plays; others paused. Auto-pause on scroll-away via `LifecycleEventEffect`.
+- Post UI models should have a truthful immutable or observable-state contract; `@Immutable` annotates a type, not a composable, and cannot make mutable fields safe. Use `derivedStateOf` for an appropriate change-frequency boundary, not every calculation or one-shot animation.
+- Bitmap loading via Coil 3 with `MemoryCache.Builder().maxSizePercent(context, 0.25).build()`.
+- Short-video playback via Media3 with a 2-3 player pool. Only the most-visible video plays; others paused. Drive scroll visibility from list state separately from activity lifecycle. A lifecycle event effect can pause on backgrounding; it does not itself report that one card scrolled away.
 - Pre-buffer next 1-2 videos on Wi-Fi; defer on cellular.
 - `derivedStateOf` for "is this card in viewport" so player activation doesn't recompose every card on every scroll tick.
 
@@ -89,7 +93,7 @@ The most performance-sensitive surface in the entire app. Rules:
 - WebSocket-based chat similar to a standalone chat app (see [`mobile-system-design/chat-messaging.md`](../mobile-system-design/chat-messaging.md)).
 - Room as single source of truth for conversation history.
 - Optimistic send with client-side message UUID for idempotency.
-- E2EE optional on some platforms; defer protocol to libsignal SDK if so.
+- If E2EE is required, choose an audited protocol and maintainable implementation with explicit identity, key lifecycle and recovery contracts. Signal states that libsignal use outside Signal is unsupported and its APIs may change; do not treat it as a supported drop-in SDK.
 - Push notifications for unread messages via FCM data messages.
 
 ### FeedApi + Ranker (Server-Side, Black Box)
@@ -100,7 +104,7 @@ The most performance-sensitive surface in the entire app. Rules:
 ### Push (FCM) for Engagement Events
 
 - Data messages, not notification messages (client decides whether to render).
-- High-priority for genuine engagement (follow, mention, DM); normal-priority for promotional.
+- Use high priority only for time-sensitive, user-visible notifications, with normal priority for other work. Treat push as a hint; refresh/reconcile missed updates.
 - Per-category notification channels so users can mute promo separately from DMs.
 - See [`mobile-system-design/push-notifications.md`](../mobile-system-design/push-notifications.md).
 
@@ -122,7 +126,7 @@ sequenceDiagram
     App->>FeedVM: instantiate
     FeedVM->>Room: page 0 cached?
     Room-->>FeedVM: cached posts (yes)
-    FeedVM-->>User: render cached feed (~300ms TTID)
+    FeedVM-->>User: render retained feed (example 300ms content target)
     FeedVM->>FeedApi: GET /v1/feed?cursor= (parallel)
     FeedApi-->>FeedVM: fresh posts (~700ms)
     FeedVM->>Room: upsert
@@ -141,15 +145,17 @@ sequenceDiagram
     participant Api
 
     UI->>Repo: like(postId)
-    Repo->>Local: UPDATE posts SET liked=true, likeCount=likeCount+1 WHERE id=postId
-    Local-->>UI: emit updated post (instant heart animation)
-    Repo->>Out: enqueue {postId, action=like, key=UUID}
+    Repo->>Local: BEGIN transaction
+    Repo->>Local: UPDATE desired like state for account + post
+    Repo->>Out: INSERT stable operation key + desired state
+    Repo->>Local: COMMIT transaction
+    Local-->>UI: emit pending like state
     Out->>Api: POST /v1/engagement (Idempotency-Key)
     Api-->>Out: 200 OK
     Out->>Out: dequeue
 ```
 
-Notice the user sees the like instantly; the server roundtrip is invisible. If the server rejects (rate limit, post deleted), the next feed refresh reconciles.
+Notice the user sees the like instantly; the server roundtrip is invisible. Keep pending choices while retryable failures remain. Reconcile a permanent rejection explicitly; a refresh must not silently erase a queued choice or move work to a different account.
 
 ### Short-Video Playback
 
@@ -174,7 +180,7 @@ sequenceDiagram
     UI->>Player: prepare item N+1
 ```
 
-The player pool is essential. Instantiating an `ExoPlayer` per card crashes the heap; pooling 2-3 and recycling them is the working model.
+The player pool is essential. Unbounded per-card players can exhaust decoder or memory resources. A bounded, measured pool is one policy; its size depends on the device, codec and preloading requirements.
 
 ---
 
@@ -190,19 +196,19 @@ The player pool is essential. Instantiating an `ExoPlayer` per card crashes the 
 | **Profile views** | Cached for recently-viewed; new profiles blocked. |
 | **Video playback** | Cached segments play; new videos blocked. |
 
-The general rule, like consumer apps: **anything previously seen is available; new content requires network**.
+The general rule, like consumer apps: **retained cached content can remain available; missing, evicted or no-longer-authorized content needs explicit handling**.
 
 ---
 
 ## Security
 
-- **TLS 1.3 + cert pinning** at the BFF. See [`security/certificate-pinning.md`](../security/certificate-pinning.md).
+- **HTTPS with normal certificate/hostname validation.** Optional pinning on owned endpoints requires a rotation and recovery policy. See [`security/certificate-pinning.md`](../security/certificate-pinning.md).
 - **OAuth + PKCE** for sign-in; persist tokens only when required, using a versioned ciphertext envelope protected by Android Keystore. Anonymous browsing is typically allowed for discovery.
 - **Play Integrity** to deter bot accounts and scripted engagement. Server-side evaluation. See [`security/attestation.md`](../security/attestation.md).
 - **Content moderation hooks.** Image / video uploads server-scanned for policy violations before publishing. Client merely uploads; server gates.
 - **Per-account visibility.** Private accounts, blocked users, muted users — server-enforced. Client renders the server's authoritative visibility decisions.
-- **DM E2EE optional** on some platforms (libsignal SDK boundary).
-- **Privacy controls.** Granular opt-out for personalized tracking; data-deletion path on request; GDPR / CCPA compliant.
+- **DM E2EE is a product/security decision**, with explicit protocol, identity, key lifecycle and implementation-support boundaries.
+- **Privacy controls.** Granular opt-out for personalized tracking; data-deletion and retention controls appropriate to the product and jurisdiction. These features alone do not establish GDPR/CCPA compliance.
 - **No FLAG_SECURE** on most screens (social media is share-friendly by design).
 
 ---
@@ -248,7 +254,7 @@ See [`observability/dashboards.md`](../observability/dashboards.md), [`observabi
 
 ### Per-user scaling
 
-- Client is stateless; Room cache bounded per surface; old posts evicted.
+- Client retains account-scoped cache and pending mutations; bound the cache per surface while preserving accepted unsynced work.
 - Eventual consistency for counters and engagement.
 
 ### Server-side fan-out
@@ -302,6 +308,19 @@ See [`observability/dashboards.md`](../observability/dashboards.md), [`observabi
 
 ---
 
+## Further Reading
+
+- [Compose stability contracts](https://developer.android.com/develop/ui/compose/performance/stability/fix)
+- [Compose state-derived effects](https://developer.android.com/develop/ui/compose/side-effects)
+- [Android lifecycle versus composition](https://developer.android.com/topic/libraries/architecture/lifecycle)
+- [Coil cache configuration](https://coil-kt.github.io/coil/image_loaders/)
+- [Paging database/network consistency](https://developer.android.com/topic/libraries/architecture/paging/v3-network-db)
+- [SQLite atomic transactions](https://www.sqlite.org/lang_transaction.html)
+- [FCM user-visible message priority](https://firebase.google.com/docs/cloud-messaging/android-message-priority)
+- [Signal libsignal support and API stability](https://github.com/signalapp/libsignal/blob/main/README.md)
+
+---
+
 ## Related
 
 - [`mobile-system-design/news-feed.md`](../mobile-system-design/news-feed.md) — feed reasoning exercise.
@@ -315,4 +334,4 @@ See [`observability/dashboards.md`](../observability/dashboards.md), [`observabi
 
 ---
 
-> **In short:** Social media optimizes for scroll smoothness, engagement velocity, and ranking-feedback collection at massive scale. Render-from-cache, refresh-in-background. Optimistic engagement. Server-authoritative ranker; client is a thin render + telemetry surface. Where banking refuses to cache, social media caches obsessively to never block on a network.
+> **In short:** Social media optimizes for scroll smoothness, engagement velocity, and ranking-feedback collection at massive scale. Render-from-cache, refresh-in-background. Optimistic engagement. Server-authoritative ranker; client is a thin render + telemetry surface. This blueprint uses retained feed data aggressively while defining loading, rejection and empty-cache outcomes. Banking cache policy is product-specific, and neither blueprint eliminates network failures.

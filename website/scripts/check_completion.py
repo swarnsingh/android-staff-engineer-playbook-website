@@ -17,7 +17,7 @@ def fingerprints():
   'website/design-system/components/bundle.js','website/tools/browser_audit_runner.js',
   'website/tools/ux_audit_runner.js','website/tools/prepare_browser_audit.py']
  files += ['website/scripts/design_tokens.py']
- files += ['website/content/principles.json','website/content/patterns.json']
+ files += ['website/content/principles.json','website/content/patterns.json','website/content/reference-architectures.json']
  files += ['website/scripts/static_figures.py','website/content/static-figures.json']
  files += ['website/content/code-pairs.json','website/content/code-kotlin-only.json','website/scripts/check_cs_code.py']
  files += [str(f.relative_to(ROOT)) for f in (ROOT/'website/content/blend').rglob('*.blend')]
