@@ -46,4 +46,4 @@ The outer box is the ownership boundary. Arrows describe event processing; they 
 
 A durable upload needs more than a saved Uploading label. Persist the operation ID, payload reference, progress that can be recovered, and pending effect intent under an atomic local contract. After a crash, reconcile an uncertain server result before repeating sensitive work. Otherwise the machine can restore a plausible state while forgetting the operation it promised to perform.
 
-[Source: transactional outbox and duplicate handling](https://docs.aws.amazon.com/prescriptive-guidance/latest/cloud-design-patterns/transactional-outbox.html).
+[Source: transactional outbox and duplicate handling](https://github.com/aws-samples/transactional-outbox-pattern).

@@ -64,7 +64,7 @@ The content layer supplies content and component selection only. Layout and beha
 - **Figures / step-throughs:** Trust-chain and stack enforcement maps; manual pin-overlap trace.
 - **Production / staff decisions:** Balance added trust restrictions against outage/recovery risk and installed-client lifetime.
 - **Prerequisites:** TLS; key management.
-- **Official sources:** [Android: Network Security Configuration](https://developer.android.com/privacy-and-security/security-config); [OkHttp: HTTPS](https://square.github.io/okhttp/features/https/).
+- **Official sources:** [Android: Network Security Configuration](https://developer.android.com/privacy-and-security/security-config); [OkHttp: HTTPS](https://lysine.dev/okhttp/features/https/).
 
 ## 7. Security: App and Device Attestation
 

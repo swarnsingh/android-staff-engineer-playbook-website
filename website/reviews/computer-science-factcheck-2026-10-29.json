@@ -313,7 +313,7 @@
   "new": "Android Studio's Layout Inspector shows recomposition and skip counts per composable",
   "reason": "Recomposition counts are a Layout Inspector feature.",
   "sources": [
-   "https://developer.android.com/develop/ui/compose/tooling/layout-inspector"
+   "https://developer.android.com/develop/ui/compose/tooling/debug#recomposition-counts"
   ],
   "status": "proposed"
  },

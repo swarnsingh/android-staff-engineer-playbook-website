@@ -51,7 +51,7 @@ Big-O, Linked Lists, Recursion and Backtracking, Dynamic Programming, and Greedy
 | CSG03 | medium | Graphs | The quoted message is not what Gradle prints; Gradle reports a task cycle. | [source](https://docs.gradle.org/current/userguide/build_lifecycle.html) |
 | CSG04 | medium | Graphs | LinkedIn documents its own graph database, LIquid. | [source](https://engineering.linkedin.com/blog/2020/liquid-the-soul-of-a-new-graph-database-part-1) |
 | CSG05 | low | Graphs | The scandal broke in 2018. | [source](https://en.wikipedia.org/wiki/Facebook%E2%80%93Cambridge_Analytica_data_scandal) |
-| CSG06 | low | Graphs | Recomposition counts are a Layout Inspector feature. | [source](https://developer.android.com/develop/ui/compose/tooling/layout-inspector) |
+| CSG06 | low | Graphs | Recomposition counts are a Layout Inspector feature. | [source](https://developer.android.com/develop/ui/compose/tooling/debug#recomposition-counts) |
 | CSG07 | low | Graphs | The diagram shows four edges. | Diagram inspection |
 | CSG08 | low | Graphs | Nodes outside the cycle can still be emitted; the code already checks the output size. | Code inspection |
 | CSS01 | high | System Complexity | The sentence states a ratio and contradicts it, with no source. | Internal consistency |

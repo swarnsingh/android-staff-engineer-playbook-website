@@ -13,7 +13,7 @@
       "intro": "Separate admission, processing and acknowledgement without hiding overload.",
       "sources": [
         "https://developer.android.com/topic/architecture/data-layer/offline-first",
-        "https://docs.aws.amazon.com/prescriptive-guidance/latest/cloud-design-patterns/transactional-outbox.html"
+        "https://github.com/aws-samples/transactional-outbox-pattern"
       ]
     },
     {
@@ -116,7 +116,7 @@
       "reason": "Actions are optional and their trigger placement is not an execution-delivery guarantee.",
       "sources": [
         "https://www.w3.org/TR/scxml/#onentry",
-        "https://docs.aws.amazon.com/prescriptive-guidance/latest/cloud-design-patterns/transactional-outbox.html"
+        "https://github.com/aws-samples/transactional-outbox-pattern"
       ],
       "status": "approved",
       "validation": "Verified against the cited primary API/specification; exact original text matches once. Actions are optional and their trigger placement is not an execution-delivery guarantee."
@@ -189,7 +189,7 @@
       "new": "For uploads or purchases that must recover after process death, persist sufficient state and pending-effect intent atomically, for example with an outbox. Execute effects using stable operation IDs, retain outcomes and reconcile uncertain remote results. Persisting a state name alone can leave a crash gap; idempotent retries address duplicates but do not create missing effect records. See [`../distributed-systems/idempotency.md`](../distributed-systems/idempotency.md).",
       "reason": "Persisted state and idempotency alone do not close the atomic state/effect-intent gap.",
       "sources": [
-        "https://docs.aws.amazon.com/prescriptive-guidance/latest/cloud-design-patterns/transactional-outbox.html"
+        "https://github.com/aws-samples/transactional-outbox-pattern"
       ],
       "status": "approved",
       "validation": "Verified against the cited primary API/specification; exact original text matches once. Persisted state and idempotency alone do not close the atomic state/effect-intent gap."
@@ -250,7 +250,7 @@
       "reason": "Entry/exit classifications cannot guarantee once-only execution after recovery.",
       "sources": [
         "https://www.w3.org/TR/scxml/#onentry",
-        "https://docs.aws.amazon.com/prescriptive-guidance/latest/cloud-design-patterns/transactional-outbox.html"
+        "https://github.com/aws-samples/transactional-outbox-pattern"
       ],
       "status": "approved",
       "validation": "Verified against the cited primary API/specification; exact original text matches once. Entry/exit classifications cannot guarantee once-only execution after recovery."
@@ -299,7 +299,7 @@
       "new": "- **Recovery.** Durable state, recoverable effect intent, idempotent or reconciled remote work and an explicit replay policy work together. A state name plus an idempotency claim is not a complete recovery protocol.",
       "reason": "Recovery also requires durable effect intent and a reconciliation policy.",
       "sources": [
-        "https://docs.aws.amazon.com/prescriptive-guidance/latest/cloud-design-patterns/transactional-outbox.html"
+        "https://github.com/aws-samples/transactional-outbox-pattern"
       ],
       "status": "approved",
       "validation": "Verified against the cited primary API/specification; exact original text matches once. Recovery also requires durable effect intent and a reconciliation policy."
@@ -347,7 +347,7 @@
       "new": "7.  **A file-upload pipeline persists state on every transition. What property must the side effects have for this to be safe?**\n    Recovery must retain enough durable state and effect intent to know what remains to do. Stable operation IDs and idempotent effects make retries safe when execution may have occurred already; uncertain remote outcomes may require reconciliation. State and pending intent should commit atomically so an effect is not lost before it can be retried.",
       "reason": "Idempotency handles duplicates but does not alone prevent missing effect execution.",
       "sources": [
-        "https://docs.aws.amazon.com/prescriptive-guidance/latest/cloud-design-patterns/transactional-outbox.html"
+        "https://github.com/aws-samples/transactional-outbox-pattern"
       ],
       "status": "approved",
       "validation": "Verified against the cited primary API/specification; exact original text matches once. Idempotency handles duplicates but does not alone prevent missing effect execution."
@@ -570,7 +570,7 @@
       "new": "9.  **How would you design a SQLite-backed queue to efficiently allow batching of 50 items at a time?**\n    Select or atomically claim up to 50 eligible operations in a deterministic order, retain their stable IDs, and send them under a defined per-item or atomic-batch server contract. Acknowledge only confirmed successes in a local transaction. Handle partial responses and uncertain outcomes without deleting unconfirmed operations; concurrent workers need leases or transactional claims.",
       "reason": "A 50-item response is not necessarily atomic success for every item; claims and acknowledgments must match the server contract.",
       "sources": [
-        "https://docs.aws.amazon.com/prescriptive-guidance/latest/cloud-design-patterns/transactional-outbox.html",
+        "https://github.com/aws-samples/transactional-outbox-pattern",
         "https://www.sqlite.org/lang_transaction.html"
       ],
       "status": "approved",
@@ -743,7 +743,7 @@
       "reason": "Commands do not require direct calls and events can trigger required business work under an explicit protocol.",
       "sources": [
         "https://learn.microsoft.com/en-us/azure/architecture/guide/architecture-styles/event-driven",
-        "https://docs.aws.amazon.com/prescriptive-guidance/latest/cloud-design-patterns/transactional-outbox.html"
+        "https://github.com/aws-samples/transactional-outbox-pattern"
       ],
       "status": "approved",
       "validation": "Checked against the cited primary API, specification or owner documentation; exact original text matches once. Commands do not require direct calls and events can trigger required business work under an explicit protocol."
@@ -793,7 +793,7 @@
       "reason": "A replay slot alone does not ensure critical-event delivery across process death or prevent duplicates.",
       "sources": [
         "https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines.flow/-shared-flow/",
-        "https://docs.aws.amazon.com/prescriptive-guidance/latest/cloud-design-patterns/transactional-outbox.html"
+        "https://github.com/aws-samples/transactional-outbox-pattern"
       ],
       "status": "approved",
       "validation": "Checked against the cited primary API, specification or owner documentation; exact original text matches once. A replay slot alone does not ensure critical-event delivery across process death or prevent duplicates."

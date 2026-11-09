@@ -57,7 +57,7 @@ Each ID below is a proposal for owner consideration, not a correction status. Ac
 
 In addition to the finding sources above, the following primary documents were checked during authoring:
 
-- [OkHttp interceptors](https://square.github.io/okhttp/features/interceptors/): application/network middleware and response ownership; the refresh stepper traces the original bounded authenticator's success and terminal-failure paths rather than adding an untested auth implementation.
+- [OkHttp interceptors](https://lysine.dev/okhttp/features/interceptors/): application/network middleware and response ownership; the refresh stepper traces the original bounded authenticator's success and terminal-failure paths rather than adding an untested auth implementation.
 - [Android Keystore](https://developer.android.com/privacy-and-security/keystore): non-exportability, hardware assurance and compromised-process limits. Restore/recovery follows the source chapter's stated device-key policy; no promise of recovery of every vault.
 - [BLE scanning](https://developer.android.com/develop/connectivity/bluetooth/ble/find-ble-devices): stop conditions and bounded scan lifetime. Version-specific permissions remain in the full original and its official links, not a new hard-coded permission matrix.
 - [Health Connect sync](https://developer.android.com/health-and-fitness/health-connect/sync-data): upserts/deletions and token expiry. The transaction/replay animation is an application pattern following the original, not a claim that Health Connect provides an app-database transaction.

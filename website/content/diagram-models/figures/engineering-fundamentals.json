@@ -3287,7 +3287,7 @@
    }
   ],
   "sources": [
-   "https://docs.aws.amazon.com/prescriptive-guidance/latest/cloud-design-patterns/transactional-outbox.html",
+   "https://github.com/aws-samples/transactional-outbox-pattern",
    "https://learn.microsoft.com/en-us/azure/architecture/guide/architecture-styles/event-driven"
   ]
  },

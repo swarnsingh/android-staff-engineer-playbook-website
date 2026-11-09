@@ -284,7 +284,7 @@
     "sources": [
       "https://docs.stripe.com/api/idempotent_requests",
       "https://www.postgresql.org/docs/current/transaction-iso.html",
-      "https://docs.aws.amazon.com/prescriptive-guidance/latest/cloud-design-patterns/transactional-outbox.html"
+      "https://github.com/aws-samples/transactional-outbox-pattern"
     ]
   },
   {
