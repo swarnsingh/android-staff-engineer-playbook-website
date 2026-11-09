@@ -4,20 +4,19 @@
 
 ---
 
+This packet-based process is one organizational model. Confirm your employer’s current rubric, decision authority, timing, role availability and evidence rules. All example achievements and metrics below are fictional; they are not production results, universal thresholds or a guarantee of promotion. Preserve colleagues’ privacy and company retention rules when saving evidence.
+
 ## The Promotion Truth
 
-- Promotions are made by committees, not by your manager alone. Your EM is your *sponsor*; the committee is the *decision-maker*.
-- Committees evaluate against a rubric. Your packet is the evidence that you've been operating against that rubric *for at least two cycles*.
-- You can't be promoted on a single brilliant project. You can be promoted on a consistent pattern.
-- Most denials are not about technical ability; they're about *insufficient evidence of the right kind of impact*. Often the work was done, the case wasn't made.
+- Organizations differ: some use committees, others manager/leadership decisions. Identify the actual process and your sponsor.
+- Sustained evidence is useful, but no universal two-cycle or project-count minimum applies. A single initiative may contain several kinds of impact; repeated small work may also be significant.
+- A packet should distinguish your contribution, collaborators, measured outcomes and uncertainty. Rubric fit, available scope, business need, timing and bias can affect a decision; missing documentation is not the explanation for every denial.
 
-The Senior-to-Staff jump is the hardest because the rubric shifts from "great IC work" to "great work that lifts the organization." Until you internalize that shift, you'll be doing senior work and waiting to be discovered.
-
----
+Use the local rubric and regular feedback to decide which opportunities are useful. Career development remains valuable even where Staff is not an available or desired next role.
 
 ## The Brag Document
 
-You will not remember what you did in February when you write your H2 review in October. You will undercount your impact by 50-70% from memory. The brag document fixes this.
+You will not remember what you did in February when you write your H2 review in October. Memory can omit useful evidence; no universal 50–70% undercount is established. The brag document fixes this.
 
 ### The format
 
@@ -93,7 +92,7 @@ Each quarter:
 4. Agree: am I trending? What do I need more of next quarter?
 5. Update the project hunt.
 
-This is calendar work, not heroics. Promotions happen because of consistent quarterly checkpoints, not because of brilliant Q3.
+This is calendar work, not heroics. Checkpoints help expose gaps early; they do not guarantee a promotion or substitute for the actual decision process.
 
 ---
 
@@ -130,7 +129,7 @@ For each major initiative, use the STAR format:
 
 **Result:** P90 build time: 22 min → 6 min. P50 incremental build: 6 min → 1.4 min. Internal survey shows 87% of engineers report meaningful productivity improvement.
 
-**Impact in business terms:** Recovered ~7 engineer-hours/day across the org. At fully-loaded cost, ~$1.4M annualized productivity recovery.
+**Impact in business terms (hypothetical model):** If measured blocked time recovers 7 engineer-hours/day for 220 working days at an assumed $100/hour, that is 1,540 hours or $154,000 of modeled capacity/year. It is not realized cash savings; distinguish build elapsed time from blocked attention, adoption, overlap and attribution. Replace assumptions with evidence.
 
 ### Initiative 2: ...
 
@@ -166,8 +165,8 @@ Links: RFCs, PRs, dashboards, recorded talks. Make it easy for the committee to 
 
 - **Pattern, not peak.** Three Staff-shaped initiatives over 18 months beats one heroic project.
 - **Verifiable evidence.** Links to RFCs, PRs, before/after dashboards. Adjectives without numbers lose to numbers without adjectives.
-- **Business framing.** Translate "we modularized" into "we recovered $1.4M of engineer productivity."
-- **Cross-team breadth.** Staff is measured on impact *outside* your team. If all your evidence is intra-team, you're being promoted to a stronger Senior, not to Staff.
+- **Business framing.** Explain the measured change and its modeled capacity value, with assumptions and uncertainty. Do not convert build latency directly into claimed cash savings.
+- **Cross-team breadth.** Cross-team impact matters in some rubrics; other Staff roles have deep team/domain scope. Evaluate against the actual role rather than team count alone.
 - **Sponsor diversity.** A packet with feedback from just your direct EM is weaker than one with feedback from a peer EM, an iOS lead, a Product Manager, and a Director.
 
 ### What kills packets
@@ -182,7 +181,7 @@ Links: RFCs, PRs, dashboards, recorded talks. Make it easy for the committee to 
 
 ## Handling "No"
 
-Most Staff promotions are denied at least once. The denial is data, not a verdict.
+A denial is possible; no universal denial rate is established. Ask for specific feedback and assess whether the process and available opportunities support your goals.
 
 ### The Junior reaction
 
@@ -201,21 +200,21 @@ This locks you out of the next cycle.
 4. **Recalibrate the timeline.** Two more brag-doc cycles, then re-submit.
 5. **Don't job-hop just because of the denial.** Job-hopping for a title at another company often resets you to the bar at that company. The promotion you earn at your current company is more durable.
 
-A "no" with feedback you can act on is a *plan*, not a rejection. Most successful Staff promotions reference the previous denial in the resubmission ("To address the feedback from the H1 cycle, I led the cross-platform API standardization...").
+A "no" with feedback you can act on is a *plan*, not a rejection. A resubmission can explain how it addressed prior feedback ("To address the feedback from the H1 cycle, I led the cross-platform API standardization...").
 
 ---
 
 ## Common Anti-Patterns
 
 - **The Silent Martyr.** "If I just work hard, I'll be noticed." Visibility is part of the job. Present at all-hands. Write engineering blog posts. Take credit publicly.
-- **The Competitor.** Viewing peer Seniors as rivals for a promotion slot. There's no slot — Staff is a bar, not a quota. Tearing down peers fails the "lifts others" criterion.
+- **The Competitor.** Viewing peer Seniors as rivals for a promotion slot. Role availability, budgets or calibration constraints can matter as well as a performance bar. Clarify the actual process rather than assuming unlimited slots. Tearing down peers fails the "lifts others" criterion.
 - **The Heroics Trap.** A single 6-week sprint that saved the launch is a Senior story. Sustained Staff-level work over 18 months is a Staff story. Heroics burn you out and skew your packet.
 - **The Vague Brag Doc.** "Worked on cool stuff" entries. Useless 6 months later.
 - **Sandbagging your own work.** Underselling impact because you're modest. The committee can't infer what you don't write.
 - **Inflating your own work.** Claiming credit for things you contributed to but didn't lead. The committee verifies; inflation costs you credibility for years.
 - **Surprised at review time.** No quarterly checkpoints with your EM; you submit a packet they haven't co-developed; they can't defend it. The packet must be a *partnership*.
 - **Treating Staff as a title, not a role.** Some people just want the title. The committee can smell it. Staff is more responsibility, not just more pay.
-- **Asking for promotion before you're consistently operating at the next level.** Two cycles of Staff-level work is the minimum. You must already be doing the job before you ask for the title.
+- **Asking for promotion before you're consistently operating at the next level.** Discuss readiness and opportunities early. Sustained impact may be required, but the evaluation period and criteria come from the current local process.
 
 ---
 
@@ -249,7 +248,7 @@ A "no" with feedback you can act on is a *plan*, not a rejection. Most successfu
 7. **You're denied. What's the first conversation you have with your EM?**
    Ask for the specific rubric gap identified by the committee (e.g., "insufficient cross-team evidence"), validate it, and immediately map out 1-2 projects for the next 6 months to address that exact gap.
 8. **When is the right time to leave for another company instead of waiting for the next cycle?**
-   Only if you are systematically blocked from Staff-level scope (e.g., zero cross-team opportunities, unsupportive leadership, or moving goalposts). Job-hopping merely for a title often resets your credibility to the new company's bar.
+   Compare role fit, learning, compensation, well-being, available scope and the credibility of each process. An external title is not automatically less durable than an internal promotion; evaluate responsibilities and expectations, not just the label.
 
 ---
 
@@ -262,3 +261,7 @@ A "no" with feedback you can act on is a *plan*, not a rejection. Most successfu
 - [Will Larson — "Staff Engineer"](https://staffeng.com/book) — the canonical reference.
 - [Julia Evans — "Get your work recognized: write a brag document"](https://jvns.ca/blog/brag-documents/) — the technique's origin.
 - [Tanya Reilly — "The Staff Engineer's Path"](https://www.oreilly.com/library/view/the-staff-engineers/9781098118723/) — the chapter on packets is excellent.
+- [Dropbox promotion principles (company-specific)](https://dropbox.github.io/dbx-career-framework/promotion_principles.html)
+- [Will Larson: promotion packets](https://staffeng.com/guides/promo-packets/)
+- [Will Larson: getting the title where you are](https://staffeng.com/guides/getting-the-title-where-you-are/)
+- [Staff role variants](https://staffeng.com/guides/staff-archetypes/)

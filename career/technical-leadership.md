@@ -4,6 +4,8 @@
 
 ---
 
+The EM/Staff comparison is a heuristic, not an authority matrix. Product, management and technical leadership share decisions under local delegation. Role variants differ in coding time and planning horizon; the numerical examples are fictional and require evidence before use in a review packet.
+
 ## Leadership ≠ Management
 
 | Management (EM) | Technical Leadership (Staff) |
@@ -41,7 +43,7 @@ The org has dozens of broken things nobody owns. Pick one; fix it; document it. 
 
 ### Writing things down
 
-The engineer who writes the architecture doc *is* the architect. The engineer who writes the runbook *is* the on-call lead. The engineer who writes the hiring rubric *defines* the team's bar. Writing converts your opinion into the team's reality.
+Writing can make decisions and operational knowledge durable. Authorship alone does not confer architect, incident-command or hiring authority; name owners and secure the appropriate reviews.
 
 ---
 
@@ -54,7 +56,7 @@ Culture is what the team *tolerates*. The Staff engineer is one of the small gro
 | Cultural signal | What it says about the team |
 |---|---|
 | PRs land with 0 tests | The team doesn't believe tests pay back |
-| PRs require 2 approvals from CODEOWNERS | The team values consensus over speed |
+| PRs require 2 approvals plus code-owner review | The policy requires review coverage; it does not establish consensus or the team’s motives |
 | Crash-rate gating blocks the rollout | The team prioritizes user experience over launch dates |
 | Post-mortems are blameless and rigorous | The team learns from incidents |
 | Post-mortems become finger-pointing | The team will hide future incidents |
@@ -68,13 +70,13 @@ Culture is what the team *tolerates*. The Staff engineer is one of the small gro
 3. **Write the post-mortem template.** Make blameless analysis the default. Lead by example: write yours rigorously, especially the ones where you made the mistake.
 4. **Document the decision process.** RFCs in a folder; ADRs in another folder. Make it impossible for a new engineer to argue "we never decided that."
 5. **Show up at hiring.** The bar you set in interviews is the bar you'll work with for years.
-6. **Public credit, private criticism.** Public praise costs nothing; never criticize publicly.
+6. **Public credit, respectful feedback.** Keep sensitive personal feedback private; technical disagreements and factual corrections can belong in the shared review. Critique the work and explain the evidence.
 
 ---
 
 ## The Tech Lead vs The Staff Engineer
 
-In many orgs, a Senior engineer becomes the **Tech Lead** (TL) of a squad. The TL is delivery-focused: shipping the team's roadmap on time. A Staff engineer operates *above* the TL layer.
+In many orgs, a Senior engineer becomes the **Tech Lead** (TL) of a squad. The TL is delivery-focused: shipping the team's roadmap on time. A Staff engineer may be a team’s Tech Lead, or may operate across teams in another role. Tech Lead is often a responsibility rather than a universal level below Staff.
 
 | Role | Scope | Primary metric |
 |---|---|---|
@@ -108,7 +110,7 @@ Glue work is invisible by default. Two things make it visible-enough to count:
 1. **Document the work in writing.** RFCs, runbooks, blog posts, hiring rubrics. The artifact is the evidence.
 2. **Surface impact in business terms.** "I aligned the analytics schema across platforms; the data team estimates this recovered ~30% of previously-corrupt event data." That's a sentence the EM can put in your packet.
 
-The danger: spending 100% of your time on glue work and burning out. Reilly's rule: cap glue work at ~20% of your time. The other 80% is high-leverage engineering. Glue is the lubricant, not the engine.
+The danger: spending 100% of your time on glue work and burning out. Reilly emphasizes allocating and recognizing glue work deliberately; this source does not establish a universal 20% cap. Agree on a sustainable mix that supports the intended career path and values this work appropriately.
 
 ---
 
@@ -158,7 +160,7 @@ Sponsorship is where Staff engineers' influence becomes generational. The engine
 ## Anti-Patterns
 
 - **The Dictator.** Dictating choices without building anything. "We're moving to MVI; just do it." Engineers tune you out. Lead by example: write the first prototype, then ask the team to adopt the pattern.
-- **The Architecture Astronaut.** All UML, no code. Decisions look elegant on paper, fail on the compiler. Stay 30-40% hands-on.
+- **The Architecture Astronaut.** All UML, no code. Decisions look elegant on paper, fail on the compiler. Maintain technical contact appropriate to the role, without a fixed coding quota.
 - **Abandoning code.** Stops coding entirely; technical skills atrophy; can't accurately assess risk. The team stops trusting your judgment.
 - **Doing your EM's job.** Slipping into people management because no EM is available. Noble; destroys your bandwidth. Lobby for the hire.
 - **Glue-work-only.** Doing 100% lubrication, 0% engine. Burns out within a year; doesn't ship anything you can put in a packet.
@@ -189,7 +191,7 @@ Sponsorship is where Staff engineers' influence becomes generational. The engine
 2. **Why can't you be a Technical Leader on authority alone?**
    Because a Tech Leader lacks HR authority (cannot fire/promote), their influence relies entirely on the respect and trust earned from peers by consistently demonstrating sound technical judgment and driving successful outcomes.
 3. **Give an example of "owning the unowned." What's the smallest version that still demonstrates leadership?**
-   Writing a missing runbook for on-call engineers. It requires no permission, solves an immediate pain point, scales knowledge, and demonstrates accountability for the team's operational health.
+   Writing a missing runbook for on-call engineers. Drafting it is a low-cost initiative; have operational owners verify it before responders rely on it. It can solve an immediate pain point, scales knowledge, and demonstrates accountability for the team's operational health.
 4. **What's the difference between mentorship and sponsorship? Why is sponsorship harder?**
    Mentorship is providing advice; sponsorship is using your own reputation capital to put someone else in a high-visibility opportunity (e.g., letting them present an RFC to leadership). Sponsorship is harder because if they fail, it reflects on your judgment.
 5. **How do you set engineering culture if you can't fire anyone?**
@@ -199,7 +201,7 @@ Sponsorship is where Staff engineers' influence becomes generational. The engine
 7. **What's the time horizon a Staff engineer should optimize for? How is it different from a Senior's?**
    A Staff engineer optimizes for a multi-year horizon (1-3 years), anticipating how scaling and business growth will stress the architecture. A Senior optimizes for the current sprint or quarter (the immediate roadmap).
 8. **How do you stay hands-on with code while taking on more meetings, mentorship, and writing?**
-   By aggressively saying no to low-leverage meetings, delegating well-defined feature execution, and intentionally carving out 30-40% of your week for deep work on complex, high-impact foundational tasks.
+   Protect implementation and investigation time appropriate to the role, delegate with clear ownership and revisit meeting load with the team. There is no universal 30–40% coding requirement.
 
 ---
 
@@ -213,3 +215,9 @@ Sponsorship is where Staff engineers' influence becomes generational. The engine
 - [Tanya Reilly — "Being Glue"](https://noidea.dog/glue) — the canonical talk.
 - [Charity Majors — "The Engineer/Manager Pendulum"](https://charity.wtf/2017/05/11/the-engineer-manager-pendulum/) — why these are different jobs.
 - [Lara Hogan — Influence and managing up resources](https://larahogan.me/resources/influence-manage-up/) — practical tools for navigating organizational influence.
+- [Will Larson: Staff archetypes](https://staffeng.com/guides/staff-archetypes/)
+- [Dropbox career-framework scope and limitations](https://dropbox.github.io/dbx-career-framework/)
+- [GitLab Staff role (company-specific example)](https://handbook.gitlab.com/job-description-library/engineering/development/backend/staff/)
+- [Tanya Reilly: Being Glue](https://www.noidea.dog/glue)
+- [Lara Hogan: sponsorship](https://larahogan.me/blog/what-sponsorship-looks-like/)
+- [Google respectful technical review](https://google.github.io/eng-practices/review/reviewer/comments.html)

@@ -1,0 +1,8 @@
+<!-- Teaching layer over the approved source 4520147. -->
+<!-- @opening -->
+<p class="story-lead">Several teams want a faster startup, but each measures a different screen and device. Before proposing a migration, define the affected journey and a baseline that lets them compare changes.</p>
+
+<!-- @before Navigating Total Ambiguity :: staff -->
+### Make the first decision small enough to test
+
+Agree on the user journey, a representative cohort and the outcome to measure. Separate unknowns you can resolve with a small experiment from constraints the decision owner must settle. Write down who will decide what to do after the experiment. [Staff role archetypes](https://staffeng.com/guides/staff-archetypes/).
