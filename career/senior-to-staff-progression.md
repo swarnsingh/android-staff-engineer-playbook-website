@@ -4,6 +4,8 @@
 
 ---
 
+The comparisons below illustrate one broad cross-team Staff role. Senior engineers also define ambiguous work and strategy; some Staff roles lead one team or focus deeply on a difficult technical problem. Titles, coding fractions, planning horizons and promotion timelines vary by organization. Use the current local rubric, not this chapter as a promotion checklist.
+
 ## What Stops Being The Job
 
 The Senior-to-Staff transition is mostly a process of *letting go* of behaviors that made you a great Senior:
@@ -72,7 +74,7 @@ The shorthand: deep in one specialty, broad across many adjacent ones.
 flowchart TB
     breadth["Breadth across adjacent domains<br/>API design · iOS · Backend · ML · Infrastructure"]
     breadth -->|"Depth in one specialty"| android["Android UI internals"]
-    android --> internals["Compose internals<br/>ART rendering pipeline<br/>GPU surface lifecycle<br/>snapshot system"]
+    android --> internals["Compose internals<br/>Android rendering pipeline<br/>GPU surface lifecycle<br/>snapshot system"]
 ```
 
 **Depth.** Be the org's authority on at least one thing. Common Staff Mobile specializations: Compose/Jetpack internals, build systems, performance/perf-profiling, security, multi-module architecture, the Kotlin compiler, a key vendor SDK (Stripe, Firebase, ExoPlayer).
@@ -107,7 +109,7 @@ A Staff engineer is comfortable contributing meaningfully at every row of this t
 
 ## How To Operate At Staff Before You Have The Title
 
-This is the entire game. Promotions are *trailing indicators*: you must operate at the next level for 6-18 months *before* the title is granted.
+This is the entire game. Promotions are *trailing indicators*: many organizations look for sustained next-level impact, but there is no universal 6–18 month requirement or guaranteed promotion date. Agree on expectations, scope availability and evaluation with your manager.
 
 ### The first 90 days
 
@@ -142,9 +144,9 @@ This is the entire game. Promotions are *trailing indicators*: you must operate 
 ## Anti-Patterns That Stall Staff Promotions
 
 - **The Hero Trap.** Working 80-hour weeks to fix every production bug yourself. Management sees a single point of failure hoarding knowledge, not a Staff scaling the team.
-- **The Architecture Astronaut.** Stops coding entirely; spends all day drawing UML diagrams; the architecture inevitably fails because the author is disconnected from the compiler's reality. Staff must stay hands-on with hard, risky engineering work (30-40% of the week).
-- **Waiting for permission.** "Can I lead this RFC?" — no, you write the RFC and tag the right reviewers. Asking signals you're not ready; doing signals you are.
-- **Confusing visibility with impact.** Speaking at conferences ≠ reducing crash rate by 1pp for 100M users. The first sometimes follows the second; never the reverse.
+- **The Architecture Astronaut.** Stops coding entirely; spends all day drawing UML diagrams; the architecture inevitably fails because the author is disconnected from the compiler's reality. Maintain enough direct technical contact for the role’s decisions; agree on implementation time rather than imposing a universal coding percentage.
+- **Waiting for permission.** "Can I lead this RFC?" — no, you write the RFC and tag the right reviewers. Propose and draft proactively, while agreeing on ownership, priority and any required approval before committing others or changing production. Asking for alignment is not evidence of unreadiness.
+- **Confusing visibility with impact.** Speaking at conferences ≠ reducing crash rate by 1pp for 100M users. Public explanation can also create impact through adoption or education; evaluate the outcome, not visibility alone.
 - **Slipping into people management.** Doing your EM's job because your team needs an EM. Noble; destroys your Staff bandwidth. Lobby for a competent EM hire; do not become one by default.
 - **All-or-nothing on cross-team work.** Spreading across 5 initiatives and finishing none. Pick 1-2 large bets per quarter and let smaller asks go.
 - **Avoiding politics.** Staff requires navigating org boundaries, conflicting priorities, and stakeholder management. Refusing to engage in "politics" means refusing to be Staff.
@@ -156,23 +158,9 @@ This is the entire game. Promotions are *trailing indicators*: you must operate 
 
 ## What Changes Day-To-Day
 
-A Senior engineer's calendar:
-- 60% deep coding work
-- 20% PR reviews + design discussions for their team
-- 10% 1:1s
-- 10% meetings
+The calendar changes with the role and phase of work. A Tech Lead may spend substantial time coordinating execution, an Architect on design and alignment, and a Solver on implementation and investigation. There is no universal 30–40% coding allocation or tenfold impact ratio.
 
-A Staff engineer's calendar:
-- 30-40% deep coding work (on intentionally chosen high-leverage projects)
-- 20% writing (RFCs, ADRs, post-mortems, documentation)
-- 20% cross-team meetings + decisions
-- 10-15% mentorship + sponsorship
-- 5-10% hiring + recruiting
-- 5% organizational citizenship (all-hands, blog posts, interviews)
-
-The deep-coding fraction *shrinks*, but its *leverage* multiplies. A Staff engineer's 10 hours of coding might land 10× the durable impact of a Senior's 30 hours.
-
----
+Agree on a sustainable mix of implementation, review, writing, mentorship and coordination. Revisit it when delivery stalls, technical context decays or important work depends on one person. Evaluate outcomes and handoff quality rather than treating fewer tickets or coding hours as proof of seniority.
 
 ## Probing Questions
 
@@ -200,9 +188,9 @@ The deep-coding fraction *shrinks*, but its *leverage* multiplies. A Staff engin
 5. **What's the difference between "Senior on a team" and "Staff working with that team"?**
    A Senior measures success by whether the team ships its OKRs. A Staff working with that team measures success by whether the team's architecture scales organizationally and integrates cleanly with the platform without causing systemic issues, regardless of team boundaries.
 6. **How do you balance staying hands-on with code while taking on more cross-team work?**
-   By deliberately shrinking coding time to 30-40% of your week and focusing strictly on high-leverage, complex, or unowned problems (like CI pipelines or core architecture), while delegating feature execution and spending the remaining time on prose, mentorship, and alignment.
+   Agree on the role’s needed balance of implementation, review and coordination; protect enough technical contact to make sound decisions and delegate with clear ownership. A fixed coding percentage is not a promotion criterion.
 7. **What's the right horizon for an architectural decision? When is it too far out to be useful?**
-   The right horizon for an architectural decision is 1-3 years, accounting for projected organizational scale and platform needs. It becomes too far out to be useful when it attempts to solve problems beyond 3-5 years, where uncertainty makes the assumptions unreliable.
+   Choose the horizon from the decision’s useful life, reversibility and evidence. Multi-year platform strategy and short-term incident decisions can both be Staff work; distant assumptions need explicit uncertainty and revisit triggers.
 8. **Why can't you be promoted to Staff just by being a really good Senior?**
    Because promotions are based on demonstrating impact at the *next* level's rubric. A really good Senior proves they can execute well-defined tasks flawlessly, but Staff requires proven ability to navigate total ambiguity, create leverage, and expand scope across the organization.
 
@@ -217,3 +205,6 @@ The deep-coding fraction *shrinks*, but its *leverage* multiplies. A Staff engin
 - [Tanya Reilly — "The Staff Engineer's Path"](https://www.oreilly.com/library/view/the-staff-engineers/9781098118723/) — canonical book; read it.
 - [Will Larson — "Staff Engineer: Leadership Beyond the Management Track"](https://staffeng.com/) — practitioner stories from Staff+ engineers.
 - [Charity Majors — "The Engineer/Manager Pendulum"](https://charity.wtf/2017/05/11/the-engineer-manager-pendulum/) — why you shouldn't slip into management by default.
+- [Will Larson: Staff archetypes](https://staffeng.com/guides/staff-archetypes/)
+- [Dropbox career-framework scope and limitations](https://dropbox.github.io/dbx-career-framework/)
+- [GitLab Staff role (company-specific example)](https://handbook.gitlab.com/job-description-library/engineering/development/backend/staff/)

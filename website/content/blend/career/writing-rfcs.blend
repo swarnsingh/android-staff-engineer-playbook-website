@@ -1,0 +1,8 @@
+<!-- Teaching layer over the approved source 4520147. -->
+<!-- @opening -->
+<p class="story-lead">Two teams read a proposal and agree that a retry must be safe. They disagree about which component owns the stable key. Make the ownership and failure case concrete enough to review before implementation.</p>
+
+<!-- @before Writing Discipline :: staff -->
+### Describe one failure path precisely
+
+Name the operation identity, who stores it and what the caller sees after a lost response. In the example below, a matching retry within the endpoint’s retention policy can replay the saved outcome. Record the final decision and its consequences once the review closes. [Documenting architecture decisions](https://cognitect.com/blog/2011/11/15/documenting-architecture-decisions).

@@ -1,0 +1,151 @@
+[
+  {
+    "path": "career/senior-to-staff-progression",
+    "diagram": "2feca392a5382ef0",
+    "number": 1,
+    "title": "Use breadth to connect teams and depth to solve hard problems",
+    "caption": "This example pairs awareness across neighboring domains with depth in Android UI internals. Staff responsibilities and the relevant specialty vary by organization.",
+    "sources": [
+      "https://staffeng.com/guides/staff-archetypes/"
+    ],
+    "kind": "map",
+    "nodes": [
+      {
+        "id": "breadth",
+        "title": "Breadth across domains",
+        "role": "neutral",
+        "detail": [
+          "API design, iOS, backend",
+          "ML and infrastructure"
+        ]
+      },
+      {
+        "id": "depth",
+        "title": "Android UI internals",
+        "role": "runtime",
+        "detail": "One specialty"
+      },
+      {
+        "id": "details",
+        "title": "Areas of depth",
+        "role": "runtime",
+        "detail": [
+          "Compose and rendering",
+          "GPU surfaces and snapshots"
+        ]
+      }
+    ],
+    "groups": [
+      {
+        "id": "scope",
+        "label": "Example skill profile",
+        "nodes": [
+          "breadth",
+          "depth",
+          "details"
+        ]
+      }
+    ],
+    "edges": [
+      {
+        "from": "breadth",
+        "to": "depth",
+        "label": "choose a specialty"
+      },
+      {
+        "from": "depth",
+        "to": "details",
+        "label": "build depth"
+      }
+    ]
+  },
+  {
+    "path": "career/writing-rfcs",
+    "diagram": "668833f1020a3902",
+    "number": 1,
+    "title": "A concrete retry example makes the idempotency contract reviewable",
+    "caption": "The backend claims the operation, persists its provider key and saves the result before replying. This endpoint’s matching retry replays a saved 200 within its deduplication policy.",
+    "sources": [
+      "https://docs.stripe.com/api/idempotent_requests"
+    ],
+    "kind": "sequence",
+    "participants": [
+      {
+        "id": "client",
+        "title": "Client",
+        "role": "client",
+        "detail": "Sends stable operation key"
+      },
+      {
+        "id": "bff",
+        "title": "Order backend",
+        "role": "runtime",
+        "detail": "Owns saved outcome"
+      },
+      {
+        "id": "pay",
+        "title": "Payment provider",
+        "role": "neutral",
+        "detail": "Receives provider key"
+      }
+    ],
+    "events": [
+      {
+        "from": "client",
+        "to": "bff",
+        "label": "Create order with key abc"
+      },
+      {
+        "at": "bff",
+        "label": "Claim account, key and payload hash"
+      },
+      {
+        "at": "bff",
+        "label": "Persist pending record and key p123"
+      },
+      {
+        "from": "bff",
+        "to": "pay",
+        "label": "Charge with saved key p123"
+      },
+      {
+        "from": "pay",
+        "to": "bff",
+        "label": "Payment result",
+        "style": "dashed"
+      },
+      {
+        "at": "bff",
+        "label": "Persist result before replying"
+      },
+      {
+        "from": "bff",
+        "to": "client",
+        "label": "200 OK",
+        "style": "dashed"
+      },
+      {
+        "over": [
+          "client"
+        ],
+        "text": "Reply is lost. The client retries the same operation.",
+        "role": "neutral"
+      },
+      {
+        "from": "client",
+        "to": "bff",
+        "label": "Retry with key abc and same payload"
+      },
+      {
+        "at": "bff",
+        "label": "Look up matching operation"
+      },
+      {
+        "from": "bff",
+        "to": "client",
+        "label": "Replay saved 200 in this example",
+        "style": "dashed"
+      }
+    ]
+  }
+]

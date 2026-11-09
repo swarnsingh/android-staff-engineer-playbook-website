@@ -1222,16 +1222,12 @@ window.PLAYBOOK_CATALOG = [
     "icon": "⌁",
     "chapters": [
       {
-        "title": "Career: Performance Reviews & The Promotion Packet",
-        "path": "career/performance-reviews-and-promotion.md"
+        "title": "Career: The Senior-to-Staff Progression (The Paradigm Shift)",
+        "path": "career/senior-to-staff-progression.md"
       },
       {
         "title": "Career: Scope and Ambiguity",
         "path": "career/scope-and-ambiguity.md"
-      },
-      {
-        "title": "Career: The Senior-to-Staff Progression (The Paradigm Shift)",
-        "path": "career/senior-to-staff-progression.md"
       },
       {
         "title": "Career: Technical Leadership",
@@ -1240,6 +1236,10 @@ window.PLAYBOOK_CATALOG = [
       {
         "title": "Career: Writing Technical Documents (RFCs, ADRs, 1-Pagers)",
         "path": "career/writing-rfcs.md"
+      },
+      {
+        "title": "Career: Performance Reviews & The Promotion Packet",
+        "path": "career/performance-reviews-and-promotion.md"
       }
     ]
   }

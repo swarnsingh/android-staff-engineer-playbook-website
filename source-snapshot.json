@@ -388,5 +388,20 @@
     "source_pr": 81,
     "scope": "Exact approved Reference Architectures index and all 8 chapters.",
     "method": "Exact git show bytes from merged main; SHA-256 over raw bytes."
+  },
+  "career_sha256": {
+    "career.md": "89f65f4f3c156ab0c1e565e73ab54ef170fd50f12e7a066fa29c370c9821d8a0",
+    "career/senior-to-staff-progression.md": "08151a6920203970f44a4bcc7f091bec751ceb1f30c6cfad60752297bf5492d5",
+    "career/scope-and-ambiguity.md": "24b3638a5790cb74cbead9c1459bee4be654036cad3de46b280d89d3ab6c29c2",
+    "career/technical-leadership.md": "ea62ea0e6467a15739652ecb38220cb88700243939cfd88433bc375d9a3b60d3",
+    "career/writing-rfcs.md": "232c61d6837da35f9d77c7eee8df54437dfb90456bec30b887409d82ae8b3274",
+    "career/performance-reviews-and-promotion.md": "1c3f8c1c07bb897597847d5e4a0880622fcd47cb1bf796c605ef363e0d606ed1"
+  },
+  "career_provenance": {
+    "repository": "https://github.com/swarnsingh/android-staff-engineer-playbook",
+    "commit": "45201470a80d644a12eac0d9ff787e34f09062a2",
+    "source_pr": 81,
+    "scope": "Exact approved Career index and all five chapters.",
+    "method": "Exact git show bytes from merged main; SHA-256 over raw bytes."
   }
 }

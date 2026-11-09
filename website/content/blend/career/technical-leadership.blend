@@ -1,0 +1,8 @@
+<!-- Teaching layer over the approved source 4520147. -->
+<!-- @opening -->
+<p class="story-lead">A shared component keeps breaking downstream apps. An engineer can fix the immediate bug, but the teams also need a decision about ownership and compatibility. Make the follow-through part of the technical proposal.</p>
+
+<!-- @before Technical Strategy (The Multi-Year Horizon) :: staff -->
+### Give the strategy a decision and an owner
+
+State which recurring decision the strategy should make easier. Name who will own the shared boundary and when you will check adoption. Scope this to the expectations of your organization and the people available to maintain it. [Staff role archetypes](https://staffeng.com/guides/staff-archetypes/).

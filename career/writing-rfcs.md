@@ -4,9 +4,11 @@
 
 ---
 
+The document lengths, alternatives counts, review cadences and numeric cases below are suggested examples, not universal RFC/ADR rules or observed results. A company’s internal RFC process differs from the Internet RFC series. Use local decision authority and name assumptions, measurements and unresolved risks.
+
 ## Why It Matters
 
-Code is read sequentially by compilers. Prose is read asynchronously by humans with varying contexts (Product, EM, CTO, junior engineers, the engineer who joins in 18 months). Staff-scope problems take weeks of human alignment before any code makes sense. The RFC is the tool that compresses that alignment.
+Compilers parse and analyze source under language rules; engineers use prose to explain context and tradeoffs. Prose is read asynchronously by humans with varying contexts (Product, EM, CTO, junior engineers, the engineer who joins in 18 months). Staff-scope problems take weeks of human alignment before any code makes sense. The RFC is the tool that compresses that alignment.
 
 The RFC also forces *you* to think. The act of writing "why" forces you to confront edge cases your code-thinking glossed over. A Staff engineer who writes RFCs catches their own bad ideas before the team does. The reviewer who comments "what about retry semantics?" saves you a week of debugging in three months.
 
@@ -42,9 +44,9 @@ The history book, written **after** a decision. Short (1-3 pages).
 
 - **Audience:** The engineer who joins in 18 months and asks "why did we build it this way?"
 - **Goal:** Capture decision context so it can't be relitigated without new information.
-- **Lives in:** Co-located with the topic it decides — e.g., a decision about the data layer lives in `android/data-and-di/`, a decision about transport in `backend-for-mobile/`. Filename pattern is `<choice-a>-vs-<choice-b>.md`. Never deleted; only superseded by a newer file that links back to it.
+- **Lives in:** Co-located with the topic it decides — e.g., a decision about the data layer lives in `android/data-and-di/`, a decision about transport in `backend-for-mobile/`. For this playbook’s reusable comparison guides, the filename pattern is `<choice-a>-vs-<choice-b>.md`; a project ADR may use a numbered decision log. Never deleted; only superseded by a newer file that links back to it.
 
-See [`../android/architecture/mvvm-vs-mvi.md`](../android/architecture/mvvm-vs-mvi.md), [`../backend-for-mobile/sse-vs-websockets.md`](../backend-for-mobile/sse-vs-websockets.md), and [`../android/data-and-di/hilt-vs-koin-vs-manual-di.md`](../android/data-and-di/hilt-vs-koin-vs-manual-di.md) for examples. Template: [`../templates/decision.md`](../templates/decision.md).
+See [`../android/architecture/mvvm-vs-mvi.md`](../android/architecture/mvvm-vs-mvi.md), [`../backend-for-mobile/sse-vs-websockets.md`](../backend-for-mobile/sse-vs-websockets.md), and [`../android/data-and-di/hilt-vs-koin-vs-manual-di.md`](../android/data-and-di/hilt-vs-koin-vs-manual-di.md) for reusable comparison guides, not accepted decisions in a consuming project. Template: [`../templates/decision.md`](../templates/decision.md).
 
 ### 1-Pager / Tech Spec
 
@@ -75,7 +77,7 @@ One paragraph. What you propose, why, and what changes for the reader.
 
 The current state of the world. Why this is a problem worth solving NOW (not 6 months ago, not 6 months from now). Include data:
 
-- Telemetry: "Crashlytics shows 4,200 ANRs/day on the cart screen, all SharedPreferences-related."
+- Telemetry: "Our diagnostics show 4,200 ANR events/day associated with the cart screen; traces suggest SharedPreferences disk work in the affected paths. Confirm denominators, reporting coverage and causal attribution."
 - Constraints: "Q3 OKRs include reducing ANR rate to <0.3%."
 - Org context: "Three teams have independently raised this in retros."
 
@@ -108,7 +110,7 @@ For each, state: the option, its pros, its cons, and *why you rejected it*. Thre
 
 How will we know this worked? Concrete numbers:
 
-- "ANR rate on cart screen drops from 4,200/day to <100/day within 30 days of rollout."
+- "Cart-screen ANR event count drops from 4,200/day to <100/day at comparable traffic; separately track user-perceived ANR rate with its defined denominator."
 - "Cold-start TTID p95 stays within current budget (no regression)."
 
 ## Risks & Open Questions
@@ -153,7 +155,7 @@ Optimize for the skimmer. Section headers should answer questions, not name topi
 
 | Weak | Strong |
 |---|---|
-| "ANRs are bad" | "ANRs are 0.8% of sessions; Play's threshold is 0.47%; we're at risk of demotion in Search." |
+| "ANRs are bad" | "User-perceived ANRs affect 0.8% of daily active users; Play's overall threshold is 0.47%; discoverability is at risk. See [SLO definitions](../observability/slos.md#mobile-implementation-android)." |
 | "This will be much faster" | "Cold start p95 drops from 1.8s to estimated 1.2s based on a prototype." |
 | "Many teams need this" | "Three teams (chat, feed, profile) have independently filed tickets for this." |
 
@@ -165,7 +167,7 @@ Same proposal, written three ways:
 
 > **For Product:** "We'll move our user-settings storage from a legacy library to its modern replacement. No user-visible change; eliminates a class of crashes that currently affects 0.3% of sessions."
 
-> **For VP:** "Eliminates ANRs that put us on Play's bad-behavior list. 3 engineer-weeks. Q3 OKR for stability."
+> **For VP:** "Targets the measured storage-related ANR path. Estimated effort: 3 engineer-weeks; validate against traces, user-perceived ANR rate and rollout guardrails. Q3 stability goal."
 
 ### 5. Diagrams over paragraphs
 
@@ -174,10 +176,11 @@ A Mermaid sequence diagram of the failure case will save you 200 words and three
 ```mermaid
 sequenceDiagram
     Client->>BFF: POST /v1/order (Idempotency-Key: abc)
-    BFF->>BFF: dedupe check: abc not seen
-    BFF->>Payment: charge card
-    Payment-->>BFF: 200 OK
-    BFF->>BFF: persist (abc, response)
+    BFF->>BFF: Atomically claim account + abc + payload hash
+    BFF->>BFF: Persist pending operation and provider key p123
+    BFF->>Payment: charge using persisted key p123
+    Payment-->>BFF: payment result
+    BFF->>BFF: Persist result for abc before replying
     BFF-->>Client: 200 OK
     Note over Client: network drops, client retries
     Client->>BFF: POST /v1/order (Idempotency-Key: abc)
@@ -186,6 +189,8 @@ sequenceDiagram
 ```
 
 ---
+
+A lost provider response leaves an unknown outcome. Reconcile or retry with the same persisted provider key under its retention/parameter contract; never create a fresh charge merely because the BFF lacks a final response. Concurrent requests for the same key must join, wait or receive an in-progress result. This protocol sketch requires durable storage and provider integration; the header alone provides no guarantee.
 
 ## ADR Template (Michael Nygard style)
 
@@ -209,7 +214,7 @@ The decision itself, in active voice: "We will use Room for relational data and 
 What becomes easier, what becomes harder, what is now non-trivial. Include the bad with the good — future readers need to know what trade-offs you accepted.
 ```
 
-ADRs are short by design. If yours is over 3 pages, it's an RFC, not an ADR.
+Keep an ADR focused on one consequential decision and link supporting detail. Page count is a readability heuristic, not a definition of RFC versus ADR.
 
 ---
 
@@ -226,7 +231,7 @@ ADRs are short by design. If yours is over 3 pages, it's an RFC, not an ADR.
 One sentence: "I want to migrate our build system from Groovy DSL to Kotlin DSL."
 
 ## Why
-- Current pain point #1: "Groovy build files take 25s to evaluate; Kotlin DSL caches better."
+- Current pain point #1: "Our build configuration takes 25s in the measured scenario. Prototype Kotlin DSL/convention-plugin changes and compare; Gradle configuration caching is available independently of DSL choice."
 - Current pain point #2: "Type-safe access reduces a class of CI breakage."
 
 ## Cost
@@ -278,7 +283,7 @@ If the live meeting becomes a place to re-raise resolved comments, the meeting i
 
 This repo follows the patterns above. See:
 
-- `backend-for-mobile/sse-vs-websockets.md` and `distributed-systems/lww-vs-crdt.md` — full-depth ADRs.
+- [SSE versus WebSockets](../backend-for-mobile/sse-vs-websockets.md) and [LWW registers versus richer CRDTs](../distributed-systems/lww-vs-crdt.md) — reusable decision guides. They supply criteria, not accepted project decisions. Apply the ADR template above in the consuming project to record its actual choice, owner, status and consequences.
 - `mobile-system-design/feature-flags-and-remote-config.md` — RFC-shaped design discussion.
 - `release-engineering/release-strategy.md` — rollout plans (the kind a real RFC includes).
 
@@ -314,14 +319,19 @@ This repo follows the patterns above. See:
 7. **How do you balance "write in the open" with "don't waste reviewers' time on half-formed thoughts"?**
    Share the draft early with explicit tags for specific reviewers asking targeted questions (e.g., "@alice - does this idempotency key shape match?"), rather than asking everyone to review the whole unstructured document.
 8. **What's the smallest unit of telemetry data that makes an RFC's "why now" argument credible?**
-   A specific, quantitative metric showing current negative impact (e.g., "Crashlytics shows 4,200 ANRs/day affecting 0.3% of sessions"), proving it is an urgent problem rather than a theoretical refactor.
+   A decision-relevant observation with source, time window, denominator, affected population and uncertainty. Counts, per-session rates and Play daily-user rates are different measures. Qualitative evidence or a demonstrated safety risk may justify action before a statistically stable rate is available.
 
 ---
 
 ## Further Reading
 
 - [Michael Nygard — Documenting Architecture Decisions](https://cognitect.com/blog/2011/11/15/documenting-architecture-decisions) — the canonical ADR template.
-- [Industrial Logic — How to write a Design Doc](https://www.industriallogic.com/blog/) — practical RFC guidance.
+- [Rust RFC process](https://github.com/rust-lang/rfcs/blob/main/README.md) — a concrete project’s proposal/review process, not a universal template.
 - [Google's eng-practices](https://google.github.io/eng-practices/) — review discipline.
-- [`distributed-systems/lww-vs-crdt.md`](../distributed-systems/lww-vs-crdt.md) — full-depth ADR in this repo.
+- [`distributed-systems/lww-vs-crdt.md`](../distributed-systems/lww-vs-crdt.md) — reusable comparison for preparing a project-specific ADR.
 - [`scope-and-ambiguity.md`](scope-and-ambiguity.md) — when RFCs are how you take scope.
+- [Android ANR measurement](https://developer.android.com/topic/performance/issues/anr)
+- [Android DataStore contracts](https://developer.android.com/topic/libraries/architecture/datastore)
+- [Stripe idempotent requests](https://docs.stripe.com/api/idempotent_requests)
+- [Gradle build performance](https://docs.gradle.org/current/userguide/performance.html)
+- [Google Play user-perceived ANR threshold and denominator](https://support.google.com/googleplay/android-developer/answer/9844486)
