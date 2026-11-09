@@ -1,0 +1,8 @@
+<!-- Teaching layer over the approved Patterns source 4520147. -->
+<!-- @opening -->
+<p class="story-lead">A detail screen already has a route ID, but its ViewModel also needs a repository. The route and the dependency graph provide different inputs. Trace which owner supplies each one before creating the ViewModel.</p>
+
+<!-- @before 5. Common Pitfalls :: staff -->
+### Test the construction path through its real owner
+
+Create the screen with a valid route and again with missing input. Check what the factory is given and where failure is reported. The Android ViewModel factory path also carries ownership through the provider, so exercise the same path the screen uses. [ViewModel factories and CreationExtras](https://developer.android.com/topic/libraries/architecture/viewmodel/viewmodel-factories).

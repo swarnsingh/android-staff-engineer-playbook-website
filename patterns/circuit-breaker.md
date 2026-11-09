@@ -1,6 +1,6 @@
 # Circuit Breaker Pattern
 
-> The Circuit Breaker pattern prevents an application from repeatedly trying to execute an operation that is likely to fail. While traditionally thought of as a backend microservice pattern, a Staff engineer knows that mobile clients *must* implement client-side circuit breakers. If a backend service goes down, millions of Android apps aggressively retrying the API will cause a "thundering herd" that acts as a self-inflicted DDoS attack, keeping the servers down. A client-side circuit breaker fails fast, saves device battery, and protects the backend infrastructure.
+> The Circuit Breaker pattern prevents an application from repeatedly trying to execute an operation that is likely to fail. While traditionally thought of as a backend microservice pattern, a Staff engineer knows that client-side circuit breakers are one option when bounded retries, deadlines and failure feedback do not adequately limit repeated work. If a backend service goes down, millions of Android apps aggressively retrying the API will cause a "thundering herd" that acts as a self-inflicted DDoS attack, keeping the servers down. A client-side circuit breaker fails fast, saves device battery, and protects the backend infrastructure.
 
 ---
 
@@ -41,51 +41,57 @@ If your app has a naive retry policy (e.g., retry 3 times on failure) and the se
 
 ## 2. Core Android Example: OkHttp Interceptor
 
-The most effective place to implement a circuit breaker in Android is at the HTTP layer, using an OkHttp `Interceptor`. This ensures all API calls respect the breaker.
+Choose the breaker boundary around the dependency/failure domain. An OkHttp application interceptor can cover calls through that client; it does not cover other clients, WebView or SDK-owned transports.
 
 ```kotlin
-// A thread-safe state machine for the Circuit Breaker
+// Teaching core: synchronized compound transitions and generation-bound permits.
+// Thresholds/cooldown are example policy; the clock must be monotonic.
 class CircuitBreaker(
     private val failureThreshold: Int = 3,
-    private val resetTimeoutMillis: Long = 30_000 // 30 seconds
+    private val resetTimeoutMillis: Long = 30_000,
+    private val nowMillis: () -> Long = { System.nanoTime() / 1_000_000 },
 ) {
-    private val failureCount = AtomicInteger(0)
-    private var lastFailureTime = AtomicLong(0)
-    
-    // States: 0 = CLOSED, 1 = OPEN, 2 = HALF_OPEN
-    private val state = AtomicInteger(0)
+    init { require(failureThreshold > 0 && resetTimeoutMillis >= 0) }
+    enum class Outcome { SUCCESS, FAILURE, IGNORED }
+    class Permit internal constructor(internal val generation: Long) {
+        internal var completed = false
+    }
+    private enum class State { CLOSED, OPEN, HALF_OPEN }
+    private var state = State.CLOSED
+    private var generation = 0L
+    private var failures = 0
+    private var openedAt = 0L
 
-    fun allowRequest(): Boolean {
-        if (state.get() == 0) return true // CLOSED - let it through
+    @Synchronized fun acquire(): Permit? {
+        if (state == State.OPEN && nowMillis() - openedAt >= resetTimeoutMillis) {
+            state = State.HALF_OPEN
+            generation++
+            return Permit(generation)
+        }
+        return if (state == State.CLOSED) Permit(generation) else null
+    }
 
-        val now = System.currentTimeMillis()
-        if (state.get() == 1) { // OPEN
-            if (now - lastFailureTime.get() > resetTimeoutMillis) {
-                // Timeout passed. Transition to HALF_OPEN to test the waters
-                if (state.compareAndSet(1, 2)) {
-                    return true // Allow one test request through
-                }
+    @Synchronized fun complete(permit: Permit, outcome: Outcome) {
+        if (permit.completed) return
+        permit.completed = true
+        if (permit.generation != generation) return // Ignore old in-flight results.
+        when (outcome) {
+            Outcome.SUCCESS -> {
+                failures = 0
+                if (state == State.HALF_OPEN) { state = State.CLOSED; generation++ }
             }
-            return false // Still OPEN, block the request
+            Outcome.FAILURE -> {
+                failures++
+                if (state == State.HALF_OPEN || failures >= failureThreshold) open()
+            }
+            Outcome.IGNORED -> if (state == State.HALF_OPEN) open()
         }
-        
-        // If HALF_OPEN, another thread is already testing. Block this one.
-        return false 
     }
 
-    fun recordSuccess() {
-        failureCount.set(0)
-        state.set(0) // Reset to CLOSED
-    }
-
-    fun recordFailure() {
-        lastFailureTime.set(System.currentTimeMillis())
-        val currentFailures = failureCount.incrementAndGet()
-        
-        if (currentFailures >= failureThreshold || state.get() == 2) {
-            // Trip the breaker to OPEN
-            state.set(1)
-        }
+    private fun open() {
+        state = State.OPEN
+        openedAt = nowMillis()
+        generation++
     }
 }
 ```
@@ -93,40 +99,24 @@ class CircuitBreaker(
 Now, inject this into an OkHttp Interceptor:
 
 ```kotlin
-class CircuitBreakerInterceptor(
-    private val circuitBreaker: CircuitBreaker
-) : Interceptor {
-
+class CircuitBreakerInterceptor(private val breaker: CircuitBreaker) : Interceptor {
     override fun intercept(chain: Interceptor.Chain): Response {
-        val request = chain.request()
-
-        // 1. Check if we should even attempt the network call
-        if (!circuitBreaker.allowRequest()) {
-            throw CircuitBreakerOpenException("Circuit is open. Failing fast.")
-        }
-
+        val permit = breaker.acquire() ?: throw CircuitBreakerOpenException("Circuit open")
         try {
-            // 2. Attempt the network call
-            val response = chain.proceed(request)
-
-            if (response.isSuccessful || response.code in 400..499) {
-                // 4xx errors are client bugs, not server downtime. Don't trip the breaker.
-                circuitBreaker.recordSuccess()
-            } else if (response.code >= 500) {
-                // 5xx errors indicate server struggle.
-                circuitBreaker.recordFailure()
-            }
-
+            val response = chain.proceed(chain.request())
+            // Example availability policy, not an application-success classifier.
+            breaker.complete(permit, if (response.code >= 500)
+                CircuitBreaker.Outcome.FAILURE else CircuitBreaker.Outcome.SUCCESS)
             return response
-            
-        } catch (e: IOException) {
-            // Network timeouts or connection drops
-            circuitBreaker.recordFailure()
-            throw e
+        } catch (failure: IOException) {
+            breaker.complete(permit, if (chain.call().isCanceled())
+                CircuitBreaker.Outcome.IGNORED else CircuitBreaker.Outcome.FAILURE)
+            throw failure
+        } finally {
+            breaker.complete(permit, CircuitBreaker.Outcome.IGNORED)
         }
     }
 }
-
 class CircuitBreakerOpenException(message: String) : IOException(message)
 ```
 
@@ -152,6 +142,8 @@ class HomeViewModel(private val repository: Repository) : ViewModel() {
                 // The server is down. Show cached data with an offline banner immediately.
                 val cachedData = repository.getCachedFeed()
                 _uiState.value = UiState.Degraded(cachedData, message = "Server unavailable")
+            } catch (cancelled: CancellationException) {
+                throw cancelled
             } catch (e: Exception) {
                 _uiState.value = UiState.Error("An error occurred")
             }
@@ -164,9 +156,9 @@ class HomeViewModel(private val repository: Repository) : ViewModel() {
 
 ## 4. Resilience4j (The Library Alternative)
 
-If you don't want to build a custom thread-safe state machine, you can use **Resilience4j**, a lightweight, modular fault tolerance library designed for Java 8+ (a modern replacement for Netflix Hystrix).
+If you don't want to build a custom thread-safe state machine, you can use **Resilience4j**, a lightweight, modular fault tolerance library whose 2.x line requires Java 17.
 
-While heavily used on backends, it can be used on Android via Kotlin Coroutines.
+The following is a JVM library example. Verify the selected artifact's bytecode, dependencies and Android/desugaring support against your build before adopting it; coroutine support alone does not establish Android compatibility.
 
 ```kotlin
 // Setup the registry
@@ -174,6 +166,8 @@ val circuitBreakerConfig = CircuitBreakerConfig.custom()
     .failureRateThreshold(50.0f) // Trip if 50% of calls fail
     .waitDurationInOpenState(Duration.ofSeconds(30))
     .slidingWindowSize(10) // Evaluate over the last 10 calls
+    .minimumNumberOfCalls(10)
+    .permittedNumberOfCallsInHalfOpenState(1)
     .build()
 
 val circuitBreaker = CircuitBreakerRegistry.of(circuitBreakerConfig)
@@ -193,7 +187,7 @@ suspend fun fetchUsers(): List<User> {
 
 | Failure Mode | Cause | Prevention / Solution |
 |---|---|---|
-| **Tripping on Bad Internet** | The user goes into a tunnel (IOException). The circuit breaker trips. The user exits the tunnel 5 seconds later, but the app blocks requests for 30 seconds because the circuit is OPEN. | Separate "Server Errors" (HTTP 503) from "Network Connectivity Errors" (SocketTimeout). Only trip the breaker on 503/504 errors, not pure network drops. |
+| **Tripping on Bad Internet** | The user goes into a tunnel (IOException). The circuit breaker trips. The user exits the tunnel 5 seconds later, but the app blocks requests for 30 seconds because the circuit is OPEN. | Separate "Server Errors" (HTTP 503) from "Network Connectivity Errors" (SocketTimeout). Choose whether the breaker measures backend availability or the whole network path. This teaching example counts non-cancellation I/O failures; mobile connectivity changes can make a shorter cooldown or a reset policy appropriate. Do not claim an IOException proves server downtime. |
 | **Global Breaker Lockout** | Using a single global CircuitBreaker for all endpoints. If the `ImageServer` goes down, the breaker trips, and the app blocks calls to the perfectly healthy `AuthServer`. | Instantiate multiple CircuitBreakers keyed by base URL or domain (e.g., one for `api.company.com`, one for `cdn.company.com`). |
 | **Silent Failures** | The UI doesn't explicitly handle the `CircuitBreakerOpenException` and treats it like a generic error, showing a generic "Something went wrong" message. | Catch the specific exception and show a Degraded state, utilizing local SQLite/Room caches to keep the app functional. |
 
@@ -203,17 +197,17 @@ suspend fun fetchUsers(): List<User> {
 
 ### Pitfall 1: Confusing Retry with Circuit Breaker
 Many engineers use a Retry Interceptor with exponential backoff (1s, 2s, 4s) to handle failures. **Retry is not a Circuit Breaker.** Retry *adds* load to the server in hopes it recovers. A Circuit Breaker *removes* load to allow it to recover. 
-*Fix:* You must use both together. Wrap your Retrofit call in a Retry block (to handle blips), but put the Circuit Breaker interceptor underneath it. If the breaker trips, the Retry block will instantly fail 3 times in 3 milliseconds (because the breaker throws immediately), aborting the operation.
+*Fix:* Use either or both only when justified. Ordering determines which failures/attempts the breaker observes. Explicitly exclude CircuitBreakerOpenException from retry; backoff does not disappear merely because an exception was fast.
 
 ### Pitfall 2: Memory Leaks in Half-Open State
 In the Half-Open state, if you allow exactly 1 request through to test the server, and that request hangs forever (no timeout configured on OkHttp), the circuit remains permanently Half-Open, blocking all other requests infinitely.
-*Fix:* Always configure strict OkHttp `readTimeout` and `connectTimeout`. The test request must fail fast if the server is still struggling.
+*Fix:* Bound the whole call with `callTimeout` as well as appropriate phase timeouts. Release/complete a probe on every exit, including cancellation and unexpected exceptions.
 
 ---
 
 ## Probing Questions
 
-1.  **Concurrency:** In the custom OkHttp Interceptor implementation above, `AtomicInteger` and `AtomicLong` are used. If 10 coroutines make a network request simultaneously and the server returns a 503 for all of them at the exact same millisecond, how does `compareAndSet` prevent the state machine from corruption?
+1.  **Concurrency:** Why are atomic fields alone insufficient for a multi-field breaker, and how do synchronized transitions and generation-bound permits prevent a late success from an older call from closing a newly opened circuit?
 2.  **Jitter:** When a Circuit Breaker transitions from OPEN to HALF_OPEN, and a test request succeeds, the state transitions to CLOSED. If millions of apps transition to CLOSED at the same time, what happens to the backend? How would you add "Jitter" to the `resetTimeoutMillis` to mitigate this?
 3.  **HTTP Status Codes:** Why is it an anti-pattern to record a failure and trip the circuit breaker when the server returns an HTTP 400 (Bad Request) or 401 (Unauthorized)?
 4.  **Backend vs Frontend Breakers:** Your API Gateway has an Envoy circuit breaker configured to reject requests if the internal database is down. Why do you still need an OkHttp circuit breaker on the Android client?
@@ -221,10 +215,10 @@ In the Half-Open state, if you allow exactly 1 request through to test the serve
 
 ## Answer Key
 
-1. **Concurrency:** `compareAndSet` prevents state machine corruption because it's an atomic operation. It ensures that only one thread can successfully transition the state from OPEN to HALF_OPEN (1 to 2) and subsequently perform the test request.
+1. **Concurrency:** Synchronize the compound state/counter/timestamp transition. Admit one half-open probe and associate each call with a generation; opening or finishing a probe invalidates older in-flight results. A CAS on one field alone does not enforce those invariants.
 2. **Jitter:** If millions of apps transition to CLOSED at the same time, the backend gets hit by a thundering herd (retry storm). Jitter adds a random delay to the `resetTimeoutMillis` for each client so they attempt the test request at distributed times rather than all at once.
-3. **HTTP Status Codes:** 400 and 401 are client errors (bad request, unauthorized), not server availability issues. Tripping the circuit breaker on these would block valid requests permanently when the server is actually healthy.
-4. **Backend vs Frontend Breakers:** If the API Gateway itself goes down, the backend breaker is useless. The mobile client is the only line of defense to prevent battery drain and cellular network saturation on the device itself.
+3. **HTTP Status Codes:** 400 and 401 are client errors (bad request, unauthorized), not server availability issues. Tripping the circuit breaker on these would unnecessarily block valid requests during the cooldown when the server is actually healthy.
+4. **Backend vs Frontend Breakers:** If the API Gateway itself goes down, the backend breaker is useless. Client deadlines, retry budgets, backoff and optional breakers also bound device-side costs. A mobile breaker is one defense, not a universal requirement.
 5. **Offline First:** The Circuit Breaker catches the exception and the Repository uses this to emit the cached Room database data instead. It allows the app to seamlessly transition to an offline state.
 
 ## Further Reading
@@ -233,3 +227,8 @@ In the Half-Open state, if you allow exactly 1 request through to test the serve
 - [`../backend-for-mobile/api-design-for-mobile.md`](../backend-for-mobile/api-design-for-mobile.md) — The physical costs of cellular radio wakeups that Circuit Breakers prevent.
 - [`../android/networking-and-security/retrofit-and-okhttp.md`](../android/networking-and-security/retrofit-and-okhttp.md) — OkHttp interceptor chain ordering (where the breaker should sit relative to logging and auth).
 - [`../reference-architectures/offline-first-app.md`](../reference-architectures/offline-first-app.md) — Architecting the UI to gracefully fallback to local caches when the breaker trips.
+- [Resilience4j state machine, metrics and probes](https://resilience4j.readme.io/docs/circuitbreaker)
+- [Resilience4j 2 Java 17 requirement](https://resilience4j.readme.io/docs/getting-started)
+- [OkHttp application interceptors and response ownership](https://raw.githubusercontent.com/square/okhttp/master/docs/features/interceptors.md)
+- [Java monotonic elapsed-time contract](https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/System.html#nanoTime())
+- [Cancellation is not an ordinary failure](https://kotlinlang.org/docs/cancellation-and-timeouts.html)

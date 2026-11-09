@@ -174,52 +174,52 @@ window.PLAYBOOK_CATALOG = [
     "icon": "▦",
     "chapters": [
       {
+        "title": "Repository Pattern",
+        "path": "patterns/repository.md"
+      },
+      {
         "title": "Adapter Pattern",
         "path": "patterns/adapter.md"
-      },
-      {
-        "title": "Builder Pattern",
-        "path": "patterns/builder.md"
-      },
-      {
-        "title": "Circuit Breaker Pattern",
-        "path": "patterns/circuit-breaker.md"
-      },
-      {
-        "title": "Command Pattern",
-        "path": "patterns/command.md"
-      },
-      {
-        "title": "Decorator Pattern",
-        "path": "patterns/decorator.md"
       },
       {
         "title": "Factory Pattern",
         "path": "patterns/factory.md"
       },
       {
+        "title": "Builder Pattern",
+        "path": "patterns/builder.md"
+      },
+      {
+        "title": "Strategy Pattern",
+        "path": "patterns/strategy.md"
+      },
+      {
+        "title": "Decorator Pattern",
+        "path": "patterns/decorator.md"
+      },
+      {
         "title": "Observer Pattern",
         "path": "patterns/observer.md"
-      },
-      {
-        "title": "Repository Pattern",
-        "path": "patterns/repository.md"
-      },
-      {
-        "title": "Retry Pattern",
-        "path": "patterns/retry.md"
-      },
-      {
-        "title": "Saga Pattern",
-        "path": "patterns/saga.md"
       },
       {
         "title": "State Pattern",
         "path": "patterns/state.md"
       },
       {
-        "title": "Strategy Pattern",
-        "path": "patterns/strategy.md"
+        "title": "Command Pattern",
+        "path": "patterns/command.md"
+      },
+      {
+        "title": "Retry Pattern",
+        "path": "patterns/retry.md"
+      },
+      {
+        "title": "Circuit Breaker Pattern",
+        "path": "patterns/circuit-breaker.md"
+      },
+      {
+        "title": "Saga Pattern",
+        "path": "patterns/saga.md"
       }
     ]
   },

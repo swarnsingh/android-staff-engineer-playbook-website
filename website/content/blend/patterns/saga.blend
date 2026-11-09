@@ -1,0 +1,8 @@
+<!-- Teaching layer over the approved Patterns source 4520147. -->
+<!-- @opening -->
+<p class="story-lead">Media is stored and metadata is created, but publishing is rejected. The recovery path needs to know what already happened and which work can still be reversed. Follow the saga record before starting cleanup.</p>
+
+<!-- @before 4. Failure Modes & Tradeoffs :: staff -->
+### Distinguish failed from unknown
+
+Check the persisted phase and the remote outcome before starting compensation. A timeout can leave a successful publish with a missing reply. Once the failure is confirmed, use the saved identifiers and compensation keys to recover the completed steps. Record any cleanup that must be retried. [Saga coordination and compensation](https://learn.microsoft.com/en-us/azure/architecture/patterns/saga).

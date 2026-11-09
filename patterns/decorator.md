@@ -1,6 +1,6 @@
 # Decorator Pattern
 
-> In modern Android development, you rarely implement the classic "Gang of Four" Decorator pattern by manually wrapping interfaces. Instead, you consume it constantly through idiomatic framework APIs: **OkHttp Interceptors**, **Jetpack Compose Modifiers**, and **Kotlin Extension Functions**. A Staff engineer must recognize these as decorators, understand how their order of application alters behavior, and know when to build custom decorators to handle cross-cutting concerns like logging, caching, and retry logic without polluting business logic.
+> In modern Android development, you rarely implement the classic "Gang of Four" Decorator pattern by manually wrapping interfaces. Instead, you consume it constantly through idiomatic framework APIs: **OkHttp Interceptors**, **Jetpack Compose Modifiers**, and higher-order function wrappers. Extension functions alone do not wrap or dynamically override an object; they are statically resolved helpers. A Staff engineer must recognize these as decorators, understand how their order of application alters behavior, and know when to build custom decorators to handle cross-cutting concerns like logging, caching, and retry logic without polluting business logic.
 
 ---
 
@@ -71,7 +71,7 @@ fun withCache(
 // Usage
 val loader = withCache(memoryCache, basicLoader)
 ```
-This functional approach is exactly how modern Android libraries handle decoration.
+This is one functional way to decorate behavior. Alternative snippets define different ImageLoader shapes; app-owned network/cache dependencies and imports are omitted. Blocking implementations need an off-main owner; a suspend signature alone does not move blocking I/O off main.
 
 ---
 
@@ -92,57 +92,54 @@ The `Chain` object holds the wrapped request and the mechanism to proceed to the
 ### Building Concrete Interceptors (Decorators)
 
 **1. Authentication Decorator:**
+
+Use the session-bound `AuthInterceptor`, `SessionTokenStore`, and `TokenAuthenticator` from [Retrofit and OkHttp](../android/networking-and-security/retrofit-and-okhttp.md#production-example). That implementation restricts credentials to one HTTPS origin, shares refresh outcomes, and prevents a late refresh from restoring a logged-out session. A generic decorator should not invent a second token lifecycle.
+
+**2. Retry Decorator (bodyless reads only):**
 ```kotlin
-class AuthInterceptor(private val tokenManager: TokenManager) : Interceptor {
+class RetryInterceptor(private val maxAttempts: Int = 2) : Interceptor {
+    init { require(maxAttempts in 1..3) }
+
     override fun intercept(chain: Interceptor.Chain): Response {
-        val originalRequest = chain.request()
-        
-        // Don't decorate if we already have an Auth header
-        if (originalRequest.header("Authorization") != null) {
-            return chain.proceed(originalRequest)
+        val request = chain.request()
+        val retrySafe = request.method in setOf("GET", "HEAD") && request.body == null
+        var attempt = 1
+        while (true) {
+            if (chain.call().isCanceled()) throw IOException("Canceled")
+            val response = chain.proceed(request)
+            if (!retrySafe || response.code !in setOf(502, 503, 504) ||
+                response.header("Retry-After") != null || attempt >= maxAttempts) {
+                return response
+            }
+            response.close() // Close only the response being discarded.
+            attempt++
         }
-        
-        val token = tokenManager.getValidToken()
-        val decoratedRequest = originalRequest.newBuilder()
-            .header("Authorization", "Bearer $token")
-            .build()
-            
-        // Pass the decorated request down the chain
-        return chain.proceed(decoratedRequest)
     }
 }
 ```
 
-**2. Retry Decorator:**
-```kotlin
-class RetryInterceptor(private val maxRetries: Int = 3) : Interceptor {
-    override fun intercept(chain: Interceptor.Chain): Response {
-        var response = chain.proceed(chain.request())
-        var tryCount = 1
-        
-        while (!response.isSuccessful && tryCount < maxRetries) {
-            response.close() // Avoid connection leaks
-            tryCount++
-            // Proceed again (retry)
-            response = chain.proceed(chain.request())
-        }
-        
-        return response
-    }
-}
-```
+This small application interceptor makes at most one extra attempt by default. It does not retry 401/403, other client errors, writes, requests with bodies, or thrown I/O failures. A `Retry-After` response is returned to the caller for scheduling. Production retry policy also needs backoff, jitter and a total deadline; see [Retry](retry.md). Do not add writes merely because the body can be replayed: the server contract and idempotency protection must make repetition safe.
 
 ### The Importance of Application Order
-Because decorators wrap each other like an onion, **order matters immensely**.
 
 ```kotlin
+// Fresh store and client for this login only; never put another account in it.
 val client = OkHttpClient.Builder()
-    .addInterceptor(RetryInterceptor(maxRetries = 3)) // Wraps AuthInterceptor
-    .addInterceptor(AuthInterceptor(tokenManager))    // Wraps the network call
+    .followRedirects(false)
+    .followSslRedirects(false)
+    .retryOnConnectionFailure(false)
+    .callTimeout(30, TimeUnit.SECONDS)
+    .addInterceptor(RetryInterceptor(maxAttempts = 2))
+    .addInterceptor(AuthInterceptor(sessionStore, apiOrigin))
+    .authenticator(TokenAuthenticator(sessionStore, apiOrigin, refreshApi))
     .build()
 ```
-If `RetryInterceptor` is added first, it wraps the `AuthInterceptor`. If a request fails, the retry loop will execute the `AuthInterceptor` again, fetching a fresh token if the old one expired.
-If the order is reversed, the `AuthInterceptor` runs once, grabs a token, and hands off to the `RetryInterceptor`. If the token is expired, the retry loop will just blindly retry 3 times with the same expired token.
+
+The bodyless-read restriction belongs to the retry decorator, not the whole client: unlike the Ktor auth sample, this `TokenAuthenticator` can replay a write with a replayable body after a 401. Use it for writes only when the API contract makes replay safe, for example with a server-enforced idempotency key.
+
+An outer application interceptor re-enters the inner application decorators when it calls `proceed` again. With retry outside auth, each permitted read attempt rechecks the captured session. With auth outside retry, the inner retry reuses the already-decorated request. Neither ordering refreshes an expired token by itself: the bounded authenticator handles a 401 challenge, independently of this 5xx policy. Its refresh API uses a separate client with no auth interceptor or authenticator. Logout invalidates the old store and cancels old-session calls; already-sent requests cannot be recalled.
+
+`maxAttempts` counts this decorator's `proceed` calls, not every wire exchange: the authenticator and OkHttp may perform their own bounded follow-ups. Configure and test the combined call budget. These are application interceptors; a network interceptor must call `proceed` exactly once.
 
 ---
 
@@ -190,7 +187,7 @@ The click ripple will extend *into* the padding area. If padding is first, the p
 Android's `Context` is heavily overloaded. To extend its behavior without subclassing the OS-provided `ContextImpl` directly, Android uses the Decorator pattern via `ContextWrapper`.
 
 ```java
-// From the Android Framework
+// Simplified framework delegation outline; other Context members omitted.
 public class ContextWrapper extends Context {
     Context mBase; // The wrapped component
 
@@ -206,23 +203,26 @@ public class ContextWrapper extends Context {
 ```
 
 ### Modern Usage: Locale Injection
-If you need to force a specific language in a specific `Activity` (regardless of the system language), you wrap the base context:
+
+`ContextWrapper` illustrates delegated context behavior, but overriding `attachBaseContext` is not the preferred complete per-app language solution. For a user-selected app language, use the supported AppCompat/platform locale APIs and their persistence/recreation contract:
 
 ```kotlin
-class LocalizedActivity : AppCompatActivity() {
-    override fun attachBaseContext(newBase: Context) {
-        val locale = Locale("es", "ES")
-        val config = Configuration(newBase.resources.configuration)
-        config.setLocale(locale)
-        
-        // Decorate the base context with our new configuration
-        val decoratedContext = newBase.createConfigurationContext(config)
-        super.attachBaseContext(decoratedContext)
-    }
-}
+// Called from the app's language-settings action; appcompat dependency required.
+AppCompatDelegate.setApplicationLocales(LocaleListCompat.forLanguageTags("es-ES"))
 ```
 
----
+On Android 13+, the platform stores the app-language choice. For Android 12 (API 32) and lower, opt in to AppCompat storage inside the manifest's `<application>` element:
+
+```xml
+<service
+    android:name="androidx.appcompat.app.AppLocalesMetadataHolderService"
+    android:enabled="false"
+    android:exported="false">
+    <meta-data android:name="autoStoreLocales" android:value="true" />
+</service>
+```
+
+`autoStoreLocales` performs a blocking main-thread read and can cause StrictMode disk read/write violations. Without this opt-in, implement custom locale storage and supply the stored choice before `onCreate` on older Android versions, following the per-app language guide. `createConfigurationContext` remains useful for scoped resource lookup; it does not by itself implement a persisted user language preference.
 
 ## 5. Architectural Role: The "Cross-Cutting Concern" Solver
 
@@ -237,6 +237,8 @@ class ProductRepositoryImpl(private val api: ProductApi) : ProductRepository {
             val products = api.getProducts()
             metrics.incrementSuccess("fetch_products")
             return products
+        } catch (cancelled: CancellationException) {
+            throw cancelled
         } catch (e: Exception) {
             metrics.incrementFailure("fetch_products")
             crashlytics.recordException(e)
@@ -264,6 +266,8 @@ class MetricsProductRepository(
         metrics.startTimer("fetch_products")
         return try {
             wrapped.getProducts().also { metrics.incrementSuccess("fetch_products") }
+        } catch (cancelled: CancellationException) {
+            throw cancelled
         } catch (e: Exception) {
             metrics.incrementFailure("fetch_products")
             throw e
@@ -273,6 +277,8 @@ class MetricsProductRepository(
     }
 }
 ```
+The metrics fragment assumes non-throwing instrumentation with per-invocation timing. Expected I/O failures in the tangled example should not all become Crashlytics non-fatals; choose telemetry by operational meaning.
+
 **Wiring with DI (Koin):**
 ```kotlin
 module {
@@ -300,7 +306,8 @@ module {
 ## 7. Common Pitfalls
 
 ### Pitfall 1: Decorating Data Classes
-Do not attempt to use the Decorator pattern on Kotlin `data classes`. Data classes are designed to be transparent holders of state, and their generated `equals()`, `hashCode()`, and `copy()` methods will break if you try to wrap them. Use composition or extension functions to derive new state instead.
+
+Kotlin data classes are final, but can implement an interface and be wrapped by a decorator that implements that interface. Wrapping does not corrupt the original generated methods. Decide equality and ownership explicitly: wrapper equality is not automatically interchangeable with its delegate, and generated `copy()` remains shallow. Use a plain data transformation when no behavioral wrapper is needed.
 
 ### Pitfall 2: Fat Interfaces
 The Decorator pattern requires implementing the entire interface. If your `UserRepository` interface has 45 methods, creating a `MetricsUserRepositoryDecorator` requires writing 45 forwarding methods.
@@ -319,15 +326,15 @@ The Decorator pattern requires implementing the entire interface. If your `UserR
 ## Answer Key
 
 1. **OkHttp Internals:**
-   Application Interceptors wrap the entire request before anything happens (great for app-level logic like Auth). Network Interceptors wrap the request right before it goes over the wire, after OkHttp adds its own headers, and are triggered on every redirect/retry (great for network profiling).
+   Application Interceptors wrap the entire request before anything happens (great for app-level logic like Auth). Network interceptors wrap actual network exchanges, may run for redirects/follow-ups, and are skipped for responses served entirely from cache. They must call proceed exactly once for the same connection host/port; application interceptors have different replay/follow-up semantics.
 2. **Compose Modifiers:**
    The runtime wraps the node from the outside in. The outermost 10dp padding is applied, then the clickable area is established (meaning the outer padding is NOT clickable), then the inner 10dp padding is applied (meaning the clickable area includes this inner padding), and finally the core content is drawn.
 3. **Kotlin Delegation:**
    The Kotlin compiler generates forwarding methods for every method in the interface, delegating them to the provided instance. A limitation is that if the base class calls one of its own methods internally, it won't invoke your overridden version in the decorator because the base class doesn't know about the wrapper.
 4. **Testing Strategy:**
-   You should test each decorator in isolation. Mock the wrapped `ProductRepository` interface to assert the decorator's specific behavior (e.g., that it caches or logs correctly) without running the core logic or other decorators.
+   Test each decorator in isolation and the composed chain. Isolation checks each contract; composition checks ordering, cache hits/misses, error/cancellation propagation and response ownership that isolated mocks can miss.
 5. **Performance:**
-   Overhead becomes measurable in deep UI hierarchies or very tight loops. Kotlin's `inline` functions mitigate this by eliminating the function call overhead and lambda allocations entirely, pasting the decorator's logic directly into the call site at compile time.
+   Overhead becomes measurable in deep UI hierarchies or very tight loops. Eligible inline higher-order calls can remove wrapper/lambda-call overhead at their call sites; they do not automatically inline arbitrary interface decorators or stored function objects. Runtime/JIT behavior and code size matter, so measure the actual hot path.
 
 ## Further Reading
 
@@ -335,3 +342,13 @@ The Decorator pattern requires implementing the entire interface. If your `UserR
 - [`../android/compose/modifiers-and-layout.md`](../android/compose/modifiers-and-layout.md) — Deep dive into the Compose Modifier hierarchy.
 - [`../android/data-and-di/dependency-injection.md`](../android/data-and-di/dependency-injection.md) — How to construct heavily decorated objects cleanly using Hilt or Koin.
 - [`../android/networking-and-security/retrofit-and-okhttp.md`](../android/networking-and-security/retrofit-and-okhttp.md) — Advanced OkHttp interceptor chaining.
+
+- [OkHttp interceptor guide (official source)](https://raw.githubusercontent.com/square/okhttp/master/docs/features/interceptors.md) — ordering, application/network constraints and closing discarded responses.
+- [OkHttp Authenticator contract (official source)](https://raw.githubusercontent.com/square/okhttp/master/okhttp/src/commonJvmAndroid/kotlin/okhttp3/Authenticator.kt) — bounded challenge follow-ups and returning the original response.
+- [HTTP Semantics, RFC 9110 §9.2.2](https://www.rfc-editor.org/rfc/rfc9110.html#section-9.2.2) — automatic retry and idempotency.
+- [Kotlin extensions are statically resolved](https://kotlinlang.org/docs/extensions.html#extensions-are-resolved-statically)
+- [Kotlin delegation and overriding limits](https://kotlinlang.org/docs/delegation.html)
+- [Data-class generated methods and shallow copy](https://kotlinlang.org/docs/data-classes.html)
+- [Inline eligibility and stored lambdas](https://kotlinlang.org/docs/inline-functions.html)
+- [Android per-app language APIs](https://developer.android.com/guide/topics/resources/app-languages)
+- [Coroutine cancellation classification](https://kotlinlang.org/docs/cancellation-and-timeouts.html)

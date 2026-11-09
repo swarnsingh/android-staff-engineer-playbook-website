@@ -29,36 +29,32 @@ Think of a navigation app (like Google Maps). The core goal is "route from A to 
 Best when the strategy requires multiple methods or internal state.
 
 ```kotlin
-// 1. The Strategy Interface
+// Fragment: DiskByteCache is an app-owned main-safe adapter with validated keys,
+// bounded storage and atomic replacement. Android LruCache size defaults to entries.
 interface CacheStrategy {
-    fun get(key: String): ByteArray?
-    fun put(key: String, data: ByteArray)
+    suspend fun get(key: String): ByteArray?
+    suspend fun put(key: String, data: ByteArray)
 }
 
-// 2. Concrete Strategies
 class MemoryCacheStrategy : CacheStrategy {
-    private val cache = LruCache<String, ByteArray>(1024 * 1024)
-    override fun get(key: String) = cache.get(key)
-    override fun put(key: String, data: ByteArray) { cache.put(key, data) }
+    private val cache = object : LruCache<String, ByteArray>(1024 * 1024) {
+        override fun sizeOf(key: String, value: ByteArray): Int = value.size
+    }
+    override suspend fun get(key: String): ByteArray? = cache.get(key)?.copyOf()
+    override suspend fun put(key: String, data: ByteArray) { cache.put(key, data.copyOf()) }
 }
 
-class DiskCacheStrategy(private val fileDir: File) : CacheStrategy {
-    override fun get(key: String) = File(fileDir, key).takeIf { it.exists() }?.readBytes()
-    override fun put(key: String, data: ByteArray) { File(fileDir, key).writeBytes(data) }
+class DiskCacheStrategy(private val cache: DiskByteCache) : CacheStrategy {
+    override suspend fun get(key: String): ByteArray? = cache.read(key)
+    override suspend fun put(key: String, data: ByteArray) = cache.writeAtomically(key, data)
 }
 
-// 3. The Context
-class ImageLoader(
-    // The Context is composed with a Strategy
-    private val cacheStrategy: CacheStrategy 
-) {
-    fun loadImage(url: String) {
-        val cached = cacheStrategy.get(url)
-        if (cached != null) return render(cached)
-        
-        val networkData = fetchFromNetwork(url)
-        cacheStrategy.put(url, networkData)
-        render(networkData)
+class ImageLoader(private val cacheStrategy: CacheStrategy) {
+    suspend fun loadImage(url: String): ByteArray {
+        cacheStrategy.get(url)?.let { return it }
+        val data = fetchFromNetwork(url) // App-supplied, main-safe suspending operation.
+        cacheStrategy.put(url, data)
+        return data
     }
 }
 ```
@@ -70,18 +66,21 @@ When the strategy is a single operation, use Kotlin's higher-order functions. No
 ```kotlin
 // The Context takes a function as the Strategy
 class OrderProcessor(
-    private val calculateDiscount: (Order) -> Double
+    private val calculateDiscount: (Order) -> Long
 ) {
     fun process(order: Order) {
-        val finalPrice = order.total - calculateDiscount(order)
+        val discount = calculateDiscount(order)
+        require(discount in 0L..order.totalMinor)
+        val finalPrice = order.totalMinor - discount
         charge(finalPrice)
     }
 }
 
 // The Strategies are just functions
-val noDiscount: (Order) -> Double = { 0.0 }
-val employeeDiscount: (Order) -> Double = { it.total * 0.20 }
-val vipDiscount: (Order) -> Double = { order -> if (order.total > 100) 25.0 else 0.0 }
+// Example USD cents: totalMinor is non-negative; division rounds down here.
+val noDiscount: (Order) -> Long = { 0L }
+val employeeDiscount: (Order) -> Long = { it.totalMinor / 5 }
+val vipDiscount: (Order) -> Long = { order -> if (order.totalMinor > 10_000) 2_500L else 0L }
 
 // Usage
 val processor = OrderProcessor(calculateDiscount = vipDiscount)
@@ -146,31 +145,31 @@ flowchart TD
     class StrategyInterface,ConcreteA,ConcreteB,ConcreteC strat;
 ```
 
-## Production Example
+## Policy Fragment: Video Height Limit
 
 In a complex video streaming app, the policy for determining video quality isn't static. It changes based on network conditions, user settings, and battery life.
 
 ```kotlin
-interface BitrateSelectionStrategy {
-    fun selectBitrate(networkBandwidth: Int, batteryLevel: Float): Int
+interface VideoHeightStrategy {
+    fun selectMaxHeight(networkKbps: Int, batteryLevel: Float): Int
 }
 
-class AutoBitrateStrategy : BitrateSelectionStrategy {
-    override fun selectBitrate(bandwidth: Int, battery: Float): Int {
-        if (battery < 0.15f) return 480 // Save power
+class AutoVideoHeightStrategy : VideoHeightStrategy {
+    override fun selectMaxHeight(networkKbps: Int, batteryLevel: Float): Int {
+        if (batteryLevel < 0.15f) return 480 // Save power
         return when {
-            bandwidth > 10_000 -> 1080
-            bandwidth > 5_000 -> 720
+            networkKbps > 10_000 -> 1080
+            networkKbps > 5_000 -> 720
             else -> 480
         }
     }
 }
 
-class DataSaverBitrateStrategy : BitrateSelectionStrategy {
-    override fun selectBitrate(bandwidth: Int, battery: Float) = 360 // Always low
+class DataSaverVideoHeightStrategy : VideoHeightStrategy {
+    override fun selectMaxHeight(networkKbps: Int, batteryLevel: Float) = 360 // Always low
 }
 ```
-When the user toggles "Data Saver Mode" in settings, the app simply swaps the `BitrateSelectionStrategy` instance in the video player context. The video player core logic remains untouched.
+When the user toggles "Data Saver Mode" in settings, the app simply swaps the `VideoHeightStrategy` instance in the video player context. These are illustrative maximum-height decisions, not bitrate estimates or a Media3 ABR implementation. Pass supported constraints to the actual track selector; codec, buffer, bandwidth and content ladders still govern selection.
 
 ## Android Example
 
@@ -243,7 +242,7 @@ When reviewing PRs with Strategies, a Staff engineer focuses on the boundary:
 6. **Managing Dependencies:** Use a Dependency Injection framework (like Dagger/Hilt) or Factory. The concrete strategies request their dependencies in their constructors, and the Context is provided the fully constructed strategies.
 7. **Composable Strategies:** Yes. E.g., multiple filtering strategies can be composed into a `CompositeFilterStrategy` that iterates through all injected strategies and applies them sequentially.
 8. **RecyclerView.LayoutManager:** It defines the layout algorithm for the RecyclerView. The RecyclerView (Context) doesn't know if it's a list or grid, it just delegates measuring and positioning to the LayoutManager (Strategy).
-9. **Performance Cost:** Interfaces cause virtual method dispatch and object allocation overhead. Functional strategies using `inline` functions remove this overhead by inlining the function body at the call site.
+9. **Performance Cost:** Interfaces cause virtual method dispatch and object allocation overhead. An eligible inline higher-order call can remove some call/lambda overhead; a stored function or interface strategy is not automatically inlined. Runtime optimization and allocations depend on use, so measure before changing a policy interface for speed.
 10. **Primitive Value Strategy:** No. If only data changes, parameterize the value in the constructor instead of creating a whole Strategy pattern structure.
 
 ## Further Reading
@@ -251,3 +250,8 @@ When reviewing PRs with Strategies, a Staff engineer focuses on the boundary:
 - [`factory.md`](factory.md) — Factories are typically responsible for instantiating and injecting the correct Strategy.
 - [`state.md`](state.md) — The behavioral cousin to Strategy; understand the difference in intent.
 - Refactoring Guru: [Strategy Pattern](https://refactoring.guru/design-patterns/strategy)
+- [LruCache sizeOf controls size units](https://developer.android.com/reference/android/util/LruCache)
+- [Kotlin higher-order/inline restrictions](https://kotlinlang.org/docs/inline-functions.html)
+- [Dagger map multibindings](https://dagger.dev/dev-guide/multibindings.html#map-multibindings)
+- [Media3 track selection constraints](https://developer.android.com/media/media3/exoplayer/track-selection)
+- [Java decimal arithmetic for non-integer monetary models](https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/math/BigDecimal.html)

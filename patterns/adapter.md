@@ -18,7 +18,7 @@ In Android, this happens in two main forms:
 
 The `RecyclerView` is an incredibly complex UI component that knows how to recycle memory, calculate layout passes, and animate scrolling. But it knows *nothing* about your business logic. 
 
-The `RecyclerView.Adapter` is a literal implementation of the Gang of Four pattern. It adapts your `List<User>` (the Adaptee) into `ViewHolders` (the Target Interface) that the `RecyclerView` (the Client) understands.
+The `RecyclerView.Adapter` is a literal implementation of the Gang of Four pattern. It adapts application data to the `RecyclerView.Adapter` contract expected by RecyclerView. A `ViewHolder` holds an item view and binding state; it is not itself the Adapter pattern's target interface.
 
 ```kotlin
 // The Domain Model (Adaptee)
@@ -88,7 +88,8 @@ interface AnalyticsTracker {
 2. Build the Adapter.
 ```kotlin
 class FirebaseAnalyticsAdapter(
-    private val firebaseAnalytics: FirebaseAnalytics
+    private val firebaseAnalytics: FirebaseAnalytics,
+    private val schemaViolations: AnalyticsSchemaViolations, // Nonthrowing diagnostics.
 ) : AnalyticsTracker {
     
     override fun trackEvent(eventName: String, properties: Map<String, Any>) {
@@ -97,8 +98,10 @@ class FirebaseAnalyticsAdapter(
             properties.forEach { (key, value) ->
                 when (value) {
                     is String -> putString(key, value)
-                    is Int -> putInt(key, value)
+                    is Int -> putLong(key, value.toLong())
+                    is Long -> putLong(key, value)
                     is Double -> putDouble(key, value)
+                    else -> schemaViolations.report(eventName, key) // Drop this parameter; keep checkout running.
                 }
             }
         }
@@ -109,13 +112,21 @@ class FirebaseAnalyticsAdapter(
 
 3. Inject the interface into your ViewModel.
 ```kotlin
-class CheckoutViewModel(private val tracker: AnalyticsTracker) {
+class CheckoutViewModel(
+    private val tracker: AnalyticsTracker,
+    private val schemaViolations: AnalyticsSchemaViolations,
+) {
     fun onCheckoutComplete(cartTotal: Double) {
+        // Validate this event's schema before tracking; do not fail the checkout.
+        if (!cartTotal.isFinite() || cartTotal < 0) {
+            schemaViolations.report("checkout", "total")
+            return
+        }
         tracker.trackEvent("checkout", mapOf("total" to cartTotal))
     }
 }
 ```
-If you ever switch to Mixpanel, you write a `MixpanelAdapter`, swap it in your DI module, and zero ViewModels change.
+A replacement adapter can preserve callers when it implements the same event schema, consent, validation and failure contract. Merely sharing a method signature does not make provider capabilities equivalent. Validate each event against its schema before calling the tracker, including provider name/length limits and permitted value types. The adapter defensively drops unsupported parameters (for example, Boolean) and reports a schema violation through the app-owned, nonthrowing `AnalyticsSchemaViolations` diagnostic sink. Keep diagnostics bounded and free of parameter values; an analytics schema mistake must not crash checkout. This fragment does not implement the full schema registry or SDK-failure isolation.
 
 ---
 
@@ -126,17 +137,10 @@ When migrating a massive app to Jetpack Compose, you cannot rewrite everything a
 **Adapting XML to Compose (`AndroidView`):**
 ```kotlin
 @Composable
-fun MapScreen() {
-    // AndroidView is an Adapter bridging the legacy View system to Compose
+fun LegacyTitle(title: String) {
     AndroidView(
-        factory = { context ->
-            MapView(context).apply {
-                // Initialize map
-            }
-        },
-        update = { mapView ->
-            // Update map when Compose state changes
-        }
+        factory = { context -> TextView(context) },
+        update = { view -> view.text = title }
     )
 }
 ```
@@ -151,6 +155,9 @@ fun MapScreen() {
 ```
 ```kotlin
 // In your Fragment
+binding.composeContainer.setViewCompositionStrategy(
+    ViewCompositionStrategy.DisposeOnViewTreeLifecycleDestroyed
+)
 binding.composeContainer.setContent {
     MyModernComposable()
 }
@@ -176,7 +183,7 @@ When bridging an old UI component that relies on mutable two-way binding (like a
 
 ### Pitfall 2: Using the Wrong Adapter Type
 Writing a custom `RecyclerView.Adapter` and calling `notifyDataSetChanged()` when the list changes. This causes the entire list to re-render, destroying animations and killing scroll performance.
-*Fix:* Always use `ListAdapter` with `DiffUtil`. `ListAdapter` acts as a specialized adapter that calculates differences on a background thread and dispatches precise update events (`notifyItemInserted`, etc.).
+*Fix:* Use `ListAdapter`/`AsyncListDiffer` when diffing immutable list snapshots fits the data; specialized adapters can also issue correct granular updates. `ListAdapter` acts as a specialized adapter that calculates differences on a background thread and dispatches precise update events (`notifyItemInserted`, etc.).
 
 ---
 
@@ -193,11 +200,11 @@ Writing a custom `RecyclerView.Adapter` and calling `notifyDataSetChanged()` whe
 1. **DiffUtil Mechanics:**
    `areItemsTheSame` checks identity (e.g., comparing unique IDs) to track if an item moved or was added/removed. `areContentsTheSame` checks equality (e.g., comparing data fields) to determine if an existing item needs a visual update. If implemented incorrectly, the RecyclerView may redraw items unnecessarily or fail to show updated data.
 2. **Compose Under the Hood:**
-   `AndroidView` manages the View lifecycle by attaching it to a `View` host under the hood when the composable enters the composition, updating it during recomposition via the `update` block, and detaching/destroying it when it leaves the composition.
+   `AndroidView` manages the View lifecycle by attaching it to a `View` host under the hood when the composable enters the composition, updating it during recomposition via the `update` block, and releasing it when no longer needed; reuse may call `onReset`, and final disposal can use `onRelease`. A complex View's own resource/lifecycle API still needs explicit handling.
 3. **Ports & Adapters (Hexagonal):**
    A Driving adapter (e.g., UI) initiates interaction and calls *into* the core domain. A Driven adapter (e.g., database) implements an interface defined by the domain and is called *by* the core domain to perform side effects.
 4. **Memory Leaks:**
-   You should pass a simple lambda (e.g., `(User) -> Unit`) into the Adapter instead of an Activity reference. The Activity implements the lambda and handles the click, keeping the UI logic decoupled from the Adapter.
+   You should pass a simple lambda (e.g., `(User) -> Unit`) into the Adapter instead of an Activity reference. A lambda can still capture and retain an Activity or binding. Scope the adapter/callback to the view owner and detach it when that view is destroyed; a callback improves coupling but is not automatic leak prevention.
 5. **Multiplatform:**
    Adapters are instantiated in the platform-specific modules (e.g., `iosMain`, `androidMain`) and injected into the `commonMain` code via dependency injection or the `expect`/`actual` mechanism to fulfill the shared interface.
 
@@ -206,3 +213,8 @@ Writing a custom `RecyclerView.Adapter` and calling `notifyDataSetChanged()` whe
 - [`../android/architecture/modularization-strategies.md`](../android/architecture/modularization-strategies.md) — How architectural adapters enable swapping modules.
 - [`../android/compose/compose-runtime.md`](../android/compose/compose-runtime.md) — How Compose replaces traditional UI adapters with pure functions.
 - [`factory.md`](factory.md) — Creating instances of adapters dynamically based on configuration.
+- [RecyclerView Adapter contract](https://developer.android.com/reference/androidx/recyclerview/widget/RecyclerView.Adapter)
+- [DiffUtil snapshot requirements](https://developer.android.com/reference/androidx/recyclerview/widget/DiffUtil)
+- [Views in Compose: reuse and release](https://developer.android.com/develop/ui/compose/migrate/interoperability-apis/views-in-compose)
+- [ComposeView disposal in Fragments](https://developer.android.com/develop/ui/compose/migrate/interoperability-apis/compose-in-views)
+- [Firebase event parameter types and limits](https://firebase.google.com/docs/reference/android/com/google/firebase/analytics/FirebaseAnalytics#logEvent(java.lang.String,%20android.os.Bundle))

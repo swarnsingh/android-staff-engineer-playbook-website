@@ -85,56 +85,93 @@ The modern standard. Language-level, coroutine-powered, multiplatform streams.
 
 ## 2. The Modern Standard: `StateFlow` and `SharedFlow`
 
-Staff engineers build architectures using Kotlin's Coroutines and Flow APIs. The Observer pattern in modern Android is split into two distinct use cases: **State** (StateFlow) and **Events** (SharedFlow).
+Staff engineers build architectures using Kotlin's Coroutines and Flow APIs. The Observer pattern in modern Android is split into two distinct use cases: renderable state and transient delivery contracts. StateFlow is a state primitive; SharedFlow broadcasts, while a Channel can hand an element to one consumer. Neither establishes exactly-once handling or process-death durability.
 
 ### Observing State (`StateFlow`)
 State represents data that *is*. It always has a value, new observers immediately get the latest value, and identical consecutive values are conflated (ignored).
 
 ```kotlin
-class UserViewModel(private val repository: UserRepository) : ViewModel() {
-    
-    // Internal mutable state (Subject)
-    private val _uiState = MutableStateFlow<UiState>(UiState.Loading)
-    
-    // Public immutable state (The Observable)
-    val uiState: StateFlow<UiState> = _uiState.asStateFlow()
-    
-    init {
-        viewModelScope.launch {
-            repository.getUserStream().collect { user ->
-                _uiState.value = UiState.Success(user)
+class UserViewModel(repository: UserRepository) : ViewModel() {
+    val uiState: StateFlow<UiState> = repository.getUserStream()
+        .map<User, UiState> { UiState.Success(it) }
+        .catch { emit(UiState.Error("Unable to load user")) }
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), UiState.Loading)
+}
+```
+
+### Required UI Progress: State and Acknowledgement
+
+For a single checkout UI, represent the pending receipt destination as state. It remains available across collector gaps until the UI acknowledges that request. This example assumes one checkout at a time and one navigation consumer; it is in-memory state, not process-death persistence or exactly-once navigation.
+
+```kotlin
+data class ReceiptNavigation(val requestId: Long, val orderId: String)
+data class CheckoutUiState(val navigation: ReceiptNavigation? = null)
+
+class CheckoutNavigationState {
+    private val nextRequestId = java.util.concurrent.atomic.AtomicLong(0)
+    private val _uiState = MutableStateFlow(CheckoutUiState())
+    val uiState: StateFlow<CheckoutUiState> = _uiState.asStateFlow()
+
+    fun onCheckoutSucceeded(orderId: String) {
+        val request = ReceiptNavigation(nextRequestId.incrementAndGet(), orderId)
+        _uiState.update { it.copy(navigation = request) }
+    }
+
+    fun navigationHandled(requestId: Long) {
+        _uiState.update { state ->
+            if (state.navigation?.requestId == requestId) state.copy(navigation = null)
+            else state // An old acknowledgement must not clear a newer request.
+        }
+    }
+}
+```
+
+The ViewModel owns this state holder and forwards confirmed checkout results and UI acknowledgements:
+
+```kotlin
+class CheckoutViewModel : ViewModel() {
+    private val navigation = CheckoutNavigationState()
+    val uiState = navigation.uiState
+    fun onCheckoutSucceeded(orderId: String) = navigation.onCheckoutSucceeded(orderId)
+    fun navigationHandled(requestId: Long) = navigation.navigationHandled(requestId)
+}
+
+// Fragment view owner; navigateToReceiptIfNeeded is an app callback that checks
+// the current destination/order before synchronously navigating. No suspension
+// between that callback and acknowledgement. Render navigation failures explicitly.
+viewLifecycleOwner.lifecycleScope.launch {
+    viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
+        viewModel.uiState.collect { state ->
+            state.navigation?.let { request ->
+                navigateToReceiptIfNeeded(request.orderId)
+                viewModel.navigationHandled(request.requestId)
             }
         }
     }
 }
 ```
 
-### Observing Events (`SharedFlow`)
-Events represent things that *happen*. They do not have a default value, they are consumed once, and identical consecutive events are valid.
+Do not acknowledge before navigation succeeds. If handling is interrupted before acknowledgement, the state can be seen again; destination-aware navigation makes that replay safe. Recover the verified order/payment state from durable storage/backend after process death rather than treating this in-memory request as the purchase record.
+
+### Loss-Tolerant Alternatives
+
+A Channel exposed with `receiveAsFlow()` hands an element to one collector, but delivery and processing are not guaranteed: cancellation after receiving and before processing can lose the element, including during lifecycle collection. Use it only when that loss is acceptable, such as an optional notice:
 
 ```kotlin
-class CheckoutViewModel : ViewModel() {
-    
-    // Internal publisher
-    private val _navigationEvents = MutableSharedFlow<NavEvent>()
-    
-    // Public observer interface
-    val navigationEvents: SharedFlow<NavEvent> = _navigationEvents.asSharedFlow()
-    
-    fun onCheckoutClicked() {
-        viewModelScope.launch {
-            // Emits the event to all active observers
-            _navigationEvents.emit(NavEvent.NavigateToSuccess)
-        }
-    }
-}
+private val notices = Channel<String>(
+    capacity = Channel.BUFFERED,
+    onUndeliveredElement = { diagnostics.recordDroppedNotice() },
+)
+val noticeEvents: Flow<String> = notices.receiveAsFlow()
 ```
+
+The app-owned diagnostic callback must be fast, nonblocking and nonthrowing; it can report an undelivered element without logging its content, but does not guarantee handling or recover every processing failure. Bound producers too. SharedFlow broadcasts to active collectors; replay-zero emissions are lost with no subscriber, and extra buffer capacity does not retain them across that gap. Required progress uses acknowledged state rather than either lossy alternative.
 
 ---
 
 ## 3. Safe UI Observation (The Android Lifecycle Trap)
 
-The most complex part of the Observer pattern on Android is ensuring the observer stops listening when the UI is hidden. If an observer updates a `View` while the `Fragment` is stopped, the app will crash or leak memory.
+The most complex part of the Observer pattern on Android is ensuring the observer stops listening when the UI is hidden. A collector outliving the Fragment view can access a destroyed binding, retain UI objects or do unwanted background work. A stopped view is not automatically invalid, so a crash is a risk rather than a guaranteed result.
 
 ### In the View System (XML)
 You must use `repeatOnLifecycle` or `flowWithLifecycle` to pause collection when the Activity/Fragment goes to the background.
@@ -169,6 +206,7 @@ fun UserScreen(viewModel: UserViewModel) {
     when (val state = uiState) {
         is UiState.Loading -> CircularProgressIndicator()
         is UiState.Success -> Text("Hello, ${state.user.name}")
+        is UiState.Error -> Text(state.message)
     }
 }
 ```
@@ -205,7 +243,7 @@ val countdownFlow = flow {
 **Danger:** If you use a cold flow to execute a network request, and 3 different UI components observe it, the network request will be fired 3 times simultaneously.
 
 ### Hot Observers (StateFlow / SharedFlow)
-A Hot observer produces data regardless of whether anyone is listening. Multiple subscribers share the same execution.
+A hot flow exists independently of collectors; whether upstream work runs without them depends on its producer and sharing policy. WhileSubscribed can stop upstream after its configured timeout.
 
 ```kotlin
 // Converts a Cold flow into a Hot flow
@@ -223,8 +261,8 @@ Using `shareIn` or `stateIn` is critical for preventing redundant work in the da
 
 | Failure Mode | Cause | Prevention / Solution |
 |---|---|---|
-| **The "Background Crash"** | Observing a Flow via `launchWhenStarted` or raw `launch`. The collector keeps running in the background, tries to update UI, and crashes (`IllegalStateException`). | Always use `repeatOnLifecycle` (Views) or `collectAsStateWithLifecycle` (Compose). |
-| **Dropped Events** | Emitting an event into a `MutableSharedFlow` while the Fragment is recreating (e.g., config change). No observer is currently listening. | Buffer the flow (`replay = 1`), or better, model the event as State (e.g. `hasNavigated = false`). |
+| **The "Background Crash"** | Observing a Flow via `launchWhenStarted` or raw `launch`. Raw lifecycle-scope collection can remain active while stopped; launchWhenStarted suspends its block and can leave upstream work active. Neither behavior guarantees a crash, but both can waste work or misuse view state. | Always use `repeatOnLifecycle` (Views) or `collectAsStateWithLifecycle` (Compose). |
+| **Dropped Events** | Emitting an event into a `MutableSharedFlow` while the Fragment is recreating (e.g., config change). No observer is currently listening. | Keep required progress in state until acknowledgement. A Channel can lose a received element on collector cancellation; onUndeliveredElement can report that loss but is not a delivery guarantee. Use Channel/SharedFlow only for explicitly loss-tolerant delivery. replay=1 can repeat stale commands. |
 | **Memory Leak** | Storing a reference to a `View` or `Activity` inside an observer that outlives the UI component (e.g., in a Singleton Repository). | Ensure the subscription is tied to a `LifecycleOwner` that automatically disposes when destroyed. |
 | **Redundant Network Calls** | Exposing a Cold `Flow` from a Repository directly to the UI. If the screen rotates, the UI re-subscribes, triggering a new API call. | Use `stateIn` in the ViewModel to cache the latest result and survive configuration changes. |
 
@@ -234,7 +272,7 @@ Using `shareIn` or `stateIn` is critical for preventing redundant work in the da
 
 ### Pitfall 1: Using LiveData for Single Events
 Many legacy codebases use `SingleLiveEvent` to trigger navigation or Snackbars. This is an anti-pattern. LiveData is inherently designed for state, not events. If a user receives an error Snackbar, backgrounds the app, and returns, the `LiveData` re-emits the last value, and the Snackbar shows again.
-*Fix:* Use a `Channel` that receives `receiveAsFlow()`, or a `MutableSharedFlow(replay = 0)`.
+*Fix:* Model required UI progress as state with a matching acknowledgement. Channels and replay-zero SharedFlow are loss-tolerant alternatives, not guaranteed navigation. Recover required business progress from durable state after process death.
 
 ### Pitfall 2: Blocking the Collector
 Kotlin Flows are sequential by default. If you perform heavy work inside the `collect` block, you block the upstream flow from emitting new values.
@@ -245,7 +283,7 @@ viewModel.locationUpdates.collect { location ->
     database.saveLocationBlocking(location) 
 }
 ```
-*Fix:* Use `buffer()`, `conflate()`, or launch a new child coroutine for the processing work.
+*Fix:* Use a suspending Room DAO or move blocking I/O off main. A bounded buffer can decouple stages while retaining order; conflate only when losing intermediate values is allowed. Launching an unbounded child per value is not a general backpressure fix.
 
 ---
 
@@ -259,11 +297,11 @@ viewModel.locationUpdates.collect { location ->
 
 ## Answer Key
 
-1. **StateFlow vs LiveData:** `StateFlow` enforces an initial value because state must always exist. This forces developers to explicitly define the initial UI state (like `Loading`), removing nullability and race conditions on startup.
-2. **Backpressure:** `Flow` handles backpressure natively via coroutine suspension. If the collector is slow, the emitter suspends until the collector is ready, preventing OutOfMemory errors.
-3. **Lifecycle Semantics:** `launchWhenStarted` simply suspends the coroutine but keeps it alive in memory. `repeatOnLifecycle` completely cancels the coroutine and restarts it from scratch, freeing resources when the UI is hidden.
-4. **SharedFlow Configuration:** The new observer receives only the very last event (because `replay = 1`), and ignores the previous 19. If the buffer was full, the oldest events were already dropped.
-5. **Multiplatform Context:** You use libraries like SKIE or KMP-NativeCoroutines, which automatically generate Swift wrappers to convert Kotlin `StateFlow` and `SharedFlow` into Swift's `ObservableObject` or `AsyncSequence`.
+1. **StateFlow vs LiveData:** `StateFlow` enforces an initial value because state must always exist. This forces developers to explicitly define the initial UI state (like `Loading`), making the initial modeled state explicit. Nullable state is still possible when T is nullable, and unrelated startup races are not removed.
+2. **Backpressure:** `Flow` handles backpressure natively via coroutine suspension. If the collector is slow, the emitter suspends until the collector is ready, bounding demand in an ordinary sequential cold flow. Buffers, hot producers and callback bridges have their own retention/overflow policies and can still exhaust memory.
+3. **Lifecycle Semantics:** `launchWhenStarted` simply suspends the coroutine but keeps it alive in memory. `repeatOnLifecycle` cancels the repeating child block below the target lifecycle state and starts it again on re-entry. The outer lifecycle coroutine remains; resource cleanup and upstream sharing still follow their own cancellation/lifetime contracts.
+4. **SharedFlow Configuration:** The new observer receives only the very last event (because `replay = 1`), and ignores the previous 19. If no subscribers existed, only the replay cache mattered: extraBufferCapacity did not retain the earlier events. Values do not expire merely because five seconds passed. With active slow collectors, overflow follows the configured DROP_OLDEST policy.
+5. **Multiplatform Context:** You use libraries like SKIE or KMP-NativeCoroutines, which automatically generate Swift wrappers to convert Kotlin `StateFlow` and `SharedFlow` into a supported Swift observation surface (for example, SKIE's async sequence support or KMP-NativeCoroutines wrappers). These are different libraries/contracts; they do not universally generate ObservableObject. A hand-written bridge is also possible.
 
 ## Further Reading
 
@@ -271,3 +309,9 @@ viewModel.locationUpdates.collect { location ->
 - [`../kotlin/coroutines-and-flow/coroutines.md`](../kotlin/coroutines-and-flow/coroutines.md) — Understanding the underlying Coroutine scopes that power Flows.
 - [`../android/compose/recomposition-and-state.md`](../android/compose/recomposition-and-state.md) — How Compose observes State changes to trigger UI updates.
 - [`../backend-for-mobile/api-design-for-mobile.md`](../backend-for-mobile/api-design-for-mobile.md) — Emitting network responses into observable streams.
+- [SharedFlow broadcast, replay and no-subscriber behavior](https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines.flow/-shared-flow/)
+- [StateFlow equality conflation and initial value](https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines.flow/-state-flow/)
+- [Channel receiveAsFlow fan-out and cancellation limits](https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines.flow/receive-as-flow.html)
+- [Android lifecycle-aware coroutine collection](https://developer.android.com/topic/libraries/architecture/coroutines#restart)
+- [Android UI events and state](https://developer.android.com/topic/architecture/ui-layer/events)
+- [SKIE Flow bridging contract](https://skie.touchlab.co/features/flows)

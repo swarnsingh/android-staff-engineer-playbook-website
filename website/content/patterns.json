@@ -1,0 +1,15 @@
+{
+  "patterns.md": "Work through collaboration patterns first, then use retry, circuit breaking and compensation to recover from failures.",
+  "patterns/repository.md": "Choose the data source the UI observes and define how refresh failures reach the caller.",
+  "patterns/adapter.md": "Translate another component’s input and output into the contract your app owns.",
+  "patterns/factory.md": "Give construction its own boundary when callers need different inputs or owners.",
+  "patterns/builder.md": "Use a builder when staged configuration improves the call site and publish a stable result.",
+  "patterns/strategy.md": "Select an algorithm through a shared contract and make the selection rules explicit.",
+  "patterns/decorator.md": "Add behavior at a wrapper boundary and check what the order changes.",
+  "patterns/observer.md": "Choose what a collector should see when it arrives late or leaves before handling an update.",
+  "patterns/state.md": "Make valid screen states explicit and separate transitions from effect execution.",
+  "patterns/command.md": "Make an operation survive interruption with saved inputs and a stable identity.",
+  "patterns/retry.md": "Choose which failures may be retried and preserve identity across every attempt.",
+  "patterns/circuit-breaker.md": "Read the three admission states and decide what a recovery probe proves.",
+  "patterns/saga.md": "Record the outcome of each step and compensate the work that actually completed."
+}

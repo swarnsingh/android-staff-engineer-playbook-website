@@ -1,0 +1,8 @@
+<!-- Teaching layer over the approved Patterns source 4520147. -->
+<!-- @opening -->
+<p class="story-lead">A user retries a failed search while the first response is still in flight. A late event can arrive after the second request starts. Review the current state and event together before deciding which transition is valid.</p>
+
+<!-- @before 5. Failure Modes & Tradeoffs :: staff -->
+### Test the transition and the effect separately
+
+Start with an explicit state and feed the reducer a typed event. Assert the next state. For an effect such as starting a request, also check when the effect runs and how the result comes back as a new event. A pure transition alone does not order concurrent requests. [Android UI state production](https://developer.android.com/topic/architecture/ui-layer/state-production).

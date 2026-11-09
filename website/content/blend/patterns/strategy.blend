@@ -1,0 +1,8 @@
+<!-- Teaching layer over the approved Patterns source 4520147. -->
+<!-- @opening -->
+<p class="story-lead">A streaming app chooses a policy for an incoming video constraint. The caller needs one answer even if no specialized policy matches. Separate choosing a strategy from running it.</p>
+
+<!-- @before Staff Engineer Thinking :: staff -->
+### Specify the missing-key behavior
+
+Write down the default policy and the result for an unsupported key before adding more implementations. If a dependency graph provides a map of strategies, the selector still owns the fallback and the meaning of each key. [Dagger map multibindings](https://dagger.dev/dev-guide/multibindings.html#map-multibindings).

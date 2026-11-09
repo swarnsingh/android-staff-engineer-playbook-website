@@ -1,6 +1,6 @@
 # Factory Pattern
 
-> The Factory pattern encapsulates the instantiation logic of objects. In modern Android, pure dependency injection frameworks (like Hilt and Koin) handle 95% of object creation, effectively acting as massive, automated Abstract Factories. However, a Staff engineer knows exactly when DI falls short and explicit Factories are required: specifically, when objects require **runtime arguments** (like navigation IDs) to be constructed. The canonical Android examples are `ViewModelProvider.Factory` and Hilt's `@AssistedInject`.
+> The Factory pattern encapsulates the instantiation logic of objects. In modern Android, pure dependency injection frameworks (like Hilt and Koin) can handle much of the application graph, effectively acting as massive, automated Abstract Factories. However, a Staff engineer knows exactly when DI falls short and explicit Factories are required: specifically, when objects require **runtime arguments** (like navigation IDs) to be constructed. The canonical Android examples are `ViewModelProvider.Factory` and Hilt's `@AssistedInject`.
 
 ---
 
@@ -19,10 +19,10 @@ There are three main flavors:
 
 ## 1. The Core Android Problem: ViewModel Creation
 
-In Android, the OS destroys and recreates `Activities` and `Fragments` constantly (e.g., during screen rotation). 
+In Android, the OS destroys and recreates `Activities` and `Fragments` constantly (e.g., during screen rotation).
 If you create a `ViewModel` yourself (`val vm = UserViewModel()`), it will be destroyed and recreated on rotation, losing all state.
 
-To survive rotation, the `ViewModel` must be created and cached by the Android system's `ViewModelStore`. But the system doesn't know how to pass dependencies (like a Repository) into your ViewModel's constructor. 
+To survive rotation, the `ViewModel` must be created and cached by the Android system's `ViewModelStore`. But the system doesn't know how to pass dependencies (like a Repository) into your ViewModel's constructor.
 
 This is the exact problem the **Factory Pattern** solves in Android.
 
@@ -39,7 +39,7 @@ class UserViewModelFactory(
     private val repository: UserRepository,
     private val userId: String
 ) : ViewModelProvider.Factory {
-    
+
     @Suppress("UNCHECKED_CAST")
     override fun <T : ViewModel> create(modelClass: Class<T>): T {
         if (modelClass.isAssignableFrom(UserViewModel::class.java)) {
@@ -62,9 +62,9 @@ class UserFragment : Fragment() {
 
 ## 2. Modern Android: Assisted Injection (Dynamic Factories)
 
-Writing manual `ViewModelProvider.Factory` boilerplate for 50 ViewModels is tedious. Modern DI frameworks like Dagger/Hilt automate this. 
+Writing manual `ViewModelProvider.Factory` boilerplate for 50 ViewModels is tedious. Modern DI frameworks like Dagger/Hilt automate this.
 
-But DI frameworks only know about **compile-time** dependencies (like Repositories). They do not know about **runtime** dependencies (like a `userId` clicked in a RecyclerView).
+But DI resolves actual objects and values at runtime even when its graph is generated at compile time. Assisted factories are useful when a caller supplies values at creation; navigation arguments may also arrive through `SavedStateHandle`.
 
 To merge compile-time DI with runtime arguments, we use **Assisted Injection**, which generates a Factory under the hood.
 
@@ -89,12 +89,12 @@ Usage in Jetpack Compose:
 @Composable
 fun UserScreen(userId: String) {
     // We use the Hilt generated factory to inject the runtime 'userId'
-    val viewModel = hiltViewModel<UserViewModel, UserViewModel.UserViewModelFactory> { factory ->
+    val viewModel = hiltViewModel<UserViewModel, UserViewModel.UserViewModelFactory>(key = userId) { factory ->
         factory.create(userId)
     }
 }
 ```
-This is the pinnacle of the Factory pattern on Android: the framework generates the Factory boilerplate, cleanly merging static dependencies and dynamic runtime arguments.
+Within a ViewModelStoreOwner, the owner and key determine reuse; changing an assisted argument does not update an existing instance. Assisted arguments are not automatically saved across process death. This is one use of the Factory pattern: the framework generates the Factory boilerplate, cleanly merging static dependencies and dynamic runtime arguments.
 
 ---
 
@@ -113,7 +113,7 @@ data class UnknownItem(val type: String) : FeedItem
 
 // The Factory
 object FeedItemFactory {
-    fun create(json: JsonObject): FeedItem {
+    fun create(json: org.json.JSONObject): FeedItem {
         return when (val type = json.getString("type")) {
             "image" -> ImageItem(json.getString("url"))
             "text" -> TextItem(json.getString("text"))
@@ -122,7 +122,7 @@ object FeedItemFactory {
     }
 }
 ```
-*Note: In modern Android, libraries like Moshi or Kotlinx.Serialization handle this via Polymorphic adapters, which are essentially automated reflection-based Factories.*
+*Note: In modern Android, libraries like Moshi or kotlinx.serialization can handle polymorphic mapping through configured adapters/serializers. kotlinx.serialization uses compiler-generated serializers; Moshi supports code generation as well as reflection. Neither is universally reflection-based.*
 
 ---
 
@@ -132,7 +132,7 @@ object FeedItemFactory {
 |---|---|---|
 | **The God Factory** | A single `ObjectFactory` class that knows how to instantiate every object in the app, becoming a 5,000-line bottleneck. | Group factories by feature or domain (e.g., `BillingFactory`, `AuthFactory`). Or better, use a DI framework (Hilt/Koin). |
 | **Factory Passing (Service Locator Anti-Pattern)** | Passing a Factory object deep down the call stack just in case a leaf node needs to instantiate something. | Use Dependency Injection to provide fully constructed objects to the leaf nodes, rather than passing the means of construction. |
-| **Leaking Android Context** | A singleton Factory requires a `Context` to create objects, and holds a strong reference to an `Activity`. | If a Factory needs Context, inject the `ApplicationContext`, never an `Activity` context, to prevent memory leaks. |
+| **Leaking Android Context** | A singleton Factory requires a `Context` to create objects, and holds a strong reference to an `Activity`. | If a Factory needs Context, use application context for application-lifetime non-UI work. UI construction can require an Activity/themed context, but its factory must not outlive that owner. |
 
 ---
 
@@ -154,7 +154,7 @@ class ConfigManager private constructor(val config: Config) {
     }
 }
 ```
-If you call `ConfigManager.create()` on the Main Thread, the app crashes with an ANR (Application Not Responding). 
+If you call `ConfigManager.create()` on the Main Thread, sufficient blocking can trigger an ANR or cause jank; one disk read does not deterministically cause an ANR.
 *Fix:* Factory methods should be fast, CPU-only instantiations. I/O should be handled asynchronously and passed into the constructor/factory.
 
 ---
@@ -170,7 +170,7 @@ If you call `ConfigManager.create()` on the Main Thread, the app crashes with an
 ## Answer Key
 
 1. **DI vs Factory:**
-   Dagger/Hilt handles compile-time dependencies. A custom Factory is required when object instantiation depends on runtime arguments (like navigation IDs or user input) that DI frameworks cannot know about during compilation.
+   Use a factory when the caller needs to create owned instances from runtime inputs. DI may supply the factory and its shared dependencies; runtime inputs can also come from scoped bindings or SavedStateHandle, so this is a lifecycle/API decision, not a compile-time-versus-runtime dichotomy.
 2. **FragmentFactory:**
    `FragmentFactory` hooks into the FragmentManager's instantiation process. Instead of reflection on a no-arg constructor, it calls `instantiate(classLoader, className)`, allowing you to provide a custom factory that passes constructor arguments (like Repositories) into your Fragments.
 3. **AssistedInject Internals:**
@@ -178,10 +178,15 @@ If you call `ConfigManager.create()` on the Main Thread, the app crashes with an
 4. **Testing:**
    You should inject a `NetworkRequestFactory`. If you inject 10 objects directly, the loop is hard-coded to a limit. Injecting a Factory allows the loop to instantiate an arbitrary number of requests dynamically, and during testing, you can mock the Factory to return mock requests.
 5. **Companion Objects:**
-   A `companion object` can function as a Simple Factory. However, unlike a dedicated Factory interface, it cannot be easily mocked or substituted via polymorphism for testing, and it couples the instantiation logic directly to the class definition.
+   A `companion object` can function as a Simple Factory and can implement a factory interface. Callers that receive that interface can substitute a test factory; callers that invoke the companion globally couple themselves to that entry point.
 
 ## Further Reading
 
 - [`../android/data-and-di/dependency-injection.md`](../android/data-and-di/dependency-injection.md) — How DI frameworks act as the ultimate application-wide factory.
 - [`../android/architecture/viewmodel.md`](../android/architecture/viewmodel.md) — Deep dive into the ViewModel lifecycle and why the Factory is strictly required.
 - [`builder.md`](builder.md) — Contrast the Factory (which returns polymorphic types) with the Builder (which constructs complex configurations of a single type).
+- [Hilt ViewModel assisted injection and memoization](https://dagger.dev/hilt/view-model.html)
+- [Android ViewModel factories and CreationExtras](https://developer.android.com/topic/libraries/architecture/viewmodel/viewmodel-factories)
+- [Kotlin companion objects implement interfaces](https://kotlinlang.org/docs/object-declarations.html#companion-objects)
+- [Compiler-generated Kotlin serializers](https://kotlinlang.org/docs/serialization.html)
+- [JSONObject getString contract](https://developer.android.com/reference/org/json/JSONObject#getString(java.lang.String))

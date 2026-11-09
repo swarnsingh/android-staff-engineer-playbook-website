@@ -1,0 +1,8 @@
+<!-- Teaching layer over the approved Patterns source 4520147. -->
+<!-- @opening -->
+<p class="story-lead">Requests keep failing after the dependency stops responding. During the cool-down, calls are rejected quickly. When a probe is allowed, its outcome determines whether normal calls can return.</p>
+
+<!-- @before 5. Failure Modes & Tradeoffs :: staff -->
+### Check which result can change the breaker
+
+Trace a slow call that began before the breaker opened and completes after a probe starts. The example tracks a generation and permit so an old result cannot close the newer breaker state. Check both the probe limit and the outcome of a failed probe. [Resilience4j circuit breaker states](https://resilience4j.readme.io/docs/circuitbreaker).

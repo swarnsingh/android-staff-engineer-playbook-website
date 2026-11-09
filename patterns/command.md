@@ -1,6 +1,6 @@
 # Command Pattern
 
-> The Command pattern encapsulates a request as an object, thereby letting you parameterize clients with different requests, queue or log requests, and support undoable operations. In modern Android, the Command pattern is the architectural bedrock of offline-first applications and background processing. A Staff engineer recognizes that **WorkManager** is simply a durable, SQLite-backed Command Bus. By encapsulating network calls or database writes as Commands, you can ensure execution across process death, poor network conditions, and complex state changes.
+> The Command pattern encapsulates a request as an object, thereby letting you parameterize clients with different requests, queue or log requests, and support undoable operations. In modern Android, the Command pattern is the architectural bedrock of offline-first applications and background processing. A Staff engineer recognizes that **WorkManager** is simply a durable, SQLite-backed Command Bus. By encapsulating network calls or database writes as Commands, you can retain execution intent across ordinary process death, subject to scheduler constraints, payload access, cancellation and application lifetime. Persistence does not guarantee eventual success.
 
 ---
 
@@ -68,7 +68,7 @@ class CommandManager {
     }
 }
 ```
-**Staff Insight:** If this state needs to survive process death (e.g., the user leaves the photo editor and returns), the `Command` objects must be serializable (e.g., to JSON) and saved in `SavedStateHandle` or Room.
+**Staff Insight:** If this state needs to survive process death (e.g., the user leaves the photo editor and returns), persist serializable command data/deltas, not objects holding Views. Use saved state only for small reconstructible UI state; use durable storage for user work, and reconstruct executors with current owners/dependencies.
 
 ---
 
@@ -84,124 +84,119 @@ Android's **WorkManager** is the ultimate, OS-integrated Command pattern.
 Instead of making an API call directly, we encapsulate the intent to upload an image into a `Worker`.
 
 ```kotlin
-// The Command Implementation
+// Fragment: WorkerFactory injects the API and durable operation store.
 class UploadImageWorker(
     appContext: Context,
-    workerParams: WorkerParameters
+    workerParams: WorkerParameters,
+    private val api: ImageUploadApi,
+    private val uploads: UploadOperations,
 ) : CoroutineWorker(appContext, workerParams) {
-
     override suspend fun doWork(): Result {
-        // The Payload
-        val imageUri = inputData.getString("IMAGE_URI") ?: return Result.failure()
-        
-        return try {
-            val response = api.uploadImage(imageUri)
-            Result.success(workDataOf("SERVER_URL" to response.url))
-        } catch (e: IOException) {
-            // Network failure? WorkManager will automatically retry this Command later!
-            Result.retry()
-        } catch (e: Exception) {
-            Result.failure()
+        val id = inputData.getString("UPLOAD_ID") ?: return Result.failure()
+        val operation = uploads.load(id) ?: return Result.failure()
+        operation.terminalResult?.let { return it }
+        suspend fun fail(reason: String): Result {
+            uploads.markFailed(id, reason)
+            return Result.failure()
         }
+        val fileId = inputData.getString("FILE_ID") ?: return fail("Missing image")
+        if (fileId != operation.fileId) return fail("Missing or mismatched image")
+        if (runAttemptCount >= 4) return fail("Retry budget exhausted")
+        if (!uploads.retryIsDue(id)) return Result.retry()
+        val response = try {
+            api.uploadImage(fileId, operation.idempotencyKey)
+        } catch (cancelled: CancellationException) {
+            throw cancelled
+        } catch (failure: HttpException) {
+            if (!retryableUploadStatus(failure.code())) return fail("HTTP ${failure.code()}")
+            uploads.deferRetry(id, failure.response()?.headers()?.get("Retry-After"))
+            return Result.retry()
+        } catch (failure: IOException) {
+            return Result.retry()
+        }
+        uploads.markSucceeded(id, response.url)
+        return Result.success(workDataOf("SERVER_URL" to response.url))
     }
 }
 ```
+
+This uses the endpoint-specific `retryableUploadStatus` policy and durable `UploadOperations` contract in [Retry](retry.md#2-durable-retries-the-command-layer-workmanager): terminal failures are saved, cancellation is rethrown, and a persisted `Retry-After` gate prevents early requests. These are app-owned interfaces; they must be implemented and injected, not mistaken for SDK methods.
 
 ### Issuing the Command
-The UI layer simply creates the Command (the `WorkRequest`) and hands it to the Invoker (`WorkManager`).
 
 ```kotlin
-class ProfileViewModel(private val workManager: WorkManager) : ViewModel() {
-    
-    fun onProfilePictureSelected(uri: Uri) {
-        // 1. Parameterize the request
-        val inputData = workDataOf("IMAGE_URI" to uri.toString())
-        
-        // 2. Create the Command object
+class ProfileViewModel(
+    private val workManager: WorkManager,
+    private val images: PrivateImageStore,
+    private val uploads: UploadOperations,
+) : ViewModel() {
+    // Called by a UI-owned coroutine; the caller renders copy/save/enqueue failures.
+    // selectionId belongs to the saved draft and is reused on repeated taps/re-entry.
+    suspend fun onProfilePictureSelected(selectionId: String, uri: Uri): String {
+        val fileId = images.copyOnceToPrivateStorage(selectionId, uri)
+        val operation = uploads.getOrCreate(selectionId, fileId)
+        if (operation.terminalResult != null) return operation.id
         val uploadCommand = OneTimeWorkRequestBuilder<UploadImageWorker>()
-            .setInputData(inputData)
-            .setConstraints(
-                Constraints.Builder()
-                    .setRequiredNetworkType(NetworkType.CONNECTED)
-                    .build()
-            )
+            .setInputData(workDataOf("UPLOAD_ID" to operation.id, "FILE_ID" to operation.fileId))
+            .setConstraints(Constraints.Builder().setRequiredNetworkType(NetworkType.CONNECTED).build())
+            .setBackoffCriteria(BackoffPolicy.EXPONENTIAL, 10, TimeUnit.SECONDS)
             .build()
-            
-        // 3. Queue the request
-        workManager.enqueue(uploadCommand)
+        workManager.enqueueUniqueWork("upload:${operation.id}", ExistingWorkPolicy.KEEP, uploadCommand)
+            .await()
+        return operation.id
     }
 }
 ```
-Because this Command is written to SQLite by WorkManager, even if the user immediately swipes the app away and kills the process, the image will upload the next time the OS detects network connectivity.
+
+`PrivateImageStore.copyOnceToPrivateStorage` is an app-owned, main-safe copy operation: copy the selected URI while its grant is valid into non-cache app storage, publish the file atomically, and reuse that file for the same selection ID. `getOrCreate` atomically inserts an account-scoped operation with a stable key, or returns the existing row for that saved selection. Both commits precede enqueue. Keep the file until the operation is resolved; handle copy failures/orphan cleanup explicitly. This fragment requires those implementations, not just `uri.toString()`.
+
+`KEEP` prevents concurrent unfinished work with the same name; it is not remote deduplication and does not block reenqueuing after completion. The saved terminal result and server key cover those cases. A recovery scan schedules committed pending rows if the process dies after saving but before enqueue; after an unknown remote outcome, reconcile or retry only within the server's deduplication contract. WorkManager can resume eligible work after ordinary process death, but force-stop, uninstall, changed permissions and scheduling restrictions can prevent execution.
 
 ---
 
 ## 3. The Offline-First Action Queue
 
-For highly interactive apps (like Twitter or Slack), you cannot use WorkManager for every single "Like" or "Upvote" button press—it is too heavy and has a minimum latency overhead.
-
-Instead, Staff engineers build an in-memory or Room-backed **Action Queue** using Coroutines and Channels. This is a custom Command Invoker.
+For many fine-grained actions, use one durable outbox and coalesce drain scheduling. An in-memory channel may wake a consumer, but must not be the only source of pending work.
 
 ```kotlin
-// The Command Definition
+// Fragment: app-owned interfaces, with explicit durable contracts below.
 sealed interface OfflineAction {
     data class LikePost(val postId: String) : OfflineAction
     data class SubmitComment(val postId: String, val text: String) : OfflineAction
 }
 
-// The Invoker (Application Scoped)
-@Singleton
-class ActionQueue @Inject constructor(
-    private val api: SocialApi,
-    private val database: ActionDatabase,
-    @ApplicationScope private val scope: CoroutineScope
+class ActionQueue(
+    private val api: SessionBoundActionApi,
+    private val store: ActionStore,
+    private val scheduler: ActionDrainScheduler,
 ) {
-    // A channel to buffer commands
-    private val commandChannel = Channel<OfflineAction>(Channel.UNLIMITED)
-
-    init {
-        // The worker loop
-        scope.launch {
-            for (action in commandChannel) {
-                processAction(action)
-            }
-        }
+    suspend fun enqueue(action: OfflineAction) {
+        // One DB transaction: apply pending UI state + insert serialized action/key.
+        store.recordPending(api.accountId, UUID.randomUUID().toString(), action)
+        scheduler.enqueueDrain(api.accountId)
     }
 
-    // UI calls this. It returns instantly.
-    fun enqueue(action: OfflineAction) {
-        scope.launch {
-            database.saveAction(action) // Persist to disk for crash resilience
-            commandChannel.send(action) // Push to in-memory queue
-        }
-    }
-
-    private suspend fun processAction(action: OfflineAction) {
-        try {
-            when (action) {
-                is OfflineAction.LikePost -> api.likePost(action.postId)
-                is OfflineAction.SubmitComment -> api.submitComment(action.postId, action.text)
-            }
-            database.deleteAction(action) // Remove from disk on success
-        } catch (e: IOException) {
-            // Network is down. Push it back to the channel after a delay
-            delay(5000)
-            commandChannel.send(action)
-        }
+    // A lifecycle-owned coroutine or CoroutineWorker invokes this suspending API.
+    suspend fun drainOne(): Boolean {
+        val pending = store.claimNext(api.accountId) ?: return false
+        api.execute(pending.action, pending.idempotencyKey)
+        store.acknowledgeAndReconcile(pending.id)
+        return true
     }
 }
 ```
-This pattern allows the UI to update optimistically ("Like" turns red immediately) while the background Command Queue ensures eventual consistency with the server.
 
----
+`recordPending` returns only after local state and intent commit atomically. `claimNext` is account-scoped, ordered where required, and uses a recoverable lease so process death cannot strand in-flight rows. The captured API/session must not silently switch to another account. A restart/reconciliation path scans persisted pending/expired-lease rows and enqueues drains, covering a crash after commit but before scheduling.
+
+The worker owns bounded retry/backoff and classifies transient failure, permanent rejection and cancellation. Failed/cancelled calls retain recoverable intent; a permanent rejection updates that operation's status and reconciles its optimistic effect without undoing newer edits. A stable key works only with server-side deduplication. This fragment specifies the storage/scheduling contracts; it is not a complete Room/Worker implementation. There is no construction-time hidden launch or unbounded in-memory command buffer.
 
 ## 4. Failure Modes & Tradeoffs
 
 | Failure Mode | Cause | Prevention / Solution |
 |---|---|---|
 | **Command Bloat** | Storing massive payloads (e.g., entire Bitmaps or 10MB JSON strings) directly inside the Command object (or WorkManager `Data`). | Commands should only store **references** (URIs, Database IDs). The Command executor fetches the heavy data when it runs. |
-| **Out of Order Execution** | The user goes offline, renames a folder to "A", then renames it to "B". The Commands execute out of order when connectivity returns, resulting in "A". | Use sequential queues (Channels) or WorkManager Chaining (`beginWith().then()`) to enforce strict FIFO execution of related commands. |
-| **Process Death Memory Loss** | Implementing an Undo/Redo stack purely in memory. If the app is backgrounded and killed by the OS, the user loses their work. | Serialize the Command stack to `SavedStateHandle` or disk. Ensure Commands don't hold references to non-serializable objects (like `View` or `Activity`). |
+| **Out of Order Execution** | The user goes offline, renames a folder to "A", then renames it to "B". The Commands execute out of order when connectivity returns, resulting in "A". | Persist aggregate/sequence identity and serialize required operations. WorkManager chains impose prerequisite-success order; a Channel preserves its queued receive order, not global business order across concurrent producers, retries or process death. |
+| **Process Death Memory Loss** | Implementing an Undo/Redo stack purely in memory. If the app is backgrounded and killed by the OS, the user loses their work. | Use small saved-state reconstruction hints or persist command data to disk according to the required durability. Ensure Commands don't hold references to non-serializable objects (like `View` or `Activity`). |
 | **Zombie Commands** | A Command to delete a post is queued offline. Before it executes, the user deletes their account. The Command executes later, crashing on the backend. | Commands must validate system state *at execution time*, not at creation time. |
 
 ---
@@ -216,7 +211,7 @@ class ShowSnackbarCommand(private val view: View, private val message: String) :
 }
 ```
 If this Command is put in a delayed queue, it holds a strong reference to `View`. If the Activity rotates, the `View` leaks.
-*Fix:* Commands should manipulate data or emit state. The UI observes the state. Commands should never hold Android UI toolkit references.
+*Fix:* Commands should manipulate data or emit state. The UI observes the state. A delayed/durable command should not retain a View or Activity. A short-lived UI-only undo command can reference its view only while scoped to that view; persist model-level deltas for recovery.
 
 ### Pitfall 2: Bypassing the Single Source of Truth
 If a `SubmitCommentCommand` updates the network, and then the Command itself updates the UI via a callback, you fracture your state.
@@ -234,7 +229,7 @@ If a `SubmitCommentCommand` updates the network, and then the Command itself upd
 
 ## Answer Key
 
-1. **WorkManager Internals:** The maximum size is 10KB (defined by `Data.MAX_DATA_BYTES`). If exceeded, WorkManager throws an `IllegalStateException`.
+1. **WorkManager Internals:** The maximum serialized size is 10,240 bytes (defined by `Data.MAX_DATA_BYTES`), including serialization overhead. If exceeded, WorkManager throws an `IllegalStateException`.
 2. **Idempotency:** The backend must recognize duplicate commands via a unique idempotency key (like a UUID sent in the command) and return the cached success response rather than processing the action twice.
 3. **Command Chaining:** Worker B and Worker C are marked as FAILED and do not run. WorkManager stops the chain on the first failure.
 4. **Undo/Redo State:** The Command should only store the delta (the specific pixels changed) or a reference to a snapshot, rather than full copies of the image, minimizing memory overhead.
@@ -246,3 +241,12 @@ If a `SubmitCommentCommand` updates the network, and then the Command itself upd
 - [`../distributed-systems/idempotency.md`](../distributed-systems/idempotency.md) — Why Commands must be idempotent when retried over mobile networks.
 - [`../reference-architectures/offline-first-app.md`](../reference-architectures/offline-first-app.md) — Architecting the full data layer around offline command queues.
 - [`saga.md`](saga.md) — Chaining multiple commands together across microservices.
+- [WorkManager persistence and scheduling scope](https://developer.android.com/develop/background-work/background-tasks/persistent)
+- [WorkManager Data serialized-size limit](https://developer.android.com/reference/androidx/work/Data#MAX_DATA_BYTES)
+- [WorkManager prerequisite and failure semantics](https://developer.android.com/develop/background-work/background-tasks/persistent/how-to/chain-work)
+- [Saved state versus durable storage](https://developer.android.com/topic/libraries/architecture/saving-states)
+- [Android offline-first durable write queues](https://developer.android.com/topic/architecture/data-layer/offline-first)
+- [Coroutine cancellation](https://kotlinlang.org/docs/cancellation-and-timeouts.html)
+- [Unique work and KEEP conflict policy](https://developer.android.com/develop/background-work/background-tasks/persistent/how-to/manage-work)
+- [App-specific file ownership and retention](https://developer.android.com/training/data-storage/app-specific)
+- [WorkManager Operation.await suspension](https://raw.githubusercontent.com/androidx/androidx/androidx-main/work/work-runtime/src/main/java/androidx/work/Operation.kt)

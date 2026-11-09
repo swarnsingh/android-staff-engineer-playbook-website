@@ -1,0 +1,8 @@
+<!-- Teaching layer over the approved Patterns source 4520147. -->
+<!-- @opening -->
+<p class="story-lead">A profile is already visible when the refresh fails. The screen needs to keep the saved profile and report the failed request. Decide which source owns the displayed data and where each error belongs.</p>
+
+<!-- @before 4. Failure Modes & Tradeoffs :: staff -->
+### Separate stale content from refresh failure
+
+Keep the last saved profile visible while the refresh reports its outcome. In the Room example, the database drives observed state. Classify an HTTP rejection at the network boundary and a failed insert at the storage boundary. The caller can then offer the right recovery action. [Android offline-first data layer](https://developer.android.com/topic/architecture/data-layer/offline-first).

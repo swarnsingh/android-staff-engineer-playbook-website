@@ -1,0 +1,8 @@
+<!-- Teaching layer over the approved Patterns source 4520147. -->
+<!-- @opening -->
+<p class="story-lead">An event builder assembles a checkout event, then gets reused to build another. The first event should keep the values it was given. Look for the point where mutable construction becomes a stable result.</p>
+
+<!-- @before 5. Failure Modes & Tradeoffs :: staff -->
+### Test what happens after build
+
+Build an event, change the builder, and read the first event again. That tests the boundary between the builder’s working state and the published snapshot. If nested values are mutable, decide which of them also need copying. For a nested DSL, make the valid receiver scope explicit. [Kotlin type-safe builders](https://kotlinlang.org/docs/type-safe-builders.html).

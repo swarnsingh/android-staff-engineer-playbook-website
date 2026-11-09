@@ -1,0 +1,8 @@
+<!-- Teaching layer over the approved Patterns source 4520147. -->
+<!-- @opening -->
+<p class="story-lead">A request passes through two wrappers. One adds a credential and the other records diagnostics. Switching their order changes what the recorder can see. Review the call path and the data visible at each wrapper.</p>
+
+<!-- @before 6. Failure Modes & Tradeoffs :: staff -->
+### Check wrapper order and platform ownership
+
+Trace the input, call to the delegate and returned result through each wrapper. For app languages, also identify who stores the preference on each supported API level. A resource wrapper and a persisted language choice solve different parts of that problem. [Android per-app language preferences](https://developer.android.com/guide/topics/resources/app-languages).
