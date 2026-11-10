@@ -217,6 +217,9 @@ def frames(width=1440):
     result = json.loads(lines[-1]) if ok and lines else None
     clean = bool(result) and not result['kinds']
     print(f'{"PASS" if clean else "FAIL"}  frames ({width}px): ' + (f'{result["pages"]} pages, {result["figs"]} figures, {result["maps"]} maps, {result["labels"]} labels; static {result.get("staticFigures",0)} figures/{result.get("staticCards",0)} cards; problems {result["kinds"] or "none"}' if result else f'see {log.relative_to(ROOT)}'))
+    if result and width < 1024:
+        local = result.get('scrolling', {})
+        print(f'      local scrolls ({width}px): {local.get("figures", 0)} figures, {local.get("maps", 0)} relationship maps, {local.get("scenes", 0)} scenes')
     for line in (result or {}).get('sample', []):
         print('      ' + line)
     return clean

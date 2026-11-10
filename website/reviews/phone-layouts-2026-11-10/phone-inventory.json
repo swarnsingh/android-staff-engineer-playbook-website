@@ -1,0 +1,15 @@
+{
+ "viewport": 375,
+ "before": {
+  "fm-scroll": 278,
+  "pb-paper": 21,
+  "relationship-map": 137
+ },
+ "after": {
+  "pb-paper": 21,
+  "fm-scroll": 111,
+  "relationship-map": 136,
+  "table-scroll": 2
+ },
+ "note": "Elements scrolling sideways inside .reading-content; code blocks and tables are excluded (they scroll by design)."
+}

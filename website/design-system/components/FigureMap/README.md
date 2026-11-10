@@ -61,7 +61,27 @@ Each SVG has a title and a description taken from the figure's caption. The "Rea
 `website/scripts/figure_maps.py` computes geometry only. Every colour, typeface and pattern comes from `tokens.json` through the `.fm-*` rules in `bundle.css`, so the figures follow the light, dark, sepia and high-contrast themes. Figures use the shared wide frame. On narrow screens they keep their 15px labels and scroll sideways through `WideDiagram`.
 
 
-Compact maps retain the same actors, labels, edge directions and logical owners. The shared renderer removes desktop coordinates, reflows the semantic graph and applies the usual collision checks. It emits an alternative only when it fits the `figure-phone-width` and `figure-phone-max-height` budgets and is narrower than the normal drawing. Unrouteable or larger graphs retain the normal labelled scroll area. The two drawings have unique SVG and marker IDs, and WideDiagram selects one from the actual region width using `figure-phone-breakpoint`; label sizes are never reduced. Sequence diagrams retain their lanes. Automatic card bounds, label insets and wrap budgets also come from the figure tokens. Remaining routing and sequence constants are separate tokenization work.
+Compact maps retain the same actors, labels, edge directions and logical owners. The shared renderer removes desktop coordinates, reflows the semantic graph and applies the usual collision checks. It emits an alternative only when it fits the `figure-phone-width` and `figure-phone-max-height` budgets and is narrower than the normal drawing. The two drawings have unique SVG and marker IDs, and WideDiagram selects one from the actual region width using `figure-phone-breakpoint`; label sizes are never reduced. Automatic card bounds, label insets and wrap budgets also come from the figure tokens.
+
+The renderer first reflows the owner columns within the phone width. When that does not fit, it tries the **phone ladder**, a one-column composition:
+
+- Cards stack in relationship order. The members of each owner boundary stay together, so a boundary still encloses exactly its own cards.
+- A relationship to the next card drops straight down with its numbered label on the line. If the line would cross a boundary label, it moves right or takes a dog-leg with the label on its own horizontal run.
+- Every other relationship, including back edges and self-relationships, leaves its source on a row of its own under that card. The row carries the numbered label. The line then travels in a lane beside the column and enters its target from the side. Lanes are assigned shortest first, so nested relationships do not cross.
+- Labels wrap between words, trying the `phone-label-wraps` budgets widest first. Cards wrap between words or after `/`, `.` or `-`, never inside a word. A model whose longest word does not fit the card column keeps its wide drawing.
+- Besides the usual card and label collision checks, the ladder rejects any label that would hide part of another relationship's line.
+
+Numbers, labels, endpoints, dashed and two-way arrows, and text are the same as in the wide drawing; only positions and line breaks change. Edges that share one bus and one number in the wide drawing become separate lines on the phone, and each keeps that same number and label. The `phone-*` entries in `figureGeometry` hold the ladder's dimensions.
+
+Some figures still keep the normal labelled scroll area under section 20 of the rulebook, because a phone composition would lose relationships or shrink text:
+
+- sequence diagrams, whose lanes carry meaning;
+- state diagrams with start and end symbols;
+- models with a code identifier longer than a phone card;
+- graphs that need more lanes than the column can spare;
+- boundary labels wider than a phone boundary.
+
+Relationship maps beside a step-through use the same ladder at their 1.25× scale, so their budget is the phone width divided by `figure-map-scale`.
 
 ## Geometry tokens
 

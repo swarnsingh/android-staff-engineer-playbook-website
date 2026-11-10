@@ -89,15 +89,23 @@ def enhance(article,path,out,base,authored):
                 # Drawn at 1.25x below, so lay out for the frame width divided by that scale.
                 'frame_w':figure_maps.MAP_FRAME_W}
         figure_maps.check(figure)
-        svg=figure_maps.render_map(figure,digest).svg('fm-'+digest,row['problem'],row['reading'])
         # Maps beside a step-through keep every label at 15px or more on screen: draw them at 1.25x.
-        svg=re.sub(r'(width|height)="([\d.]+)"',lambda m:f'{m[1]}="{float(m[2])*figure_maps.MAP_SCALE:.0f}"',svg,count=2)
-        svg=re.sub(r'(min-width|max-width):([\d.]+)px',lambda m:f'{m[1]}:{float(m[2])*figure_maps.MAP_SCALE:.0f}px',svg)
+        def scaled(svg):
+            svg=re.sub(r'(width|height)="([\d.]+)"',lambda m:f'{m[1]}="{float(m[2])*figure_maps.MAP_SCALE:.0f}"',svg,count=2)
+            return re.sub(r'(min-width|max-width):([\d.]+)px',lambda m:f'{m[1]}:{float(m[2])*figure_maps.MAP_SCALE:.0f}px',svg)
+        canvas=figure_maps.render_map(figure,digest)
+        svg=scaled(canvas.svg('fm-'+digest,row['problem'],row['reading']))
+        # A phone composition at the same 1.25x scale, so it must fit the phone width divided by that scale.
+        compact=figure_maps.compact_map(figure,digest,figure_maps.px('figure-phone-width')/figure_maps.MAP_SCALE)
+        wide_attrs=''
+        if compact and compact.box[2]-compact.box[0]<canvas.box[2]-canvas.box[0]:
+            svg=svg.replace('<svg ','<svg data-figure-variant="wide" ',1)+scaled(compact.svg('fm-'+digest+'-compact',row['problem'],row['reading'])).replace('<svg ','<svg data-figure-variant="compact" hidden="hidden" ',1)
+            wide_attrs=' data-pb-wide data-label="Labelled relationships"'
         roles=list(dict.fromkeys(n['role'] for n in figure['nodes']))
         legend='<div class="fm-legend">'+''.join(f'<span class="actor-{r}">{figure_maps.ROLES[r]}</span>' for r in roles)+'<em>Numbered arrows name relationships, not time steps.</em></div>'
         problems='<div class="sequence-intro"><p class="sequence-problem"><strong>The problem.</strong> '+escape(row['problem'])+'</p><p class="sequence-reading">'+escape(row['reading'])+'</p></div>'
         hint='Follow the labelled arrowheads.' if row.get('edges') else 'Compare the labelled alternatives; no flow between them is implied.'
-        map_html=f'<div class="relationship-map" data-map="{digest}" role="region" aria-label="Labelled relationships; scroll sideways when needed" tabindex="0">{svg}</div>{legend}<p class="sequence-scroll-hint">{hint} Boundaries group related objects; they are not extra steps. Swipe the diagram sideways when needed.</p>'
+        map_html=f'<div class="relationship-map" data-map="{digest}"{wide_attrs} role="region" aria-label="Labelled relationships; scroll sideways when needed" tabindex="0">{svg}</div>{legend}<p class="sequence-scroll-hint">{hint} Boundaries group related objects; they are not extra steps. Swipe the diagram sideways when needed.</p>'
         data='<script type="application/json" class="relationship-model">'+json.dumps({**row,'actors':nodes},ensure_ascii=False).replace('</','<\\/')+'</script>'
         links='<details class="relationship-sources"><summary>Diagram sources</summary><ul>'+''.join('<li><a href="'+escape(u)+'" target="_blank" rel="noreferrer">'+escape(u.split('/')[2])+': '+escape(u.split('/')[-1] or 'documentation')+'</a></li>' for u in row['sources'])+'</ul></details>'
         result=match[0].replace('<figure class="stepper"','<figure class="stepper has-relationships"',1)

@@ -93,5 +93,8 @@ The 3 November migration covers all 197 older teaching figures in Kotlin and And
 The 4 November follow-up centralizes ReaderShell CSS values and FigureMap drawing defaults in `componentCss` and `figureGeometry`. The source compiler rejects new raw dimensions. Its review inventories all 238 chapters, removes repeated prose from 21 lessons and records each retained length exception; original chapters, code and Q&A remain unchanged. See `website/reviews/tokens-editorial-2026-11-04/REPORT.md`.
 
 - Principles, Patterns, Reference Architectures, Leadership and Career use all 41 approved chapters from source PR #81.
-- 57 maps have a narrower, collision-checked phone composition. Complex maps and sequences retain labelled local scrolling; additional compositions need individual semantic review.
+- **Phone layouts (10 November).** FigureMap's phone ladder gives wide maps a one-column composition with the same cards, owners, numbered labels and text; see `website/reviews/phone-layouts-2026-11-10/REPORT.md`. `dev.py frames-phone` prints the figures that still scroll locally at 375px. Each keeps a labelled local scroll under §20 because a phone composition would lose relationships or shrink text:
+  - 111 of 339 FigureMap figures: 44 sequence diagrams, 33 graphs needing more lanes or nested owners than the column can spare, 19 cards with more relationships than fit beside each other, 11 cards holding a code identifier longer than a phone card, and 4 state diagrams with start and end symbols;
+  - 136 of 137 relationship maps, drawn at 1.25× so every label stays at 15px or more;
+  - 21 FlowScene step-throughs whose lanes keep their authored cross-process topology.
 - Run one consolidated manual phone review after the Leadership release is integrated with the other planned topic trees. Automated mobile checks continue to cover each release.
