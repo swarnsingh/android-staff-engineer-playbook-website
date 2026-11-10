@@ -40,7 +40,7 @@ The deeper architectural win, which most teams under-use, is that extensions let
 2. **Scala implicit conversions (2003).** Earlier and more powerful — Scala let you implicitly convert one type to another, allowing methods on the converted type to appear callable on the original. Powerful but error-prone; Scala 3 replaced implicit conversions with explicit extension methods (2021) after years of debate.
 3. **Kotlin 1.0 (2016).** Shipped extension functions and extension properties from day one, syntactically modeled on C# but with the addition of nullable receivers and lambdas-with-receivers (which became the basis of every Kotlin DSL).
 4. **Android KTX (2018).** Google released a library of ~200 extension functions wrapping the Android SDK in idiomatic Kotlin. This was the first official Google endorsement of "extensions as API design tool" rather than just "utility shortcut."
-5. **Context receivers proposal — KEEP-259 (2022, deprecated 2024).** Kotlin 1.6.20 shipped experimental support for declaring multiple receivers. Was withdrawn for a redesigned proposal called **context parameters** (KEEP-367, in flight for Kotlin 2.x), addressing usability and ambiguity issues with the original.
+5. **Context receivers proposal — KEEP-259 (2022, deprecated 2024).** Kotlin 1.6.20 shipped experimental support for declaring multiple receivers. Was withdrawn for a redesigned proposal called **context parameters** (KEEP-367, Stable since Kotlin 2.4 except explicit context arguments and callable references), addressing usability and ambiguity issues with the original.
 
 The arc: extensions started as syntactic sugar for utility methods, became a tool for SDK design (AndroidX KTX), and are evolving toward a primary mechanism for capability-based programming (context parameters).
 
@@ -428,7 +428,7 @@ Most Kotlin operators (`plus`, `minus`, `times`, `div`, `get`, `set`, `compareTo
 
 - **Static call overhead** is the same as any Java static method call — effectively free after JIT inlining.
 - **`inline` extensions** have zero overhead because the body is copied into the call site. Use for hot-path extensions that take lambdas (`forEach`, `let`, `apply`).
-- **Non-inline extensions taking lambdas** allocate a `FunctionN` object per call. Inside a tight loop, this can dominate. The stdlib marks all such extensions `inline` for this reason.
+- **Non-inline extensions taking lambdas** allocate a `FunctionN` object per call. Inside a tight loop, this can dominate. The stdlib marks its eager collection operators `inline` for this reason; lazy ones such as `Sequence.map` cannot be, because they store the lambda for later.
 - **Reified generic extensions** must be `inline`, so they're zero-cost at the call site but every call site duplicates the body. Keep them small (typically 5–20 lines).
 - **Extension properties** are functions with `get`/`set`; they have no field-access fast path. Repeated `view.isVisible` checks in a hot frame loop are fine because the KTX implementation is `inline`, but a non-inline extension property would be a method call per access.
 

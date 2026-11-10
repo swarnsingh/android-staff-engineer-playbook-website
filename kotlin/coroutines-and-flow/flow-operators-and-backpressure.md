@@ -239,7 +239,7 @@ val thumbnails = imageIds
     .flatMapMerge(concurrency = 4) { id -> repository.thumbnail(id) }
 ```
 
-Always set a concurrency limit. Unbounded fan-out is a production performance bug.
+Set the concurrency limit deliberately. `flatMapMerge` defaults to `DEFAULT_CONCURRENCY` (16, configurable on the JVM through the `kotlinx.coroutines.flow.defaultConcurrency` property), which may be too many or too few for your backend; unbounded fan-out (for example `Int.MAX_VALUE`) is a production performance bug.
 
 ## Combining Operators
 

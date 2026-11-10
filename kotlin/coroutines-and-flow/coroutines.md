@@ -420,7 +420,7 @@ try {
 }
 ```
 
-The exception happens *inside the coroutine's machinery*. It propagates up the Job tree to the scope's `CoroutineExceptionHandler` (if any) or crashes the parent.
+The exception happens *inside the coroutine's machinery*. It propagates up the Job tree: an ordinary parent `Job` is cancelled with it. At the root, or under a `SupervisorJob` such as `viewModelScope`'s, it goes to the scope's `CoroutineExceptionHandler` if one is installed, otherwise to the thread's uncaught-exception handler, which crashes an Android app.
 
 ### `CoroutineExceptionHandler`
 
@@ -454,7 +454,7 @@ class CartViewModel : ViewModel() {
         }
     }
 }
-// On ViewModel.onCleared() → scope.cancel() → coroutine cancels
+// When the ViewModel is cleared, viewModelScope is cancelled (before onCleared() runs) → coroutine cancels
 ```
 
 ### `repeatOnLifecycle` — preferred for collecting flows

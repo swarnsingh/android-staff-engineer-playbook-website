@@ -202,7 +202,7 @@ When upstream work restarts unexpectedly, find every `stateIn`, `shareIn`, and c
 DAO Flow -> Repository map -> ViewModel stateIn -> UI collect
 ```
 
-If the repository uses `shareIn(applicationScope)`, upstream may keep running even when no screen is visible. If no one uses `shareIn`, multiple collectors may duplicate expensive work.
+If the repository uses `shareIn(applicationScope, SharingStarted.Eagerly)`, upstream keeps running even when no screen is visible. If no one uses `shareIn`, multiple collectors may duplicate expensive work.
 
 ### Check `SharingStarted`
 

@@ -98,7 +98,7 @@ If you find yourself with an enum + multiple nullable fields where the nullabili
 | Default for new code | Only if shared state | **Preferred** |
 
 ```kotlin
-// Class — share `id` across all subclasses
+// Class — share `timestamp` across all subclasses
 sealed class UiEvent(open val timestamp: Long) {
     data class Click(val buttonId: String, override val timestamp: Long) : UiEvent(timestamp)
     data class Swipe(val direction: Direction, override val timestamp: Long) : UiEvent(timestamp)
@@ -294,7 +294,7 @@ suspend fun <T> safeApi(call: suspend () -> T): ApiResult<T> = try {
 
 Every consumer of `ApiResult<T>` is forced by the compiler to handle each error case.
 
-### 3. Compose Navigation routes (Kotlin 1.9+)
+### 3. Compose Navigation routes (Navigation Compose 2.8+ with kotlinx.serialization)
 
 ```kotlin
 sealed interface Screen {
@@ -322,23 +322,27 @@ Type-safe routes — no string deeplink keys. The compiler checks every navigati
 
 ```kotlin
 sealed interface FeedItem {
-    data class Header(val title: String) : FeedItem
-    data class Post(val id: String, val text: String) : FeedItem
-    data class Ad(val campaignId: String) : FeedItem
-    data object Divider : FeedItem
+    val id: String   // stable, unique per feed entry (assigned when the feed is built)
+
+    data class Header(override val id: String, val title: String) : FeedItem
+    data class Post(override val id: String, val text: String) : FeedItem
+    data class Ad(override val id: String, val campaignId: String) : FeedItem
+    data class Divider(override val id: String) : FeedItem
 }
 
 LazyColumn {
-    items(feed, key = { it.id() }) { item ->
+    items(feed, key = { it.id }) { item ->
         when (item) {
-            is FeedItem.Header -> HeaderRow(item.title)
-            is FeedItem.Post   -> PostRow(item.id, item.text)
-            is FeedItem.Ad     -> AdRow(item.campaignId)
-            FeedItem.Divider   -> Divider()
+            is FeedItem.Header  -> HeaderRow(item.title)
+            is FeedItem.Post    -> PostRow(item.id, item.text)
+            is FeedItem.Ad      -> AdRow(item.campaignId)
+            is FeedItem.Divider -> Divider()
         }
     }
 }
 ```
+
+Keys must be unique across the whole list, not just per type: two dividers, two ads from one campaign or two headers with the same title would collide if the key came from display content. Give every entry its own stable ID instead.
 
 ### 5. Type-state pattern (compile-time state machines)
 
@@ -432,8 +436,8 @@ Now, when the server starts sending a new payment type, old clients whose parser
 | `IllegalStateException: Polymorphic` on JSON parse | Sealed without polymorphic adapter | kotlinx `@SerialName` discriminator or Moshi `PolymorphicJsonAdapterFactory` |
 | Refactor breaks 50 files | Added a case to a widely-used sealed | Often intentional; otherwise carve a narrower hierarchy |
 | Sealed leaks DB entity to UI | Same sealed type used across layers | Split: domain `Result` + UI `UiState`, mapped between layers |
-| `data class Loading()` allocates per state | Should be `data object` | Convert to `data object` |
-| Subclass not found at runtime | Subclass in different module | Move to the same module as the parent (Kotlin 1.5+ requires this) |
+| `class Loading : UiState` allocates per state and prints `Loading@1a2b3c` | Stateless case declared as a class | Convert to `data object` |
+| Compile error: inheritor of a sealed class or interface declared in another module | Subclass in different module | Move it to the same module and package as the parent (Kotlin 1.5+) |
 | Cannot inherit from a data class | Data classes are final | Use an eligible ordinary/sealed superclass; data classes may extend it |
 | `when` over a generic sealed loses type info | Generic `Result<Nothing>` for terminal cases | Use `Result<Nothing>` + `out T` covariance |
 | SDK consumers' code breaks on minor version | Added a sealed subclass | Treat exhaustiveness as a source-compatibility promise; Unknown only helps with explicit wire fallback mapping |

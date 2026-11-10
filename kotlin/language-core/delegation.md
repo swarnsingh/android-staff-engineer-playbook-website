@@ -104,7 +104,7 @@ If two delegated interfaces have the same method, the compiler forces you to dis
 interface A { fun ping() }
 interface B { fun ping() }
 
-class Both(a: A, b: B) : A by a, B by b {
+class Both(private val a: A, private val b: B) : A by a, B by b {
     override fun ping() {
         // must override explicitly when both have the same signature
         a.ping(); b.ping()

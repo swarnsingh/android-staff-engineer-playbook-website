@@ -162,7 +162,7 @@ fun loadsProfile() = runTest {
 }
 ```
 
-If the rule's dispatcher and `runTest` use different schedulers, pass the scheduler explicitly when creating dependencies:
+When `Dispatchers.Main` is replaced with a `TestDispatcher`, `runTest` reuses that dispatcher's scheduler, so the rule and the test share virtual time. Any other dispatcher you inject must share it too, so pass the scheduler explicitly when creating dependencies:
 
 ```kotlin
 val ioDispatcher = StandardTestDispatcher(testScheduler)

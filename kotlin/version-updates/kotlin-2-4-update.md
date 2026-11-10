@@ -135,10 +135,8 @@ Task {
         for try await state in viewModel.state.asAsyncSequence() {
             self.state = state
         }
-    } catch is CancellationError {
-        // Normal task cancellation.
     } catch {
-        // Surface as state or telemetry.
+        // The flow failed, or the task was cancelled; surface failures as state or telemetry.
     }
 }
 ```
@@ -157,7 +155,8 @@ This changes the KMP recommendation. SKIE and manual wrappers are no longer the 
 
 Before upgrading a serious Android/KMP codebase to Kotlin 2.4:
 
-- Confirm Android Gradle Plugin and Compose compiler compatibility.
+- Confirm Android Gradle Plugin and Compose compiler compatibility. Kotlin 2.4 requires AGP 8.5.2 or later and is fully compatible with Gradle 7.6.3 through 9.5.0.
+- Check iOS deployment targets: Kotlin 2.4 raises the default minimum to iOS and tvOS 15.0, macOS 12.0 and watchOS 8.0. Override it explicitly if the app still supports older versions.
 - Confirm all compiler plugins support Kotlin 2.4: KSP, Room, Hilt/Dagger, serialization, Compose, SKIE, SQLDelight, Ktor plugins.
 - Run binary compatibility checks for published libraries.
 - Inspect generated APIs for KMP public modules.

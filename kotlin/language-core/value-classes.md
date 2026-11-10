@@ -43,7 +43,7 @@ val list = listOf(Meters(1.0))      // boxed: List<T> is generic
 
 Consequences that matter at staff level:
 
-- **Collections store boxes.** A List<UserId> stores boxed references rather than primitive longs. Boxing occurs where a value enters generic or nullable representation; it is not necessarily a fresh allocation per list slot. Generic code can put the same already-boxed reference into several slots. Measure allocations for the actual call path; use primitive arrays when their representation fits.
+- **Collections store boxes.** A `List<UserId>` stores boxed `UserId` references rather than bare `String`s, and a `List<Millis>` stores boxes rather than primitive `long`s. Boxing occurs where a value enters generic or nullable representation; it is not necessarily a fresh allocation per list slot. Generic code can put the same already-boxed reference into several slots. Measure allocations for the actual call path; use primitive arrays when their representation fits.
 - **Use value equality.** Referential equality (`===`) on value-class operands is prohibited by the compiler because representation can vary.
 - Nullable wrapped types and generic-heavy code erode the benefit silently; the type safety remains, the zero-cost claim doesn't. Profile before assuming.
 

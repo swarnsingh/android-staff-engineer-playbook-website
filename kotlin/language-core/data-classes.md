@@ -37,7 +37,7 @@ Modern Android relies on `equals` everywhere:
 
 - **Jetpack Compose** can skip a composable whose parameters are unchanged: stable parameters are compared with `equals`, unstable ones by instance.
 - **`StateFlow.value = newState`** emits only if `newState != oldState`.
-- **DiffUtil** (RecyclerView) animates list changes based on `equals`.
+- **DiffUtil** (RecyclerView) decides which rows changed through `ItemCallback.areContentsTheSame`, which is commonly implemented with data-class `==`.
 - **`HashMap` / `Set` / Room entity caching** all rely on a correct `equals`/`hashCode` pair.
 
 A wrong (or missing) `equals` silently destroys UI performance and correctness.
@@ -424,7 +424,7 @@ If `ProductRow` is in a `LazyColumn`, stable params + stable lambda `onAdd` let 
 | Two same-typed fields silently swapped after refactor | Destructuring is positional | Access properties by name; do not rely on a universal compiler warning |
 | `User(id=1) != User(id=1)` after JSON parse | Body property holding extra state | All identity props in primary constructor |
 | `NoSuchMethodError` after library upgrade | A constructor/copy signature changed | Preserve existing binary signatures; defaults alone do not preserve `copy` ABI |
-| Logs spam `User(id=…, name=…, email=…, …)` with PII | `toString` includes sensitive fields | Override `toString` manually or mark fields as redacted (`@Sensitive`) |
+| Logs spam `User(id=…, name=…, email=…, …)` with PII | `toString` includes sensitive fields | Override `toString` manually to redact sensitive fields; no standard annotation changes the generated `toString` |
 | `60 fps drop to 30 fps` after adding state field | God-state `copy()` allocates large object each frame | Split into composed sub-states |
 
 ---
