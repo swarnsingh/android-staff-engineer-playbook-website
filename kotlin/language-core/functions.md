@@ -108,7 +108,7 @@ retry(times = 3) {
 If the function takes only the lambda, you can drop the parentheses entirely:
 
 ```kotlin
-synchronized(lock) { mutate() }
+run { mutate() }
 ```
 
 This is why Kotlin DSLs look the way they do.
@@ -424,7 +424,7 @@ viewModelScope.launch {
 }
 ```
 
-`launch` takes a `suspend CoroutineScope.() -> Unit` — a suspending lambda with `CoroutineScope` as the receiver. Inside the lambda, `this` is the scope, you can call other suspend functions, and on cancellation the lambda's continuation is invalidated.
+`launch` takes a `suspend CoroutineScope.() -> Unit` — a suspending lambda with `CoroutineScope` as the receiver. Inside the lambda, `this` is the scope, you can call other suspend functions, and on cancellation the next *cancellable* suspension point (such as `delay`, or a callback bridged with `suspendCancellableCoroutine`) or an explicit `ensureActive()` check throws `CancellationException`. A bridge built with plain `suspendCoroutine` is not cancellable.
 
 ### `fun interface` for legacy interop
 
@@ -695,7 +695,7 @@ For Compose, lambda identity affects recomposition skipping. Tools like the Comp
 9. **What does the function type `String.(Int) -> Boolean` mean, and how does it differ from `(String, Int) -> Boolean`?**
    `String.(Int) -> Boolean` is a lambda with a receiver. Inside the lambda, the `String` is available as `this`, and it takes an `Int` parameter. It differs from `(String, Int) -> Boolean` syntactically: you call it like an extension function `myString.lambda(myInt)`. At the bytecode level, they both compile to `Function2<String, Int, Boolean>`.
 10. **You have `fun fetch(callback: (Result) -> Unit)`. Five years later you need to add progress reporting. How would you evolve the API without breaking existing callers?**
-    You can introduce a functional interface `fun interface FetchCallback { fun onComplete(r: Result); fun onProgress(p: Int) {} }` but that breaks existing lambdas. The Kotlin-idiomatic way is to replace the single callback with a Suspend function returning a `Flow<FetchStatus>`, or add a second optional parameter `progressCallback: ((Int) -> Unit)? = null` with a default value.
+    You can introduce a functional interface `fun interface FetchCallback { fun onComplete(r: Result); fun onProgress(p: Int) {} }` but that breaks existing lambdas. The Kotlin-idiomatic way is to add a new function returning a `Flow<FetchStatus>` (a Flow-returning function does not need `suspend`) and deprecate the old one, or add an overload that also takes `progressCallback: (Int) -> Unit` while keeping the original. A new parameter with a default value keeps source compatibility but changes the JVM signature, so already-compiled callers break unless the old overload stays.
 
 ---
 

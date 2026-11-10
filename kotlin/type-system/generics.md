@@ -397,9 +397,10 @@ class DetailViewModel @AssistedInject constructor(
     }
 }
 
-// Composable
-val factory = EntryPointAccessors.fromActivity<DetailEntryPoint>(activity)
-val vm: DetailViewModel = viewModel(factory = ...) { factory.create(id) }
+// Composable (androidx.hilt:hilt-lifecycle-viewmodel-compose)
+val vm = hiltViewModel<DetailViewModel, DetailViewModel.Factory> { factory ->
+    factory.create(id)
+}
 ```
 
 ### Service locators / DI containers
@@ -457,7 +458,7 @@ Tells the compiler "trust me, I know this looks variance-unsafe, but it's OK in 
 | `is List<String>` fails to compile | Erasure | `is List<*>` then check element types manually |
 | Cannot instantiate `T()` inside generic class | Erasure — `T::class.java` unavailable | Pass a `Class<T>` constructor arg or use `reified` (which needs `inline`) |
 | Shadowed type parameter | `fun <T> bar(item: T)` inside `class Foo<T>` | Remove the inner `<T>` or rename |
-| `MutableList<Dog>` not assignable to `MutableList<Animal>` | Invariance is correct | Use `MutableList<out Animal>` (read-only) or copy |
+| `MutableList<Dog>` not assignable to `MutableList<Animal>` | Invariance is correct | Use `List<Animal>` or `MutableList<out Animal>` (no `add`, though `remove`/`clear` still work), or copy |
 | Gson silently returns `List<LinkedTreeMap>` instead of `List<User>` | Type token lost | Use Moshi (compile-time codegen) or `TypeToken` |
 | Java consumer gets verbose wildcard signatures | Default `out` becomes `? extends T` in bytecode | `@JvmSuppressWildcards` on the API |
 | `inline fun` becomes huge | Body copied at every call site | Smaller body; or extract non-inline helpers |

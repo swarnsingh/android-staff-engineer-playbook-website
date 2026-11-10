@@ -59,7 +59,7 @@ The JVM has eight primitive types (`int`, `long`, etc.). Anything else — inclu
 ```kotlin
 val a: Int = 30        // primitive `int` — stack
 val b: Int? = 30       // boxed `java.lang.Integer` — heap
-val c: List<Int> = listOf(1, 2, 3)   // each Int boxed into Integer — heap × 3
+val c: List<Int> = listOf(1, 2, 3)   // elements are Integer references (1, 2, 3 come from the Integer cache)
 val d: IntArray = intArrayOf(1, 2, 3)   // raw int[] — single heap allocation
 ```
 

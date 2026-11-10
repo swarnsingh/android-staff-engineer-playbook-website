@@ -11,7 +11,7 @@
 **No modifier (invariance):** "I both produce and consume T. No subtype relationship."
 
 ```kotlin
-open class Animal
+open class Animal(val name: String = "animal")
 class Dog : Animal()
 
 // Covariance: Producer<Dog> can be used as Producer<Animal>
@@ -138,15 +138,16 @@ dogSink.accept(Dog())                  // safe — Animal sink can absorb Dogs
 
 Subtype relationship is **reversed**: `Sink<Animal>` is a subtype of `Sink<Dog>` even though `Animal` is a supertype of `Dog`. Because the sink only consumes, a general consumer works wherever a specific one is needed.
 
-### Real stdlib: `Comparator<in T>`
+### Real stdlib: `sortedWith(comparator: Comparator<in T>)`
 
 ```kotlin
 val animalComparator: Comparator<Animal> = compareBy { it.name }
-val dogComparator: Comparator<Dog> = animalComparator    // ✅ legal
-listOf(Dog(), Dog()).sortedWith(dogComparator)
+listOf(Dog(), Dog()).sortedWith(animalComparator)            // ✅ legal: parameter is Comparator<in T>
+val dogComparator: Comparator<in Dog> = animalComparator     // ✅ legal with use-site `in`
+// val strict: Comparator<Dog> = animalComparator            // ❌ on Kotlin/JVM
 ```
 
-A `Comparator<Animal>` knows how to compare any two animals, so it certainly knows how to compare two dogs. Contravariance makes this fact a compile-time fact.
+A `Comparator<Animal>` knows how to compare any two animals, so it certainly knows how to compare two dogs. On Kotlin/JVM, `Comparator` is Java's `java.util.Comparator`, which has no declaration-site variance, so the stdlib states the contravariance at the use site: `sortedWith`, `sortWith` and `maxWith` take `Comparator<in T>`. Contravariance makes this fact a compile-time fact.
 
 ---
 
@@ -279,7 +280,7 @@ interface OnItemClickListener<in T> {
 }
 
 val animalListener: OnItemClickListener<Animal> = ...
-recyclerView.onClickListener = animalListener as OnItemClickListener<Dog>   // ✅ legal
+val dogListener: OnItemClickListener<Dog> = animalListener   // ✅ legal, no cast needed
 ```
 
 A listener for "anything" can listen for dogs specifically. Use `in` here.

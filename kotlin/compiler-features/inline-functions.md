@@ -18,7 +18,7 @@ Inlining can remove the inlinable lambda object and indirect call at a Kotlin ca
 
 In C and C++, `inline` was used to save the CPU from the overhead of a "function call" (pushing parameters to the stack, jumping memory addresses). 
 In Java, you cannot explicitly ask for inlining. The Java Just-In-Time (JIT) compiler dynamically decides whether to inline small functions at runtime based on profiling data. 
-Kotlin introduced explicit `inline` not to save CPU cycles on function jumps, but specifically to stop the JVM from creating hidden Anonymous Classes for Lambdas.
+Kotlin's explicit `inline` is mainly about lambdas rather than call overhead: it removes the function object and indirect call for an inlined lambda argument, and it enables non-local returns and `reified` type parameters.
 
 ## First Principles
 
@@ -50,8 +50,8 @@ fun calculate() {
 The following Java-shaped sketch illustrates a possible function-object call. It is pseudocode, not guaranteed decompiler output: this noncapturing lambda can be reused, and modern Kotlin/JVM normally emits `invokedynamic`.
 
 ```java
-// Conceptual Java-shaped sketch (No Inline)
-public final void calculate() {
+// Conceptual Java-shaped sketch (No Inline); top-level functions are static on CalcKt
+public static final void calculate() {
     // Illustrative function object; not proof of a fresh allocation per call.
     int result = doMath(5, 10, new Function2<Integer, Integer, Integer>() {
         public Integer invoke(Integer x, Integer y) {
@@ -77,8 +77,8 @@ fun calculate() {
 Decompiled Java:
 
 ```java
-// Decompiled Java (With Inline)
-public final void calculate() {
+// Decompiled Java (With Inline), simplified
+public static final void calculate() {
     // The compiler literally copied the logic (x + y) and pasted it here!
     // No doMath function is called. No Object is instantiated. Zero overhead.
     int x = 5;
@@ -111,42 +111,47 @@ graph TD
 
 Showing decompiled Java is one level of evidence; reading actual JVM bytecode is another. Compile both versions and run `javap -c -p`:
 
-**Without `inline`** — this illustrative listing shows one possible class-based call shape. It is not the output of the noncapturing example on current defaults. Kotlin/JVM 2.2.21 emits `invokedynamic`; with `-Xlambdas=class` it uses a cached `INSTANCE` for this lambda:
+**Without `inline`** — actual output from Kotlin/JVM 2.4.21 on default settings. Both functions are top level, so they compile to static methods on `CalcKt`, and the lambda arrives through `invokedynamic`:
 
 ```
-public final void calculate();
-  Code:
-     0: aload_0
-     1: iconst_5                                              // push 5
-     2: bipush        10                                      // push 10
-     4: new           #15  // class CalcKt$calculate$1        // ALLOCATE new lambda
-     7: dup
-     8: invokespecial #19  // CalcKt$calculate$1."<init>":()V // construct it
-    11: checkcast     #21  // kotlin/jvm/functions/Function2
-    14: invokevirtual #25  // Method doMath:(IILkotlin/jvm/functions/Function2;)I
-    17: istore_1                                              // result -> local 1
-    18: return
-```
-
-In the illustrative listing, `new` followed by construction would allocate a fresh function object. Do not apply that count to the source above: its noncapturing lambda can be cached or linked using `invokedynamic`. Actual allocation rates and jank require measurement.
-
-**With `inline`** — the lambda body is pasted into the caller. No allocation:
-
-```
-public final void calculate();
+public static final void calculate();
   Code:
      0: iconst_5                                              // push 5
-     1: istore_1                                              // a -> local 1
-     2: bipush        10                                      // push 10
-     4: istore_2                                              // b -> local 2
-     5: iload_1                                               // push a
-     6: iload_2                                               // push b
-     7: iadd                                                  // add (the lambda body!)
-     8: istore_3                                              // result -> local 3
-     9: return
+     1: bipush        10                                      // push 10
+     3: invokedynamic #58,  0  // InvokeDynamic #0:invoke:()Lkotlin/jvm/functions/Function2;
+     8: invokestatic  #60      // Method doMath:(IILkotlin/jvm/functions/Function2;)I
+    11: istore_0                                              // result -> local 0
+    12: return
 ```
 
-Zero `new` opcodes, zero `invokevirtual` on a lambda interface, zero `Function2` reference anywhere. The math (`iadd`) happens directly in the caller's frame.
+There is no `new` here: `invokedynamic` links a `Function2` for the noncapturing lambda, and the runtime may reuse it. `doMath` then calls the lambda through the `Function2` interface, which boxes the `Int` arguments. (With `-Xlambdas=class`, the compiler generates a lambda class and reuses a cached `INSTANCE` for this noncapturing lambda.) Actual allocation rates and jank require measurement.
+
+**With `inline`** — actual output from the same compiler. The lambda body is pasted into the caller:
+
+```
+public static final void calculate();
+  Code:
+     0: iconst_5
+     1: istore_1                                              // a -> local 1
+     2: bipush        10
+     4: istore_2                                              // b -> local 2
+     5: iconst_0                                              // inlining bookkeeping
+     6: istore_3
+     7: iload_1
+     8: iload_2
+     9: istore        4                                       // y
+    11: istore        5                                       // x
+    13: iconst_0                                              // inlining bookkeeping
+    14: istore        6
+    16: iload         5
+    18: iload         4
+    20: iadd                                                  // the lambda body: x + y
+    21: nop
+    22: istore_0                                              // result -> local 0
+    23: return
+```
+
+No `invokedynamic`, no call to `doMath`, and no `Function2` reference. The extra locals are the inliner storing parameters; the arithmetic (`iadd`) happens directly in the caller's frame.
 
 **Compare the actual call sites.** Inlining can eliminate the function-object invocation and boxing used by a generic Function interface. It does not establish a fixed number of heap allocations or a runtime speedup for this example. Inspect compiler output for the chosen version and flags, then measure the optimised Android build.
 
@@ -159,7 +164,8 @@ Almost all collection operators (`forEach`, `map`, `filter`) and scope functions
 Inlining reduces overhead for many stdlib higher-order calls. It does not fuse eager collection operations: `filter` and `map` still create their result collections, and sorting has its own allocations and comparison cost. A chain is not guaranteed to crash without inlining or become allocation-free with it.
 
 ```kotlin
-// Kotlin Standard Library Source Code
+// Simplified from the Kotlin standard library (the real map presizes the
+// list and delegates to mapTo(ArrayList<R>(collectionSizeOrDefault(10)), transform))
 public inline fun <T, R> Iterable<T>.map(transform: (T) -> R): List<R> {
     val destination = ArrayList<R>()
     for (item in this)
@@ -194,7 +200,8 @@ public inline fun <T, R> Iterable<T>.map(transform: (T) -> R): List<R> {
   If an inline function takes a lambda, but tries to pass that lambda into another thread or a callback, the compiler will fail. 
   ```kotlin
   inline fun executeAsync(action: () -> Unit) {
-      // COMPILER ERROR! You cannot inline a lambda that escapes to another context.
+      // COMPILER ERROR: "Cannot inline 'action: () -> Unit' here: it might contain
+      // non-local returns. Add 'crossinline' modifier to parameter declaration."
       Thread { action() }.start() 
   }
   ```

@@ -27,7 +27,7 @@ The hidden cost is mostly Kotlin-side: the language has to maintain awareness of
 1. **Kotlin 0.x (2011–2015).** JetBrains designed Kotlin alongside their largely Java codebase (IntelliJ IDEA). Interop was a primary design constraint from day one.
 2. **Kotlin 1.0 (2016).** Stable interop with Java 6+. Platform types, `@Jvm*` annotations, top-level functions as `XxxKt` classes, `object` singletons via `INSTANCE` field.
 3. **Android Studio 3.0 (2017).** Google announced first-party Kotlin support for Android. Kotlin became the recommended language in 2019.
-4. **Kotlin 1.3 (2018).** Added Java 8 default method support, letting Kotlin interfaces project default implementations as real Java 8 defaults (with `@JvmDefault`).
+4. **Kotlin 1.2.40–1.3 (2018).** Added experimental Java 8 default-method generation with `@JvmDefault`, later replaced by the `-Xjvm-default` modes. Since Kotlin 2.2, interface functions compile to JVM default methods by default, controlled by the stable `-jvm-default` option.
 5. **Kotlin 1.5+ (2021–).** Value classes (`@JvmInline`), sealed interfaces, improved Java records interop.
 6. **Kotlin/JVM 2.x (2024+).** Refinements to inline value class boxing, kotlin.Result interop, refined nullability inference from JSpecify annotations.
 
@@ -74,7 +74,7 @@ A Kotlin file is compiled into one or more JVM classes. Here's how each major fe
 | `var x: Int` property on `Foo` | private field `x`, public `getX()`, `setX()` | `foo.getX()`, `foo.setX(5)` |
 | `fun greet(name: String = "world")` | one method `greet(String)`; default value only available from Kotlin | `foo.greet("world")` — Java must always pass |
 | `inline fun` | regular method; `inline` is a Kotlin-side optimization | callable but not inlined when called from Java |
-| `internal fun bar()` | public method with mangled name `bar$module_name()` | callable but the mangled name is awkward |
+| `internal fun bar()` (class member) | public method with mangled name `bar$module_name()`; top-level `internal` functions keep their plain name | callable from Java; the mangled member name is awkward |
 | sealed class | abstract class with restricted construction; JVM 17 targets can also emit permitted-subclass metadata | Java cannot freely add direct subclasses; use an open interface for an intentionally extensible API |
 
 ### 3. The `@Jvm*` annotation family
@@ -375,8 +375,7 @@ Each Kotlin construct has a deterministic JVM lowering. Knowing the mapping lets
 ### A Kotlin-first SDK that supports Java consumers
 
 ```kotlin
-// File: Telemetry.kt
-@file:JvmName("Telemetry")
+// File: Telemetry.kt (only an object here, so no file facade class and no need for @file:JvmName)
 package com.example.sdk
 
 object TelemetryClient {
@@ -520,7 +519,7 @@ The callback becomes a Kotlin `Function1` at the JVM boundary; a Java lambda mus
 
 **`internal` accidentally exposed via reflection.** A Java caller uses reflection to invoke a mangled `internal` method. Not a Kotlin bug, but surprising. Mitigation: don't rely on `internal` for security; use module boundaries and access tokens for sensitive APIs.
 
-**Companion `INSTANCE` boilerplate.** Java callers without `@JvmStatic` write `MyClass.Companion.method()`. Mitigation: add `@JvmStatic` to public companion methods.
+**`Companion` boilerplate.** Java callers without `@JvmStatic` write `MyClass.Companion.method()`. Mitigation: add `@JvmStatic` to public companion methods.
 
 **Top-level function file rename.** Renaming `Util.kt` to `Strings.kt` changes the Java class from `UtilKt` to `StringsKt`. Java callers (and reflection-using code, ProGuard rules) break. Mitigation: add `@file:JvmName("Util")` to pin the class name regardless of file name.
 
@@ -579,7 +578,7 @@ The callback becomes a Kotlin `Function1` at the JVM boundary; a Java lambda mus
 
 **Audit `@JvmField` aggressively.** It's the only annotation that becomes a binary-compatibility commitment to mutable state. Most uses should be `val` (read-only) — and ideally `const val` or a `@JvmStatic` getter.
 
-**Migrate away from companion `INSTANCE` for public APIs.** New SDK design should default to top-level functions with `@file:JvmName(...)`. Companion objects are useful for class-scoped factories; for module-scoped utilities, top-level is simpler.
+**Migrate away from companion objects for module-scoped public utilities.** New SDK design should default to top-level functions with `@file:JvmName(...)`. Companion objects are useful for class-scoped factories; for module-scoped utilities, top-level is simpler.
 
 **Watch sealed hierarchy target compatibility.** Keep intended direct subclasses in the supported closed hierarchy. A public sealed API is valid, but it promises a closed set, not arbitrary same-package Java extension. Use an ordinary interface if external Java implementations are part of the API contract.
 

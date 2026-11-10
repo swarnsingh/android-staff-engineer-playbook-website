@@ -20,7 +20,7 @@ final List<String> tags = new ArrayList<>();  // immutable reference, mutable co
 Two problems:
 
 1. **The wrong default is mutable.** Most local variables are assigned once. Forcing developers to type `final` every time they want safe behavior creates friction.
-2. **`final` is one-dimensional.** `final List<String>` says "the reference doesn't change" but says nothing about the list contents. Java has no way to express "fully immutable" without a third-party type (`Collections.unmodifiableList`, Guava's `ImmutableList`, Java 9's `List.of`).
+2. **`final` is one-dimensional.** `final List<String>` says "the reference doesn't change" but says nothing about the list contents. Expressing read-only contents needs a separate wrapper or type (`Collections.unmodifiableList`, Java 9's `List.of`, Guava's `ImmutableList`), and even those are shallow: the elements themselves can still be mutable.
 
 Kotlin's design: flip the default. Use `val` for read-only bindings (the common case) and `var` only when reassignment is needed. Keep the type-system orthogonal: `val xs: List<Int>` doesn't promise immutability — it promises the reference can't be reassigned, AND that `xs` is declared as the read-only interface `List<Int>` rather than `MutableList<Int>`. For full immutability, the underlying object graph must also be immutable.
 
@@ -466,7 +466,9 @@ object FirebaseEvent {
     const val SCREEN_VIEW = "screen_view"
 }
 
-Firebase.analytics.logEvent(FirebaseEvent.SIGN_UP, params)
+fun trackSignUp(params: Bundle) {
+    Firebase.analytics.logEvent(FirebaseEvent.SIGN_UP, params)
+}
 ```
 
 Inlined constants prevent typos in event names. Renaming them requires touching every call site, which is the right level of friction for renaming an analytics event.

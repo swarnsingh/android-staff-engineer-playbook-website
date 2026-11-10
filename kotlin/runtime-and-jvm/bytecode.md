@@ -128,7 +128,7 @@ public final java.lang.String greeting();
 
 Two observations:
 1. `val name` becomes a **field** plus a getter method. Code inside `User` reads the field directly (`getfield`); code in other classes calls `getName()`.
-2. In this compiler/target configuration, the string template lowers to a `StringBuilder` chain. Other Kotlin/JVM target and compiler configurations can emit `invokedynamic` string concatenation instead, so inspect the bytecode produced by the build you are tuning rather than assuming one universal lowering.
+2. This listing is from `kotlinc` 2.4.21 with its default JVM target (1.8, class-file version 52), where the string template lowers to a `StringBuilder` chain. With `-jvm-target 9` or higher (Android builds typically target 11 or 17), the same template compiles to one `invokedynamic` `makeConcatWithConstants` call, which D8 then desugars for older devices. Inspect the bytecode produced by the build you are tuning rather than assuming one lowering.
 
 ### Null safety
 
@@ -140,15 +140,16 @@ fun length(s: String?): Int = s?.length ?: 0
 public static final int length(java.lang.String);
   Code:
      0: aload_0
-     1: ifnull        12              // if s == null, jump to 12
-     4: aload_0
-     5: invokevirtual #2 // Method java/lang/String.length:()I
+     1: dup
+     2: ifnull        11              // if s == null, jump to 11
+     5: invokevirtual #12 // Method java/lang/String.length:()I
      8: goto          13
+    11: pop                            // discard the null
     12: iconst_0                       // push 0
     13: ireturn
 ```
 
-The `?.` becomes a simple `ifnull` branch. No reflection, no overhead. The Elvis (`?:`) becomes the fallback at offset 12.
+The `?.` becomes a simple `ifnull` branch. No reflection, no overhead. The Elvis (`?:`) becomes the fallback at offsets 11–12.
 
 ### `data class`
 
@@ -163,30 +164,34 @@ public boolean equals(java.lang.Object);
   Code:
      0: aload_0
      1: aload_1
-     2: if_acmpeq     46                       // same reference? skip
-     5: aload_1
-     6: instanceof    #5 // class User
-     9: ifeq          44                       // not a User? return false
-    12: aload_1
-    13: checkcast     #5
-    16: astore_2
-    17: aload_0
-    18: getfield      #2 // name
-    21: aload_2
-    22: getfield      #2
-    25: invokestatic  #6 // kotlin.jvm.internal.Intrinsics.areEqual
-    28: ifeq          44
-    31: aload_0
-    32: getfield      #3 // age
-    35: aload_2
-    36: getfield      #3
-    39: if_icmpne     44                       // primitive int compare
-    42: iconst_1
-    43: ireturn
-    44: iconst_0
-    45: ireturn
-    46: iconst_1
-    47: ireturn
+     2: if_acmpne     7                        // different reference? keep checking
+     5: iconst_1
+     6: ireturn                                // same reference: true
+     7: aload_1
+     8: instanceof    #2 // class User
+    11: ifne          16
+    14: iconst_0
+    15: ireturn                                // not a User: false
+    16: aload_1
+    17: checkcast     #2 // class User
+    20: astore_2
+    21: aload_0
+    22: getfield      #21 // Field name:Ljava/lang/String;
+    25: aload_2
+    26: getfield      #21 // Field name:Ljava/lang/String;
+    29: invokestatic  #79 // Method kotlin/jvm/internal/Intrinsics.areEqual
+    32: ifne          37
+    35: iconst_0
+    36: ireturn
+    37: aload_0
+    38: getfield      #25 // Field age:I
+    41: aload_2
+    42: getfield      #25 // Field age:I
+    45: if_icmpeq     50                       // primitive int compare
+    48: iconst_0
+    49: ireturn
+    50: iconst_1
+    51: ireturn
 ```
 
 Every primary-constructor property participates in generated equality. Properties declared only in the class body do not. With 10 primary-constructor properties, the comparison includes all 10. This is why "10 fields × 5,000 data classes" inflates `classes.dex`.
@@ -203,17 +208,18 @@ class A {
 public final java.lang.String getName();
   Code:
      0: aload_0
-     1: getfield     #2 // Field name
+     1: getfield      #17 // Field name:Ljava/lang/String;
      4: dup
-     5: ifnull        11
+     5: ifnull        9
      8: areturn
-    11: pop
-    12: ldc          #3 // String "name"
-    14: invokestatic #4 // Method kotlin/jvm/internal/Intrinsics.throwUninitializedPropertyAccessException
-    17: athrow
+     9: pop
+    10: ldc           #18 // String name
+    12: invokestatic  #24 // Method kotlin/jvm/internal/Intrinsics.throwUninitializedPropertyAccessException:(Ljava/lang/String;)V
+    15: aconst_null                        // unreachable: the call above always throws
+    16: areturn
 ```
 
-If the field is null, throws `UninitializedPropertyAccessException`. The cost over a plain `String?` is the extra `ifnull/throw` block per access.
+If the field is null, the intrinsic throws `UninitializedPropertyAccessException`. The cost over a plain `String?` is the extra `ifnull/throw` block per access.
 
 ### Coroutines
 
@@ -227,20 +233,26 @@ suspend fun fetch(): String {
 The compiler rewrites this into a state machine. The signature changes (extra `Continuation` parameter), and the method becomes a `switch` over the saved state:
 
 ```
-public static final java.lang.Object fetch(kotlin.coroutines.Continuation);
+public static final java.lang.Object fetch(kotlin.coroutines.Continuation<? super java.lang.String>);
   Code:
      0: aload_0
-     1: instanceof    #2 // class FetchKt$fetch$1
-     4: ifeq          ...                       // first call vs resume?
-     ...
-    21: iload         11                        // load saved 'label'
-    23: tableswitch   { ... }                   // jump to state 0 or state 1
+     1: instanceof    #20 // class FetchKt$fetch$1          // resuming an existing state machine?
+     4: ifeq          36
+     ...                                                     // (reuse it, or allocate a new FetchKt$fetch$1 at 36)
+    50: invokestatic  #39 // Method kotlin/coroutines/intrinsics/IntrinsicsKt.getCOROUTINE_SUSPENDED:()Ljava/lang/Object;
+    53: astore_3                                             // keep the sentinel
+    54: aload_2
+    55: getfield      #24 // Field FetchKt$fetch$1.label:I  // saved state lives on the continuation object
+    58: tableswitch   { 0: 80, 1: 103, default: 112 }        // jump to state 0 or state 1
     ...
-    50: invokestatic  #4 // delay(JLkotlin/coroutines/Continuation;)Ljava/lang/Object;
-    53: dup
-    54: getstatic     #5 // COROUTINE_SUSPENDED
-    57: if_acmpne     61                        // if not suspended, continue
-    60: areturn                                 // suspend! return COROUTINE_SUSPENDED
+    89: iconst_1
+    90: putfield      #24 // Field FetchKt$fetch$1.label:I  // next state = 1
+    93: invokestatic  #53 // Method kotlinx/coroutines/DelayKt.delay:(JLkotlin/coroutines/Continuation;)Ljava/lang/Object;
+    96: dup
+    97: aload_3
+    98: if_acmpne     108                                   // not suspended: continue
+   101: aload_3
+   102: areturn                                              // suspend! return COROUTINE_SUSPENDED
 ```
 
 The `delay(1000)` call either returns immediately (and execution continues) or returns the `COROUTINE_SUSPENDED` sentinel, in which case the function unwinds back to its caller without finishing. A separate generated class (`FetchKt$fetch$1`) holds the saved state.
@@ -259,7 +271,7 @@ inline fun doMath(op: (Int, Int) -> Int): Int = op(5, 10)
 fun calc() = doMath { x, y -> x + y }
 ```
 
-With `inline`, this direct lambda body can be copied into `calc()`, removing the function-object call at that site. Without inlining, the lambda is represented as a function object or an `invokedynamic` lambda depending on compiler settings; this non-capturing lambda can be reused rather than allocated on every call. Inspect the selected compiler target before counting allocations.
+With `inline`, this direct lambda body can be copied into `calc()`, removing the function-object call at that site. Without inlining, Kotlin 2.0+ links the lambda through `invokedynamic` by default (`-Xlambdas=class` restores generated lambda classes); this non-capturing lambda can be reused rather than allocated on every call. Inspect the selected compiler target before counting allocations.
 
 ---
 

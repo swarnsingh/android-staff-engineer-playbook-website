@@ -8,7 +8,7 @@ The key idea: collection owns registration. Cancellation owns cleanup.
 
 ```kotlin
 fun LocationClient.locations(): Flow<Location> = callbackFlow {
-    val callback = object : LocationCallback {
+    val callback = object : LocationCallback() {
         override fun onLocationResult(result: LocationResult) {
             result.lastLocation?.let { location ->
                 trySend(location)
