@@ -11,11 +11,13 @@ import fs from 'fs';
 const nav = JSON.parse(fs.readFileSync(process.argv[4], 'utf8').split('=').slice(1).join('=').trim().replace(/;$/, ''));
 const pages = nav.flatMap(t => t.chapters.filter(c => c.rendered).map(c => '/' + c.path.replace(/\.md$/, '') + '/'));
 const kinds = {}; const sample = []; let figs = 0, maps = 0, labels = 0, staticFigures = 0, staticCards = 0;
+// Figures that keep a labelled local scroll at this width (an inventory, not a failure).
+const scrolling = { figures: 0, maps: 0, scenes: 0 };
 for (const p of pages) {
   await page.goto(base.replace(/\/$/, '') + p, { waitUntil: 'load' });
   const r = await page.evaluate(async (viewportWidth) => {
     await document.fonts.ready; await new Promise(r => setTimeout(r, 150));
-    const out = { figs: 0, maps: 0, labels: 0, staticFigures: 0, staticCards: 0, issues: [] };
+    const out = { figs: 0, maps: 0, labels: 0, staticFigures: 0, staticCards: 0, issues: [], scrolling: { figures: 0, maps: 0, scenes: 0 } };
     for (const f of document.querySelectorAll('.fm-figure')) { out.figs++; const fb = f.getBoundingClientRect(); const s = f.querySelector('.fm-scroll');
       const wide=f.querySelector('[data-figure-variant=wide]'),compact=f.querySelector('[data-figure-variant=compact]');
       if (wide && compact) {
@@ -23,6 +25,7 @@ for (const p of pages) {
         if (wide.hasAttribute('hidden')!==narrow || compact.hasAttribute('hidden')===narrow) out.issues.push('figure-variant-selection');
       }
       if (s.scrollWidth > s.clientWidth + 1) {
+        out.scrolling.figures++;
         if (viewportWidth >= 1024) out.issues.push('figure-scrolls');
         else if (s.getAttribute('role')!=='region' || !s.getAttribute('aria-label') || s.tabIndex!==0) out.issues.push('unlabelled-figure-scroll');
       }
@@ -39,7 +42,8 @@ for (const p of pages) {
         if (card.scrollWidth > card.clientWidth+1) out.issues.push('static-card-overflows');
       }
     }
-    for (const m of document.querySelectorAll('.relationship-map')) { out.maps++; if (viewportWidth >= 1024 && m.scrollWidth > m.clientWidth + 1) out.issues.push('map-scrolls ' + m.scrollWidth + '/' + m.clientWidth); }
+    for (const p of document.querySelectorAll('.reading-content .pb-paper')) if (p.scrollWidth > p.clientWidth + 1) out.scrolling.scenes++;
+    for (const m of document.querySelectorAll('.relationship-map')) { out.maps++; if (m.scrollWidth > m.clientWidth + 1) out.scrolling.maps++; if (viewportWidth >= 1024 && m.scrollWidth > m.clientWidth + 1) out.issues.push('map-scrolls ' + m.scrollWidth + '/' + m.clientWidth); }
     for (const g of document.querySelectorAll('svg.fm-svg .fm-node, svg.fm-svg .fm-pill, svg.fm-svg .fm-note')) { if (g.closest('svg').hasAttribute('hidden')) continue; out.labels++; const r = g.querySelector('rect').getBBox(); for (const t of g.querySelectorAll('text:not(.n)')) { const b = t.getBBox(); if (b.x < r.x + 2 || b.x + b.width > r.x + r.width - 2) out.issues.push('text-overflow'); } }
     // Common rule: nothing inside a box may extend past that box, except inside a scroll area.
     const boxes = '.pb-static,.blend,.fm-figure,.pb-figure,.stepper,.source-diagram,.original-diagram,.callout,.question,.deep-dive,.static-model,.checkpoint,.code-card,.decision-card,.relationship-map,details';
@@ -58,8 +62,9 @@ for (const p of pages) {
     }
     if (document.documentElement.scrollWidth > innerWidth+1) out.issues.push('page-scrolls');
     return out; }, viewportWidth);
+  for (const k in scrolling) scrolling[k] += r.scrolling[k];
   figs += r.figs; maps += r.maps; labels += r.labels; staticFigures += r.staticFigures; staticCards += r.staticCards;
   for (const i of r.issues) { const k = i.split(' ')[0]; kinds[k] = (kinds[k] || 0) + 1; if (sample.length < 25) sample.push(p + ' ' + i); }
 }
-console.log(JSON.stringify({ viewportWidth, pages: pages.length, figs, maps, labels, staticFigures, staticCards, kinds, sample }));
+console.log(JSON.stringify({ viewportWidth, pages: pages.length, figs, maps, labels, staticFigures, staticCards, scrolling, kinds, sample }));
 await b.close();

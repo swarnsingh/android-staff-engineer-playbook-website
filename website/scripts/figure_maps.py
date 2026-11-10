@@ -8,7 +8,7 @@ patterns come from tokens.json through design-system/components/bundle.css.
 """
 from pathlib import Path
 from html import escape
-import json, math
+import json, math, re
 import design_tokens
 
 WEB = Path(__file__).resolve().parents[1]
@@ -191,6 +191,9 @@ def anchors(a, b, e):
     top = lambda n: n['y']
     bottom = lambda n: n['y'] + n['h']
     route = e.get('route', 'straight')
+    if route == 'path':
+        # A composition that routed the edge itself (the phone ladder) supplies every point.
+        return [tuple(p) for p in e['points']], route
     if route == 'straight' and not e.get('from_dx') and not e.get('to_dx'):
         # Cards that share a band of height or width get an orthogonal line through that band.
         lo, hi = max(a['y'], b['y']), min(a['y'] + a['h'], b['y'] + b['h'])
@@ -257,6 +260,44 @@ def pill_size(label):
     return geometry_value('pill-number-gutter') + max(width(r, 'label') for r in rows) + geometry_value('pill-end-inset'), geometry_value('pill-base-height') + LINE * (len(rows) - 1)
 
 
+def wide_number_keys(row):
+    """For each edge, the key it shares one number under in the wide drawing (a bus), or None."""
+    edges = row.get('edges', [])
+    keys = [e.get('bus') for e in edges]
+    if row.get('layout') == 'layers' and not all('x' in n or 'col' in n for n in row['nodes']):
+        # auto_layout gives several same-label edges from one parent a shared bus.
+        count = {}
+        for e in edges:
+            count[(e['from'], str(e['label']))] = count.get((e['from'], str(e['label'])), 0) + 1
+        keys = [k if k is not None else (e['from'] + ':' + str(e['label']) if count[(e['from'], str(e['label']))] > 2 else None)
+                for k, e in zip(keys, edges)]
+    return keys
+
+
+def relationship_rank(nodes, edges):
+    """Longest-path rank over the relationships, ignoring edges that close a cycle."""
+    state, back = {}, set()
+    def visit(u):
+        state[u] = 1
+        for i, e in enumerate(edges):
+            if e['from'] == u:
+                v = e['to']
+                if v == u or state.get(v) == 1:
+                    back.add(i)
+                elif v not in state:
+                    visit(v)
+        state[u] = 2
+    for n in nodes:
+        if n['id'] not in state:
+            visit(n['id'])
+    rank = {n['id']: 0 for n in nodes}
+    for _ in nodes:
+        for i, e in enumerate(edges):
+            if i not in back and rank[e['to']] < rank[e['from']] + 1:
+                rank[e['to']] = rank[e['from']] + 1
+    return rank
+
+
 def auto_layout(row, key):
     """Place a model without coordinates: one column per owner boundary, rows in relationship order.
 
@@ -281,26 +322,7 @@ def auto_layout(row, key):
         if k not in columns:
             columns.append(k)
         n['_col'] = columns.index(k)
-    # Longest-path rank over the relationships, ignoring edges that close a cycle.
-    state, back = {}, set()
-    def visit(u):
-        state[u] = 1
-        for i, e in enumerate(edges):
-            if e['from'] == u:
-                v = e['to']
-                if v == u or state.get(v) == 1:
-                    back.add(i)
-                elif v not in state:
-                    visit(v)
-        state[u] = 2
-    for n in nodes:
-        if n['id'] not in state:
-            visit(n['id'])
-    rank = {n['id']: 0 for n in nodes}
-    for _ in nodes:
-        for i, e in enumerate(edges):
-            if i not in back and rank[e['to']] < rank[e['from']] + 1:
-                rank[e['to']] = rank[e['from']] + 1
+    rank = relationship_rank(nodes, edges)
     for c in range(len(columns)):
         last = -1
         for n in sorted((n for n in nodes if n['_col'] == c), key=lambda n: (rank[n['id']], nodes.index(n))):
@@ -523,14 +545,20 @@ def place_flow(row, nodes, rank):
         n['_col'], n['_row'] = n['x'], r
 
 
+def label_lines_extra(g):
+    """Extra header height for a boundary label wrapped onto several lines (phone compositions only)."""
+    return (len(lines(g['label'])) - 1) * geometry_value('boundary-label-line')
+
+
 def group_box(g, nodes, groups):
     """A boundary encloses its own members and every nested boundary."""
     members = [nodes[m] for m in g['nodes']]
-    boxes = [(m['x'] - geometry_value('boundary-card-inset'), m['y'] - geometry_value('boundary-header-inset'), m['x'] + m['w'] + geometry_value('boundary-card-inset'), m['y'] + m['h'] + geometry_value('boundary-card-inset')) for m in members]
+    extra = label_lines_extra(g)
+    boxes = [(m['x'] - geometry_value('boundary-card-inset'), m['y'] - geometry_value('boundary-header-inset') - extra, m['x'] + m['w'] + geometry_value('boundary-card-inset'), m['y'] + m['h'] + geometry_value('boundary-card-inset')) for m in members]
     for child in groups:
         if child.get('parent') == g['id']:
             cx0, cy0, cx1, cy1 = group_box(child, nodes, groups)
-            boxes.append((cx0 - geometry_value('nested-boundary-inset'), cy0 - geometry_value('nested-boundary-header-gap'), cx1 + geometry_value('nested-boundary-inset'), cy1 + geometry_value('nested-boundary-inset')))
+            boxes.append((cx0 - geometry_value('nested-boundary-inset'), cy0 - geometry_value('nested-boundary-header-gap') - extra, cx1 + geometry_value('nested-boundary-inset'), cy1 + geometry_value('nested-boundary-inset')))
     return min(b[0] for b in boxes), min(b[1] for b in boxes), max(b[2] for b in boxes), max(b[3] for b in boxes)
 
 
@@ -579,10 +607,12 @@ def draw_map(row, key):
         for nid, m in nodes.items():
             if nid not in owned(g) and m['x'] < x1 and x0 < m['x'] + m['w'] and m['y'] < y1 and y0 < m['y'] + m['h']:
                 raise ValueError(f'Figure {key}: boundary "{g["label"]}" overlaps card {nid}, which it does not own')
-        if len(g['label']) * geometry_value('boundary-glyph-advance') > x1 - x0 - geometry_value('boundary-label-inset-total'):
-            raise ValueError(f'Figure {key}: boundary label "{g["label"]}" is wider than its boundary')
+        if max(map(len, lines(g['label']))) * geometry_value('boundary-glyph-advance') > x1 - x0 - geometry_value('boundary-label-inset-total'):
+            raise ValueError(f'Figure {key}: boundary label "{" ".join(lines(g["label"]))}" is wider than its boundary')
+        label = ''.join(f'<text x="{x0+geometry_value('boundary-label-x')}" y="{y0+geometry_value('boundary-label-y')+i*geometry_value('boundary-label-line')}" dominant-baseline="central">{escape(t)}</text>'
+                        for i, t in enumerate(lines(g['label'])))
         c.add(f'<g class="fm-group"><rect x="{x0}" y="{y0}" width="{x1-x0}" height="{y1-y0}" rx="{geometry_value('boundary-radius')}"/>'
-              f'<text x="{x0+geometry_value('boundary-label-x')}" y="{y0+geometry_value('boundary-label-y')}" dominant-baseline="central">{escape(g["label"])}</text></g>', x0, y0, x1, y1)
+              f'{label}</g>', x0, y0, x1, y1)
     edges, pills, numbers = [], [], {}
     for e in row.get('edges', []):
         a, b = nodes[e['from']], nodes[e['to']]
@@ -616,14 +646,19 @@ def draw_map(row, key):
                     seg = max(range(len(pts) - 1), key=lambda i: math.hypot(pts[i+1][0]-pts[i][0], pts[i+1][1]-pts[i][1]))
                 t = e.get('t', .5)
                 (sx, sy), (tx, ty) = pts[seg], pts[seg + 1]
-                label_at = (sx + (tx - sx) * t, sy + (ty - sy) * t)
+                label_at = tuple(e['label_at']) if 'label_at' in e else (sx + (tx - sx) * t, sy + (ty - sy) * t)
         edges.append(f'<path class="{cls}" d="{path}"{start} marker-end="url(#{c.marker_id})"/>')
         # Edges on one shared bus carry one number and one visible label.
         bus = e.get('bus')
         if bus in numbers:
             continue
-        number = len(numbers) + 1
-        numbers[bus or id(e)] = number
+        # Separate lines that share one number in the wide drawing keep that number, each with its own label.
+        shared = e.get('shared_number')
+        if shared is not None and shared in numbers:
+            number = numbers[shared]
+        else:
+            number = len(numbers) + 1
+            numbers[bus or shared or id(e)] = number
         if kind == 'loop':
             w = geometry_value('pill-number-gutter') + max(width(r, 'label') for r in lines(e['label'])) + geometry_value('pill-end-inset')
             label_at = (label_at[0] + w / 2, label_at[1])
@@ -742,24 +777,238 @@ def transcript(row):
     return ''.join(f'<li>{escape(i)}</li>' for i in items)
 
 
-def compact_map(row,key):
+def phone_ladder(row, key, budget, wrap):
+    """The phone ladder, sending a neighbouring relationship through a lane when its straight or dog-leg drop cannot fit."""
+    demoted = set()
+    while True:
+        try:
+            return _ladder(row, budget, wrap, demoted)
+        except _Demote as through_lane:
+            demoted.add(through_lane.args[0])
+
+
+class _Demote(Exception):
+    """A neighbouring relationship whose drop cannot fit; the ladder retries it through a lane."""
+
+
+def _ladder(row, budget, wrap, demoted):
+    """A one-column phone composition that keeps every card, owner and numbered relationship.
+
+    Cards keep their model text and type sizes. They stack in relationship order, and the
+    members of each owner boundary stay together so the boundary still encloses exactly them.
+    A relationship to the next card drops straight down with its numbered label on the line.
+    Every other relationship leaves its source on its own row under that card, carrying its
+    label, travels in a lane beside the column and enters its target from the side. Returns a
+    layout for draw_map, or None when the card column would be narrower than the token allows.
+    """
+    G = geometry_value
+    nodes = [{k: v for k, v in n.items() if k in {'id', 'title', 'detail', 'role', 'key', 'state'}} for n in row['nodes']]
+    edges = [dict({k: v for k, v in e.items() if k in {'from', 'to', 'label', 'both', 'style'}}, **({'shared_number': key} if key else {}))
+             for e, key in zip(row.get('edges', []), wide_number_keys(row))]
+    groups = [dict(g) for g in row.get('groups', [])]
+    edge_index = {id(e): k for k, e in enumerate(edges)}
+    byid, index = {n['id']: n for n in nodes}, {n['id']: i for i, n in enumerate(nodes)}
+    rank = relationship_rank(nodes, edges)
+    parent = {g['id']: g.get('parent') for g in groups}
+    owner = {m: g['id'] for g in groups for m in g['nodes']}
+    children = {}
+    for g in groups:
+        children.setdefault(g.get('parent'), []).append(g)
+    def members(gid):
+        return [m for g in groups if g['id'] == gid for m in g['nodes']] + [m for c in children.get(gid, []) for m in members(c['id'])]
+    def flatten(gid):
+        items = [('node', n['id'], (rank[n['id']], index[n['id']])) for n in nodes if owner.get(n['id']) == gid]
+        items += [('group', c['id'], min(((rank[m], index[m]) for m in members(c['id'])), default=(0, 0))) for c in children.get(gid, [])]
+        return [x for kind, ident, _ in sorted(items, key=lambda it: it[2]) for x in ([ident] if kind == 'node' else flatten(ident))]
+    order = flatten(None)
+    pos = {nid: i for i, nid in enumerate(order)}
+    chain = {}
+    for nid in order:
+        chain[nid], g = [], owner.get(nid)
+        while g:
+            chain[nid].insert(0, g)
+            g = parent.get(g)
+    levels = max(map(len, chain.values()), default=0)
+    outset = G('boundary-card-inset') + (levels - 1) * G('nested-boundary-inset') if levels else 0
+    def below(g, nid):  # boundary levels between owner g and card nid
+        return len(chain[nid]) - 1 - chain[nid].index(g)
+
+    # Neighbouring relationships drop straight down; the rest use lanes, assigned shortest first.
+    adjacent, gutter = {}, []
+    for e in edges:
+        i = pos[e['from']]
+        if pos[e['to']] == i + 1 and i not in adjacent and edge_index[id(e)] not in demoted:
+            adjacent[i] = e
+        else:
+            gutter.append(e)
+    span = lambda e: sorted([(pos[e['from']] + 1, 0), (pos[e['to']], 1)])
+    lanes, lane_of = [], {}
+    for e in sorted(gutter, key=lambda e: (abs(pos[e['to']] - pos[e['from']]), pos[e['from']])):
+        lo, hi = span(e)
+        k = next((k for k, used in enumerate(lanes) if all(hi < a or b < lo for a, b in used)), len(lanes))
+        if k == len(lanes):
+            lanes.append([])
+        lanes[k].append((lo, hi))
+        lane_of[id(e)] = k
+    lane_room = G('phone-lane-clearance') + (len(lanes) - 1) * G('phone-lane-pitch') if lanes else 0
+    card_w = math.floor(budget - 2 * MARGIN - 2 * outset - lane_room)
+    inset = px('figure-card-text-inset')
+    # Cards wrap between words only: the column must hold each card's longest word.
+    longest = max((width(word, kind) + inset for n in nodes for field, kind in (('title', 'title'), ('detail', 'detail'))
+                   for t in lines(n.get(field)) for word in re.split(r'\s+|(?<=[/.-])', t) if word), default=0)
+    if card_w < max(G('phone-card-min'), longest):
+        return None
+    for n in nodes:
+        for field, kind in (('title', 'title'), ('detail', 'detail')):
+            if any(width(t, kind) + inset > card_w for t in lines(n.get(field))):
+                n[field] = [part for t in lines(n[field]) for part in lines(wrap_label(t, int((card_w - inset) / GLYPH[kind])))]
+    for e in edges:
+        e['label'] = wrap_label(' '.join(lines(e['label'])), wrap)
+    # A boundary label wider than its phone boundary wraps between words onto further header lines.
+    for g in groups:
+        reach = G('boundary-card-inset') + max((below(g['id'], m) for m in members(g['id'])), default=0) * G('nested-boundary-inset')
+        room = int((card_w + 2 * reach - G('boundary-label-inset-total')) / G('boundary-glyph-advance'))
+        if len(g['label']) > room and all(len(word) <= room for word in g['label'].split()):
+            g['label'] = lines(wrap_label(g['label'], room))
+    labels = {g['id']: g['label'] for g in groups}
+    extra = {g['id']: label_lines_extra(g) for g in groups}
+    lane_x = lambda k: card_w + outset + G('phone-lane-clearance') + k * G('phone-lane-pitch')
+    pill_right = card_w + (outset - G('phone-pill-edge-inset') if outset else G('phone-lane-clearance') / 2)
+    pill_left = -outset + G('phone-pill-edge-inset') if outset else 0
+    lo_x, hi_x = G('phone-stub-inset'), card_w - G('phone-stub-inset')
+
+    def label_end(i):
+        """Right end of the boundary labels drawn just above card i, which a line into its top must avoid."""
+        nid, prev = order[i], (chain[order[i - 1]] if i else [])
+        return max([-(G('boundary-card-inset') + below(g, nid) * G('nested-boundary-inset')) + G('boundary-card-inset')
+                    + max(map(len, lines(labels[g]))) * G('boundary-glyph-advance') + G('phone-label-clearance') for g in chain[nid] if g not in prev], default=-math.inf)
+
+    def rows_under(i, y):
+        """Rows under card i: lane-bound relationships first, their stubs stepping left, then the straight drop.
+
+        Returns the y after the last row, or None when a label cannot fit beside the lines it must not cover.
+        """
+        x = hi_x
+        for e in (e for e in gutter if pos[e['from']] == i):
+            w, h = pill_size(e['label'])
+            x = min(x, pill_right - G('phone-pill-lead') - w)
+            if x < lo_x:
+                return None
+            e['_exit'], e['label_at'] = (x, y + h / 2), (x + G('phone-pill-lead') + w / 2, y + h / 2)
+            y += h + G('phone-row-gap')
+            x -= G('phone-stub-gap')
+        e = adjacent.get(i)
+        if e:
+            w, h = pill_size(e['label'])
+            end, lead = label_end(i + 1), G('phone-pill-lead')
+            # A straight drop, moved right of any boundary label it would cross; failing that, a
+            # dog-leg whose label sits on its own horizontal run under every other row.
+            for xa in (min(card_w / 2, x), max(min(card_w / 2, x), end + 1)):
+                if lo_x <= xa <= x and xa > end and pill_left <= xa - w / 2 and xa + w / 2 <= pill_right:
+                    e['_drop'], e['label_at'] = xa, (xa, y + h / 2)
+                    break
+            else:
+                if x < lo_x or hi_x <= end or lo_x + 2 * lead + w > hi_x:
+                    raise _Demote(edge_index[id(e)])
+                e['_bend'], e['label_at'] = (lo_x, y + h / 2, hi_x), (lo_x + lead + w / 2, y + h / 2)
+            y += h + G('phone-row-gap')
+        return y
+
+    y, placed = 0, {}
+    for i, nid in enumerate(order):
+        if i:
+            prev = order[i - 1]
+            y = placed[prev]['y'] + card_height(placed[prev])
+            y += max([G('boundary-card-inset') + below(g, prev) * G('nested-boundary-inset') for g in chain[prev] if g not in chain[nid]], default=0)
+            start, y = y, rows_under(i - 1, y + G('phone-gap-pad'))
+            if y is None:
+                return None
+            y = max(y - G('phone-row-gap') + G('phone-gap-pad'), start + G('phone-card-gap'))
+        # Opening boundaries: the innermost header, then each enclosing header, each with its wrapped lines.
+        y += max([G('boundary-header-inset') + extra[chain[nid][-1]] + sum(G('nested-boundary-header-gap') + extra[h] for h in chain[nid][chain[nid].index(g):-1])
+                  for g in chain[nid] if g not in (chain[order[i - 1]] if i else [])], default=0)
+        placed[nid] = dict(byid[nid], x=0, y=y, w=card_w)
+    last = order[-1]
+    y = placed[last]['y'] + card_height(placed[last])
+    if rows_under(len(order) - 1, y + max([G('boundary-card-inset') + below(g, last) * G('nested-boundary-inset') for g in chain[last]], default=0) + G('phone-gap-pad')) is None:
+        return None
+
+    # Side entries: from above in lane order, then from below in reverse, so lanes cross as little as possible.
+    for nid in order:
+        card = placed[nid]
+        into = [e for e in gutter if e['to'] == nid]
+        into.sort(key=lambda e: (0, lane_of[id(e)]) if pos[e['from']] < pos[nid] else (1, -lane_of[id(e)]))
+        h = card_height(card)
+        if into and h / (len(into) + 1) < G('phone-entry-pitch'):
+            return None
+        for s, e in enumerate(into):
+            e['_entry'] = card['y'] + h * (s + 1) / (len(into) + 1)
+    for e in edges:
+        a, b = placed[e['from']], placed[e['to']]
+        if '_drop' in e:
+            x = e.pop('_drop')
+            e['points'] = [(x, a['y'] + card_height(a)), (x, b['y'])]
+        elif '_bend' in e:
+            x, ry, xd = e.pop('_bend')
+            e['points'] = [(x, a['y'] + card_height(a)), (x, ry), (xd, ry), (xd, b['y'])]
+        else:
+            (x, ry), lx, ey = e.pop('_exit'), lane_x(lane_of[id(e)]), e.pop('_entry')
+            e['points'] = [(x, a['y'] + card_height(a)), (x, ry), (lx, ry), (lx, ey), (card_w, ey)]
+        e['route'] = 'path'
+    return dict({k: row[k] for k in ('path', 'diagram', 'kind', 'number', 'title', 'caption', 'sources') if k in row},
+                groups=groups, edges=edges, nodes=[placed[nid] for nid in order])
+
+
+def phone_lines_clear(layout):
+    """No numbered label may hide part of another relationship's line."""
+    for e in layout['edges']:
+        (x, y), (w, h) = e['label_at'], pill_size(e['label'])
+        rect = (x - w / 2, y - h / 2, x + w / 2, y + h / 2)
+        for f in layout['edges']:
+            if f is e:
+                continue
+            for (x0, y0), (x1, y1) in zip(f['points'], f['points'][1:]):
+                if (min(x0, x1) < rect[2] and max(x0, x1) > rect[0] and min(y0, y1) < rect[3] and max(y0, y1) > rect[1]):
+                    return False
+    return True
+
+
+def compact_map(row, key, budget=None):
     """Reflow relationships without changing their text, endpoints or logical owners.
 
-    Complex or unrouteable models keep their full drawing in the labelled scroll region.
-    The compact result uses the same type sizes and the normal collision checks.
+    The first choice reflows the owner columns within the phone width. A model that does not
+    fit that way gets the one-column phone ladder, trying the widest label wrap first. Complex
+    or unrouteable models keep their full drawing in the labelled scroll region. Every compact
+    result uses the same type sizes and the normal collision checks.
     """
-    if row['kind']!='map' or any(n.get('shape') for n in row['nodes']):return None
-    candidate={k:row[k] for k in ('path','diagram','kind','number','title','caption','sources','groups') if k in row}
-    candidate['nodes']=[{k:v for k,v in n.items() if k in {'id','title','detail','role','key','state'}} for n in row['nodes']]
-    candidate['edges']=[{k:v for k,v in e.items() if k in {'from','to','label','both','style'}} for e in row.get('edges',[])]
-    candidate.update(max_w=px('figure-phone-width'),frame_w=px('figure-phone-width'),
-                     _card_max=px('figure-phone-card-max'),_card_min=px('figure-phone-card-min'))
+    if row['kind'] != 'map' or any(n.get('shape') for n in row['nodes']):
+        return None
+    budget = budget or px('figure-phone-width')
+    fits = lambda c: (c.box[2] - c.box[0] + 2 * MARGIN <= budget and c.box[3] - c.box[1] + 2 * MARGIN <= px('figure-phone-max-height'))
+    candidate = {k: row[k] for k in ('path', 'diagram', 'kind', 'number', 'title', 'caption', 'sources', 'groups') if k in row}
+    candidate['nodes'] = [{k: v for k, v in n.items() if k in {'id', 'title', 'detail', 'role', 'key', 'state'}} for n in row['nodes']]
+    candidate['edges'] = [{k: v for k, v in e.items() if k in {'from', 'to', 'label', 'both', 'style'}} for e in row.get('edges', [])]
+    candidate.update(max_w=budget, frame_w=budget, _card_max=px('figure-phone-card-max'), _card_min=px('figure-phone-card-min'))
     try:
-        canvas=draw_map(auto_layout(candidate,key+'-compact'),key+'-compact')
+        canvas = draw_map(auto_layout(candidate, key + '-compact'), key + '-compact')
         canvas.verify()
-    except ValueError:return None
-    w,h=canvas.box[2]-canvas.box[0]+2*MARGIN,canvas.box[3]-canvas.box[1]+2*MARGIN
-    return canvas if w<=px('figure-phone-width') and h<=px('figure-phone-max-height') else None
+        if fits(canvas):
+            return canvas
+    except ValueError:
+        pass
+    longest = max((len(word) for e in row.get('edges', []) for word in ' '.join(lines(e['label'])).split()), default=0)
+    for wrap in geometry_value('phone-label-wraps'):
+        layout = phone_ladder(row, key + '-compact', budget, max(wrap, min(longest, geometry_value('edge-label-wrap'))))
+        if not layout:
+            continue
+        try:
+            canvas = draw_map(layout, key + '-compact')
+            canvas.verify()
+        except ValueError:
+            continue
+        if fits(canvas) and phone_lines_clear(layout):
+            return canvas
+    return None
 
 
 def render(row, source, provenance='original'):

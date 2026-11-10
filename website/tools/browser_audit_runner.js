@@ -161,10 +161,16 @@ window.__runAudit = async (pages, widths = [320, 390, 768, 1181, 1280, 1439, 144
               const modelJSON=figure.querySelector('script.relationship-model');
               const model=modelJSON?JSON.parse(modelJSON.textContent):null;
               if(model){
-                const map=figure.querySelector('.relationship-map');
-                if(map.querySelectorAll('g.fm-node').length!==model.actors.length)problems.push('relationship actor count mismatch');
-                if(map.querySelectorAll('g.fm-group').length!==(model.groups||[]).length)problems.push('relationship owner count mismatch');
-                if(map.querySelectorAll('path.fm-edge').length!==(model.edges||[]).length)problems.push('relationship arrow count mismatch');
+                const box=figure.querySelector('.relationship-map'),drawings=[...box.querySelectorAll(':scope > svg')];
+                // A map may carry a wide and a phone drawing: each must be complete, and only the shown one is measured.
+                for(const svg of drawings){
+                  if(svg.querySelectorAll('g.fm-node').length!==model.actors.length)problems.push('relationship actor count mismatch');
+                  if(svg.querySelectorAll('g.fm-group').length!==(model.groups||[]).length)problems.push('relationship owner count mismatch');
+                  if(svg.querySelectorAll('path.fm-edge').length!==(model.edges||[]).length)problems.push('relationship arrow count mismatch');
+                }
+                const shown=drawings.filter(svg=>!svg.hasAttribute('hidden'));
+                if(shown.length!==1)problems.push('relationship map shows '+shown.length+' drawings');
+                const map=shown[0]||box;
                 if(!figure.querySelector('.sequence-problem')?.textContent.includes(model.problem))problems.push('missing topic problem');
                 if(!steps.some(s=>Object.hasOwn(s,'add')||Object.hasOwn(s,'remove'))&&figure.querySelectorAll('.stage [data-el].is-off').length)problems.push('static comparison actors hidden');
                 for(const node of map.querySelectorAll('g.fm-node')){
